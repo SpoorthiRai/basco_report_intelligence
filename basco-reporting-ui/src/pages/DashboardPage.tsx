@@ -35,23 +35,23 @@ interface ModuleSummaryData {
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const { data: leagueData } = useLeagueTable();
+  const { data: leagueData } = useLeagueTable('Q2 2026');
 
   const [summaryData, setSummaryData] = useState<ModuleSummaryData>({
-    visualAdoption: { total_creatives: 293, used_intel: 180, adoption_pct: 61.4 },
+    visualAdoption: { total_creatives: 48, used_intel: 46, adoption_pct: 95.8 },
     ctaCampaign: { aligned_count: 298, misaligned_count: 359, no_cta_pct: 62.6, buy_cta_pct: 19.3 },
     offerCta: { conversion_ready: 155, offer_missing_cta: 261, total_offers: 416 },
-    marketMaturity: { markets_count: 22, avg_score: 86.2, total_violations: 0, markets_at_risk: 3, regions_at_risk: 1 },
+    marketMaturity: { markets_count: 8, avg_score: 87.0, total_violations: 0, markets_at_risk: 1, regions_at_risk: 1 },
   });
 
 
   useEffect(() => {
     let isMounted = true;
     Promise.allSettled([
-      api.get('/api/reports/visual-adoption/'),
-      api.get('/api/reports/cta-campaign/'),
-      api.get('/api/reports/offer-cta/'),
-      api.get('/api/reports/market-maturity/'),
+      api.get('/api/reports/visual-adoption/?quarter=Q2 2026'),
+      api.get('/api/reports/cta-campaign/?quarter=Q2 2026'),
+      api.get('/api/reports/offer-cta/?quarter=Q2 2026'),
+      api.get('/api/reports/market-maturity/?quarter=Q2 2026'),
     ]).then(([visRes, ctaRes, offRes, mmRes]) => {
       if (!isMounted) return;
 
@@ -60,9 +60,9 @@ export default function DashboardPage() {
       if (visRes.status === 'fulfilled' && visRes.value.data?.kpis) {
         const k = visRes.value.data.kpis;
         newSummary.visualAdoption = {
-          total_creatives: k.total_creatives || 293,
-          used_intel: k.used_intel || 180,
-          adoption_pct: k.adoption_pct || 61.4,
+          total_creatives: k.total_creatives || 48,
+          used_intel: k.used_intel || 46,
+          adoption_pct: k.adoption_pct || 95.8,
         };
       }
 
@@ -92,13 +92,13 @@ export default function DashboardPage() {
         const totalJobs = rows.reduce((acc: number, r: any) => acc + (r.total_jobs || 1), 0);
         const avg = totalJobs > 0
           ? Number((rows.reduce((acc: number, r: any) => acc + ((r.avg_basco_score || 0) * (r.total_jobs || 1)), 0) / totalJobs).toFixed(1))
-          : 86.2;
+          : 87.0;
         const totalV = rows.reduce((acc: number, r: any) => acc + (r.total_violations || 0), 0);
-        const marketsAtRisk = rows.filter((r: any) => (r.avg_basco_score || 0) < 75).length;
-        const regionsAtRisk = new Set(rows.filter((r: any) => (r.avg_basco_score || 0) < 75).map((r: any) => r.region).filter(Boolean)).size;
+        const marketsAtRisk = rows.filter((r: any) => (r.avg_basco_score || 0) < 80).length;
+        const regionsAtRisk = new Set(rows.filter((r: any) => (r.avg_basco_score || 0) < 80).map((r: any) => r.region).filter(Boolean)).size;
 
         newSummary.marketMaturity = {
-          markets_count: rows.length || 22,
+          markets_count: rows.length || 8,
           avg_score: avg,
           total_violations: totalV,
           markets_at_risk: marketsAtRisk,
@@ -122,18 +122,18 @@ export default function DashboardPage() {
     ? (leagueData as any).data
     : [];
 
-  const totalRetailers = leagueRows.length > 0 ? leagueRows.length : 16;
+  const totalRetailers = leagueRows.length > 0 ? leagueRows.length : 9;
   const totalQueries = leagueRows.reduce((s: number, r: any) => s + (r.queries || 1), 0);
   const weightedLeagueScore = leagueRows.reduce((s: number, r: any) => s + ((r.basco ?? r.basco_score ?? 0) * (r.queries || 1)), 0);
   const avgBasco = totalQueries > 0
     ? (weightedLeagueScore / totalQueries).toFixed(1)
     : summaryData.marketMaturity?.avg_score
     ? summaryData.marketMaturity.avg_score.toFixed(1)
-    : '10.5';
+    : '87.0';
 
   const totalAttrLoss = leagueRows.length > 0
     ? leagueRows.reduce((s: number, r: any) => s + (r.attr_loss ?? 0), 0)
-    : 810000;
+    : 173692;
 
   return (
     <div className="space-y-8 pb-12">
@@ -143,7 +143,7 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2.5 mb-2">
               <span className="bg-blue-500/20 text-cyan-300 border border-cyan-400/30 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                2026 Consolidated Insights
+                Q2 2026 Insights (Latest)
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
@@ -422,7 +422,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">Multi-Quarter support (Q1, Q2, Q3 2026)</span>
+              <span className="text-[11px] text-slate-400 font-medium">Multi-Quarter support (Q1, Q2 2026)</span>
               <Link
                 to="/market-maturity"
                 className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
