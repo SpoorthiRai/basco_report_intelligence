@@ -150,10 +150,9 @@ class LeagueTableView(APIView):
                 retailer_quarter_map[(r['retailer'], r['quarter'])] = r['basco']
 
             for r in rows:
-                country_base = BASE_FMV_MAP.get(r['country'], 250000)
-                est_fmv = int(r['queries'] * 35000) if r['queries'] > 0 else country_base
-                r['fmv'] = est_fmv
-                r['attr_loss'] = int(est_fmv * ((100 - r['basco']) / 100) * 0.22)
+                r['fmv'] = int(r.get('fmv') or 0)
+                r['attr_loss'] = int(r.get('attr_loss') or 0)
+                r['attr_gain'] = int(r.get('attr_gain') or 0)
 
                 q_str = r.get('quarter', '')
                 if 'Q3' in q_str:
@@ -267,26 +266,14 @@ class MarketMaturityView(APIView):
                 matching_rows = [r for r in raw_rows if r.get("quarter_label") == quarter_param]
                 country_rows = []
                 for r in matching_rows:
-                    country = r.get("country")
-                    region = r.get("region")
-                    jobs = r.get("total_jobs") or 0
-                    score = float(r.get("avg_basco_score") or 0.0)
-                    violations = int(r.get("total_violations") or 0)
-
-                    base_fmv = BASE_FMV_MAP.get(country, jobs * 35000)
-                    all_time_jobs = max(1, country_all_time_jobs.get(country, jobs))
-                    ratio = min(1.0, jobs / all_time_jobs)
-                    fmv = round(base_fmv * ratio) if ratio > 0 else base_fmv
-                    attr_loss = round(fmv * ((100.0 - score) / 100.0) * 0.22)
-
                     country_rows.append({
-                        "country": country,
-                        "region": region,
-                        "total_jobs": jobs,
-                        "avg_basco_score": score,
-                        "total_violations": violations,
-                        "fmv": fmv,
-                        "attr_loss": attr_loss,
+                        "country": r.get("country"),
+                        "region": r.get("region"),
+                        "total_jobs": r.get("total_jobs") or 0,
+                        "avg_basco_score": float(r.get("avg_basco_score") or 0.0),
+                        "total_violations": int(r.get("total_violations") or 0),
+                        "fmv": int(r.get("fmv") or 0),
+                        "attr_loss": int(r.get("attr_loss") or 0),
                     })
             else:
                 # Aggregate across all quarters
@@ -300,6 +287,8 @@ class MarketMaturityView(APIView):
                             "total_jobs": 0,
                             "total_violations": 0,
                             "weighted_score": 0.0,
+                            "fmv": 0,
+                            "attr_loss": 0,
                         }
                     item = agg_map[key]
                     jobs = r.get("total_jobs") or 0
@@ -309,13 +298,13 @@ class MarketMaturityView(APIView):
                     item["total_jobs"] += jobs
                     item["total_violations"] += violations
                     item["weighted_score"] += score * jobs
+                    item["fmv"] += int(r.get("fmv") or 0)
+                    item["attr_loss"] += int(r.get("attr_loss") or 0)
 
                 country_rows = []
                 for (country, region), item in agg_map.items():
                     jobs = item["total_jobs"]
                     avg_score = round(item["weighted_score"] / jobs, 1) if jobs > 0 else 0.0
-                    fmv = BASE_FMV_MAP.get(country, jobs * 35000)
-                    attr_loss = round(fmv * ((100.0 - avg_score) / 100.0) * 0.22)
 
                     country_rows.append({
                         "country": country,
@@ -323,8 +312,8 @@ class MarketMaturityView(APIView):
                         "total_jobs": jobs,
                         "avg_basco_score": avg_score,
                         "total_violations": item["total_violations"],
-                        "fmv": fmv,
-                        "attr_loss": attr_loss,
+                        "fmv": item["fmv"],
+                        "attr_loss": item["attr_loss"],
                     })
 
             country_rows.sort(key=lambda x: x["avg_basco_score"])
