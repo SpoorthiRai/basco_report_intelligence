@@ -35,23 +35,23 @@ interface ModuleSummaryData {
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const { data: leagueData } = useLeagueTable('Q3 2026');
+  const { data: leagueData } = useLeagueTable();
 
   const [summaryData, setSummaryData] = useState<ModuleSummaryData>({
-    visualAdoption: { total_creatives: 132, used_intel: 52, adoption_pct: 39.4 },
+    visualAdoption: { total_creatives: 293, used_intel: 180, adoption_pct: 61.4 },
     ctaCampaign: { aligned_count: 298, misaligned_count: 359, no_cta_pct: 62.6, buy_cta_pct: 19.3 },
     offerCta: { conversion_ready: 155, offer_missing_cta: 261, total_offers: 416 },
-    marketMaturity: { markets_count: 14, avg_score: 15.6, total_violations: 7867, markets_at_risk: 8, regions_at_risk: 3 },
+    marketMaturity: { markets_count: 22, avg_score: 86.2, total_violations: 0, markets_at_risk: 3, regions_at_risk: 1 },
   });
 
 
   useEffect(() => {
     let isMounted = true;
     Promise.allSettled([
-      api.get('/api/reports/visual-adoption/?quarter=Q3 2026'),
-      api.get('/api/reports/cta-campaign/?quarter=Q3 2026'),
-      api.get('/api/reports/offer-cta/?quarter=Q3 2026'),
-      api.get('/api/reports/market-maturity/?quarter=Q3 2026'),
+      api.get('/api/reports/visual-adoption/'),
+      api.get('/api/reports/cta-campaign/'),
+      api.get('/api/reports/offer-cta/'),
+      api.get('/api/reports/market-maturity/'),
     ]).then(([visRes, ctaRes, offRes, mmRes]) => {
       if (!isMounted) return;
 
@@ -60,9 +60,9 @@ export default function DashboardPage() {
       if (visRes.status === 'fulfilled' && visRes.value.data?.kpis) {
         const k = visRes.value.data.kpis;
         newSummary.visualAdoption = {
-          total_creatives: k.total_creatives || 132,
-          used_intel: k.used_intel || 52,
-          adoption_pct: k.adoption_pct || 39.4,
+          total_creatives: k.total_creatives || 293,
+          used_intel: k.used_intel || 180,
+          adoption_pct: k.adoption_pct || 61.4,
         };
       }
 
@@ -92,15 +92,15 @@ export default function DashboardPage() {
         const totalJobs = rows.reduce((acc: number, r: any) => acc + (r.total_jobs || 1), 0);
         const avg = totalJobs > 0
           ? Number((rows.reduce((acc: number, r: any) => acc + ((r.avg_basco_score || 0) * (r.total_jobs || 1)), 0) / totalJobs).toFixed(1))
-          : 15.6;
+          : 86.2;
         const totalV = rows.reduce((acc: number, r: any) => acc + (r.total_violations || 0), 0);
-        const marketsAtRisk = rows.filter((r: any) => (r.avg_basco_score || 0) < 15).length;
-        const regionsAtRisk = new Set(rows.filter((r: any) => (r.avg_basco_score || 0) < 15).map((r: any) => r.region).filter(Boolean)).size;
+        const marketsAtRisk = rows.filter((r: any) => (r.avg_basco_score || 0) < 75).length;
+        const regionsAtRisk = new Set(rows.filter((r: any) => (r.avg_basco_score || 0) < 75).map((r: any) => r.region).filter(Boolean)).size;
 
         newSummary.marketMaturity = {
-          markets_count: rows.length || 14,
+          markets_count: rows.length || 22,
           avg_score: avg,
-          total_violations: totalV || 7867,
+          total_violations: totalV,
           markets_at_risk: marketsAtRisk,
           regions_at_risk: regionsAtRisk,
         };
@@ -143,7 +143,7 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2.5 mb-2">
               <span className="bg-blue-500/20 text-cyan-300 border border-cyan-400/30 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                Q3 2026 Insights
+                2026 Consolidated Insights
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
