@@ -45,24 +45,24 @@ function getScoreColor(score: number): {
   badgeText: string;
   label: string;
 } {
-  if (score < 8) {
+  if (score < 80) {
     return {
       fill: "#ef4444",
       gradientId: "redBubbleGrad",
       border: "#b91c1c",
-      badgeBg: "bg-red-500/10",
-      badgeText: "text-red-400",
-      label: "Critical Risk (< 8)",
+      badgeBg: "bg-rose-500/10",
+      badgeText: "text-rose-400",
+      label: "Critical Action (< 80%)",
     };
   }
-  if (score < 15) {
+  if (score <= 90) {
     return {
       fill: "#f59e0b",
       gradientId: "amberBubbleGrad",
       border: "#d97706",
       badgeBg: "bg-amber-500/10",
       badgeText: "text-amber-400",
-      label: "Moderate (8 - 14)",
+      label: "Moderate (80% – 90%)",
     };
   }
   return {
@@ -71,7 +71,7 @@ function getScoreColor(score: number): {
     border: "#059669",
     badgeBg: "bg-emerald-500/10",
     badgeText: "text-emerald-400",
-    label: "Mature (≥ 15)",
+    label: "Healthy (> 90%)",
   };
 }
 
@@ -422,15 +422,15 @@ export default function MarketMaturityPage() {
           <div className="flex items-center gap-2 flex-wrap text-xs">
             <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold px-2.5 py-0.5 rounded-lg text-[11px]">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>≥ 15% Mature (Healthy)</span>
+              <span>&gt; 90% Healthy</span>
             </span>
             <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200/80 font-bold px-2.5 py-0.5 rounded-lg text-[11px]">
               <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-              <span>8% – 14% Moderate</span>
+              <span>80% – 90% Moderate</span>
             </span>
             <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200/80 font-bold px-2.5 py-0.5 rounded-lg text-[11px]">
               <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-              <span>&lt; 8% Critical Action</span>
+              <span>&lt; 80% Critical Action</span>
             </span>
           </div>
         </div>
@@ -443,7 +443,7 @@ export default function MarketMaturityPage() {
             <div className="inline-flex items-center gap-1.5 bg-rose-50/70 text-rose-700/90 border border-rose-200/60 text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500/80"></span>
               <span>🚨 Critical Action</span>
-              <span className="hidden lg:inline text-[10px] font-normal text-rose-500/90">(High Risk / Low Score)</span>
+              <span className="hidden lg:inline text-[10px] font-normal text-rose-500/90">(High Risk / Score &lt; 80%)</span>
             </div>
           </div>
 
@@ -452,7 +452,7 @@ export default function MarketMaturityPage() {
             <div className="inline-flex items-center gap-1.5 bg-amber-50/70 text-amber-700/90 border border-amber-200/60 text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80"></span>
               <span>⚠️ Needs Support</span>
-              <span className="hidden lg:inline text-[10px] font-normal text-amber-600/90">(High Risk / High Score)</span>
+              <span className="hidden lg:inline text-[10px] font-normal text-amber-600/90">(High Risk / High Volume)</span>
             </div>
           </div>
 
@@ -461,7 +461,7 @@ export default function MarketMaturityPage() {
             <div className="inline-flex items-center gap-1.5 bg-amber-50/70 text-amber-700/90 border border-amber-200/60 text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80"></span>
               <span>⚠️ Needs Support</span>
-              <span className="hidden lg:inline text-[10px] font-normal text-amber-600/90">(Low Risk / Low Score)</span>
+              <span className="hidden lg:inline text-[10px] font-normal text-amber-600/90">(Emerging Market)</span>
             </div>
           </div>
 
@@ -469,8 +469,8 @@ export default function MarketMaturityPage() {
           <div className="absolute bottom-[48px] right-[24px] z-0 pointer-events-none select-none opacity-75">
             <div className="inline-flex items-center gap-1.5 bg-emerald-50/70 text-emerald-700/90 border border-emerald-200/60 text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-2xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80"></span>
-              <span>✨ Healthy & Mature</span>
-              <span className="hidden lg:inline text-[10px] font-normal text-emerald-600/90">(Optimal Market)</span>
+              <span>✨ Healthy &amp; Mature</span>
+              <span className="hidden lg:inline text-[10px] font-normal text-emerald-600/90">(Score &gt; 90%)</span>
             </div>
           </div>
 
@@ -503,8 +503,8 @@ export default function MarketMaturityPage() {
                   type="number"
                   dataKey="x"
                   name="BASCO Score"
-                  domain={[0, 30]}
-                  ticks={[0, 5, 10, 15, 20, 25, 30]}
+                  domain={[40, 100]}
+                  ticks={[40, 50, 60, 70, 80, 90, 100]}
                   stroke="#94a3b8"
                   tick={{ fill: "#64748b", fontSize: 11, fontWeight: 600 }}
                 >
@@ -551,16 +551,31 @@ export default function MarketMaturityPage() {
                   cursor={{ strokeDasharray: "3 3", stroke: "#94a3b8", strokeWidth: 1 }}
                 />
 
-                {/* Vertical Quadrant Separator Line at BASCO Score = 15 */}
+                {/* Target Line at 90% (Healthy Threshold) */}
                 <ReferenceLine
-                  x={15}
+                  x={90}
                   stroke="#0062d2"
                   strokeDasharray="4 4"
                   strokeWidth={2}
                   label={{
-                    value: "Target BASCO (15%)",
+                    value: "Target BASCO (90%)",
                     position: "top",
                     fill: "#0062d2",
+                    fontSize: 10,
+                    fontWeight: 700,
+                  }}
+                />
+
+                {/* Moderate Boundary Line at 80% */}
+                <ReferenceLine
+                  x={80}
+                  stroke="#f59e0b"
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: "Moderate (80%)",
+                    position: "top",
+                    fill: "#d97706",
                     fontSize: 10,
                     fontWeight: 700,
                   }}
@@ -596,7 +611,7 @@ export default function MarketMaturityPage() {
         <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-400 gap-1.5">
           <span>{footNote}</span>
           <span className="font-semibold text-slate-500">
-            Quadrant Baseline: X = 15% Score • Period: {selectedQuarter}
+            Target BASCO: &gt; 90% Healthy • 80%–90% Moderate • &lt; 80% Critical Action • Period: {selectedQuarter}
           </span>
         </div>
       </div>
