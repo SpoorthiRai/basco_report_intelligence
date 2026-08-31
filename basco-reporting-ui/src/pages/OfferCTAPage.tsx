@@ -80,6 +80,7 @@ export default function OfferCTAPage() {
   const [quarterFilter, setQuarterFilter] = useState<string>('All Quarters');
   const [countryFilter, setCountryFilter] = useState<string>('All Countries');
   const [retailerFilter, setRetailerFilter] = useState<string>('All Retailers');
+  const [offerProductFilter, setOfferProductFilter] = useState<string>('All Products');
   const [selectedCreative, setSelectedCreative] = useState<OfferEvidence | null>(null);
 
   const promoEvidenceRef = useRef<HTMLDivElement>(null);
@@ -141,6 +142,26 @@ export default function OfferCTAPage() {
   const productHeatmap = data?.product_heatmap || [];
   const promoMissingList = data?.promo_missing_cta || [];
   const allOfferList = data?.all_offer_evidence || [];
+
+  const productOptions = [
+    'All Products',
+    ...Array.from(
+      new Set(
+        allOfferList
+          .map((r) => r.product)
+          .filter((p): p is string => Boolean(p && p !== 'Unknown'))
+      )
+    ),
+  ];
+
+  const filteredAllOfferList =
+    offerProductFilter === 'All Products'
+      ? allOfferList
+      : allOfferList.filter(
+          (r) =>
+            (r.product && r.product.toLowerCase().includes(offerProductFilter.toLowerCase())) ||
+            (r.Content && r.Content.toLowerCase().includes(offerProductFilter.toLowerCase()))
+        );
 
   return (
     <div className="space-y-6 pb-12">
@@ -600,22 +621,38 @@ export default function OfferCTAPage() {
             id="all-offer-evidence-table"
             className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col justify-between"
           >
-            <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
+            <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100 flex-wrap">
               <div>
                 <h3 className="text-sm font-bold text-slate-800 tracking-tight">
                   Different Offer Types Including No Offer
                 </h3>
                 <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                  All creatives across all offer types and CTA inclusion states.
+                  All creatives across all offer types.
                 </p>
               </div>
-              <button
-                onClick={scrollToTop}
-                className="text-slate-400 hover:text-slate-700 text-base font-bold p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                title="Scroll to Top"
-              >
-                ←
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 rounded-lg px-2.5 py-1 text-xs text-slate-700">
+                  <span className="text-[11px] font-medium text-slate-400">Product:</span>
+                  <select
+                    value={offerProductFilter}
+                    onChange={(e) => setOfferProductFilter(e.target.value)}
+                    className="bg-transparent text-slate-800 text-xs font-bold focus:outline-none cursor-pointer"
+                  >
+                    {productOptions.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={scrollToTop}
+                  className="text-slate-400 hover:text-slate-700 text-base font-bold p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Scroll to Top"
+                >
+                  ←
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 overflow-y-auto max-h-[420px] border border-slate-200 rounded-xl">
@@ -623,9 +660,9 @@ export default function OfferCTAPage() {
                 <div className="p-8 text-center text-xs font-semibold text-slate-400 animate-pulse">
                   Loading offer evidence...
                 </div>
-              ) : allOfferList.length === 0 ? (
+              ) : filteredAllOfferList.length === 0 ? (
                 <div className="p-8 text-center text-xs font-medium text-slate-400">
-                  No offer evidence found.
+                  No offer evidence found for the selected product.
                 </div>
               ) : (
                 <table className="w-full text-left text-xs border-collapse">
@@ -634,12 +671,11 @@ export default function OfferCTAPage() {
                       <th className="py-2.5 px-3">Creative</th>
                       <th className="py-2.5 px-3">Parent Account</th>
                       <th className="py-2.5 px-3">Offer Type</th>
-                      <th className="py-2.5 px-3">CTA Status</th>
                       <th className="py-2.5 px-3">Product</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {allOfferList.slice(0, 15).map((row, idx) => (
+                    {filteredAllOfferList.slice(0, 15).map((row, idx) => (
                       <tr
                         key={`${row.Asset_URL}-${idx}`}
                         className={idx % 2 === 0 ? 'bg-white hover:bg-slate-50/80' : 'bg-slate-50/50 hover:bg-slate-50'}
@@ -670,17 +706,6 @@ export default function OfferCTAPage() {
                         </td>
                         <td className="py-2 px-3 align-middle text-slate-600 font-medium">
                           {row.Offer_Type}
-                        </td>
-                        <td className="py-2 px-3 align-middle">
-                          {row.cta_status === 'Has CTA' ? (
-                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full inline-block">
-                              Has CTA
-                            </span>
-                          ) : (
-                            <span className="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full inline-block">
-                              No CTA
-                            </span>
-                          )}
                         </td>
                         <td className="py-2 px-3 align-middle text-slate-500 font-mono text-[10px]">
                           {row.product || 'Unknown'}

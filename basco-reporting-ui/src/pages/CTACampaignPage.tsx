@@ -391,9 +391,6 @@ export default function CTACampaignPage() {
               <h3 className="text-sm font-bold text-slate-800 tracking-tight">
                 CTA Usage by Retailer
               </h3>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                Top 20 Retailers by Creative Volume
-              </p>
             </div>
           </div>
 
