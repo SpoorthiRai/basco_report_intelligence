@@ -9,6 +9,20 @@ from .visual_adoption_queries import (
 from .views import apply_user_scope, sort_quarters_desc
 
 
+def is_intel_layout(layout_str, intel_flag=None) -> bool:
+    """
+    Check if creative uses Intel Layout or Custom Intel Layout.
+    Formula: Master Intel Visual Adoption % = (count(intel layout) + count(custom intel layout)) / total creatives
+    """
+    if layout_str:
+        l = str(layout_str).lower().strip()
+        if ('intel' in l and 'layout' in l) or ('custom' in l and 'intel' in l) or l in ('intel layouts', 'intel layout', 'custom-intel layouts', 'custom intel layouts', 'custom-intel layout', 'custom intel layout'):
+            return True
+    if intel_flag and str(intel_flag).lower().strip() == 'yes':
+        return True
+    return False
+
+
 class VisualAdoptionView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -55,7 +69,11 @@ class VisualAdoptionView(APIView):
             filtered_rows = [r for r in filtered_rows if r.get('Visual_Style') == visual_style_filter]
 
         total_creatives = sum(r.get('creative_count', 1) for r in filtered_rows)
-        used_intel = sum(r.get('creative_count', 1) for r in filtered_rows if r.get('Intel_Visual_Flag') == 'Yes')
+        # Master Intel Visual Adoption = count(intel layout) + count(custom intel layout)
+        used_intel = sum(
+            r.get('creative_count', 1) for r in filtered_rows
+            if is_intel_layout(r.get('Layout_Category'), r.get('Intel_Visual_Flag'))
+        )
         adoption_pct = round(used_intel / total_creatives * 100, 1) if total_creatives > 0 else 0
 
         # Retailer-wise adoption breakdown
@@ -68,7 +86,7 @@ class VisualAdoptionView(APIView):
                 ret_map[ret] = {'total': 0, 'intel': 0}
             cnt = r.get('creative_count', 1)
             ret_map[ret]['total'] += cnt
-            if r.get('Intel_Visual_Flag') == 'Yes':
+            if is_intel_layout(r.get('Layout_Category'), r.get('Intel_Visual_Flag')):
                 ret_map[ret]['intel'] += cnt
 
         retailer_adoption = sorted([

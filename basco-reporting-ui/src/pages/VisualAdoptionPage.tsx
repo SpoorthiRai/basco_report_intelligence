@@ -238,8 +238,13 @@ export default function VisualAdoptionPage() {
           {loading && !data ? (
             <div className="h-8 bg-blue-800/60 rounded animate-pulse w-1/2 mt-2" />
           ) : (
-            <div className="text-2xl md:text-3xl font-black text-white tracking-tight mt-1">
-              {data?.kpis?.master_visual_adoption_pct ?? 0}%
+            <div className="flex items-baseline justify-between mt-1">
+              <div className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                {data?.kpis?.master_visual_adoption_pct ?? 0}%
+              </div>
+              <span className="text-[10px] text-blue-100 font-medium">
+                (Intel + Custom Layouts)
+              </span>
             </div>
           )}
         </div>

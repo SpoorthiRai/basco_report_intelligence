@@ -4,6 +4,7 @@ SELECT
     COUNTRY AS Country,
     REGION AS Region,
     REPLACE(QUARTER, '-', ' ') AS quarter_label,
+    ISNULL(LAYOUT_CATEGORY, 'Unknown') AS Layout_Category,
     ISNULL(GENERAL_VISUAL_STYLE, 'Unknown') AS Visual_Style,
     ISNULL(INTEL_VISUAL_FLAG, 'No') AS Intel_Visual_Flag,
     ISNULL(VISUAL_CONTENT_NAME, 'None') AS Visual_Content_Name,
@@ -11,13 +12,12 @@ SELECT
     ISNULL(INTEL_VISUAL_USAGE, 'None') AS Intel_Visual_Usage,
     COUNT(*) AS creative_count
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
-WHERE VISUAL_CONTENT_NAME IS NOT NULL
-  AND VISUAL_CONTENT_NAME NOT IN ('None', '', 'NA')
 GROUP BY
     PARENT_ACCOUNT,
     COUNTRY,
     REGION,
     QUARTER,
+    LAYOUT_CATEGORY,
     GENERAL_VISUAL_STYLE,
     INTEL_VISUAL_FLAG,
     VISUAL_CONTENT_NAME,
