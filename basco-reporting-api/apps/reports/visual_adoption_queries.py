@@ -1,81 +1,28 @@
 VISUAL_ADOPTION_MAIN_QUERY = """
-WITH CleanSenders AS (
-    SELECT
-        jq.Thread_ID,
-        jq.Received_Time,
-        CASE
-            WHEN CHARINDEX('<', jq.Sender_Email) > 0
-            THEN LTRIM(RTRIM(SUBSTRING(
-                    jq.Sender_Email,
-                    CHARINDEX('<', jq.Sender_Email) + 1,
-                    CHARINDEX('>', jq.Sender_Email)
-                        - CHARINDEX('<', jq.Sender_Email) - 1
-                )))
-            ELSE LTRIM(RTRIM(jq.Sender_Email))
-        END AS clean_email
-    FROM [BLUE_BASCO].[dbo].[Job_Queue] jq
-    WHERE jq.Status = 'COMPLETED'
-      AND jq.Received_Time IS NOT NULL
-      AND YEAR(jq.Received_Time) = 2026
-),
-SenderInfo AS (
-    SELECT
-        cs.Thread_ID,
-        cs.Received_Time,
-        cs.clean_email,
-        COALESCE(aihd.COUNTRY, scm.Country, 'Unknown') AS Country,
-        COALESCE(aihd.REGION, scm.Region, 'Unknown') AS Region,
-        COALESCE(aihd.PARENT_ACCOUNT_V2, aihd.PARENT_ACCOUNT, scm.Parent_Account, 'Unknown') AS Retailer
-    FROM CleanSenders cs
-    LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_SenderDetails] aihd WITH (NOLOCK)
-        ON cs.clean_email = aihd.CLEAN_SENDER_ID
-    LEFT JOIN [BASCO_REPORTING_AUTH].[dbo].[Sender_Country_Map] scm WITH (NOLOCK)
-        ON cs.clean_email = scm.Sender_Email
-),
-CreativeBase AS (
-    SELECT
-        cml.Email_Thread_ID,
-        cml.Intel_Visual_Flag,
-        cml.Visual_Content_Name,
-        cml.Visual_Content_URL,
-        cml.Intel_Visual_Usage,
-        cml.Visual_Style,
-        si.Country,
-        si.Region,
-        si.Retailer,
-        si.Received_Time,
-        CONCAT(
-            'Q', DATEPART(QUARTER, si.Received_Time),
-            ' ', YEAR(si.Received_Time)
-        ) AS quarter_label
-    FROM [BLUE_BASCO].[dbo].[Creative_Metadata_Log] cml
-    INNER JOIN SenderInfo si
-        ON cml.Email_Thread_ID = si.Thread_ID
-    WHERE cml.Visual_Content_Name IS NOT NULL
-      AND cml.Visual_Content_Name NOT IN ('None', '', 'NA')
-)
 SELECT
-    Retailer,
-    Country,
-    Region,
-    quarter_label,
-    Visual_Style,
-    Intel_Visual_Flag,
-    Visual_Content_Name,
-    Visual_Content_URL,
-    Intel_Visual_Usage,
+    PARENT_ACCOUNT AS Retailer,
+    COUNTRY AS Country,
+    REGION AS Region,
+    REPLACE(QUARTER, '-', ' ') AS quarter_label,
+    ISNULL(GENERAL_VISUAL_STYLE, 'Unknown') AS Visual_Style,
+    ISNULL(INTEL_VISUAL_FLAG, 'No') AS Intel_Visual_Flag,
+    ISNULL(VISUAL_CONTENT_NAME, 'None') AS Visual_Content_Name,
+    VISUAL_CONTENT_URL AS Visual_Content_URL,
+    ISNULL(INTEL_VISUAL_USAGE, 'None') AS Intel_Visual_Usage,
     COUNT(*) AS creative_count
-FROM CreativeBase
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
+WHERE VISUAL_CONTENT_NAME IS NOT NULL
+  AND VISUAL_CONTENT_NAME NOT IN ('None', '', 'NA')
 GROUP BY
-    Retailer,
-    Country,
-    Region,
-    quarter_label,
-    Visual_Style,
-    Intel_Visual_Flag,
-    Visual_Content_Name,
-    Visual_Content_URL,
-    Intel_Visual_Usage
+    PARENT_ACCOUNT,
+    COUNTRY,
+    REGION,
+    QUARTER,
+    GENERAL_VISUAL_STYLE,
+    INTEL_VISUAL_FLAG,
+    VISUAL_CONTENT_NAME,
+    VISUAL_CONTENT_URL,
+    INTEL_VISUAL_USAGE
 ORDER BY Retailer ASC
 """
 
@@ -85,6 +32,6 @@ SELECT
     PMSVisual_Name,
     PMSVisual_URL,
     Content
-FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_PMSVisual]
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_PMSVisual] WITH (NOLOCK)
 ORDER BY PMSVisual_Name ASC
 """

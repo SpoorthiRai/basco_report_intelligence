@@ -59,41 +59,35 @@ GROUP BY Country, Region, Quarter, Year
 ORDER BY Quarter DESC, avg_basco_score ASC
 """
 
-# Returns Intel visual type usage per sender/retailer from Creative_Metadata_Log
+# Returns Intel visual type usage per sender/retailer from BASCO_AIHD_Metadata
 VISUAL_ADOPTION_QUERY = """
     SELECT
-        jq.Sender_Email AS retailer_name,
-        ISNULL(cml.Visual_Content_Name, 'Unknown') AS visual_type,
+        PARENT_ACCOUNT AS retailer_name,
+        ISNULL(VISUAL_CONTENT_NAME, 'Unknown') AS visual_type,
         COUNT(*) AS usage_count
-    FROM [BLUE_BASCO].[dbo].[Creative_Metadata_Log] cml WITH (NOLOCK)
-    INNER JOIN [BLUE_BASCO].[dbo].[Job_Queue] jq WITH (NOLOCK)
-        ON cml.Email_Thread_ID = jq.Thread_ID
-    WHERE jq.Status = 'COMPLETED'
-      AND cml.Intel_Visual_Flag = 'Yes'
-      AND cml.Visual_Content_Name IS NOT NULL
-      AND cml.Visual_Content_Name != 'None'
+    FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
+    WHERE INTEL_VISUAL_FLAG = 'Yes'
+      AND VISUAL_CONTENT_NAME IS NOT NULL
+      AND VISUAL_CONTENT_NAME NOT IN ('None', '', 'NA')
     GROUP BY
-        jq.Sender_Email,
-        cml.Visual_Content_Name
+        PARENT_ACCOUNT,
+        VISUAL_CONTENT_NAME
     ORDER BY
-        jq.Sender_Email ASC,
+        PARENT_ACCOUNT ASC,
         usage_count DESC
 """
 
 # Returns campaign type and CTA objective breakdown across all completed creatives
 CTA_MIX_QUERY = """
     SELECT
-        ISNULL(cml.Campaign_Type, 'Unknown') AS campaign_type,
-        ISNULL(cml.Objective, 'Unknown') AS cta_type,
+        ISNULL(CAMPAIGN_TYPE, 'Unknown') AS campaign_type,
+        ISNULL(OBJECTIVE, 'Unknown') AS cta_type,
         COUNT(*) AS count
-    FROM [BLUE_BASCO].[dbo].[Creative_Metadata_Log] cml WITH (NOLOCK)
-    INNER JOIN [BLUE_BASCO].[dbo].[Job_Queue] jq WITH (NOLOCK)
-        ON cml.Email_Thread_ID = jq.Thread_ID
-    WHERE jq.Status = 'COMPLETED'
-      AND cml.Campaign_Type IS NOT NULL
-      AND cml.Campaign_Type != 'None'
+    FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
+    WHERE CAMPAIGN_TYPE IS NOT NULL
+      AND CAMPAIGN_TYPE NOT IN ('None', '', 'NA')
     GROUP BY
-        cml.Campaign_Type,
-        cml.Objective
+        CAMPAIGN_TYPE,
+        OBJECTIVE
     ORDER BY count DESC
 """

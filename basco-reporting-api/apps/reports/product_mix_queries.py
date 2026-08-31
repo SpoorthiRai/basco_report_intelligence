@@ -1,50 +1,14 @@
 PRODUCT_MIX_QUERY = """
-WITH CleanSenders AS (
-    SELECT
-        jq.Thread_ID,
-        jq.Received_Time,
-        CASE
-            WHEN CHARINDEX('<', jq.Sender_Email) > 0
-            THEN LTRIM(RTRIM(SUBSTRING(
-                    jq.Sender_Email,
-                    CHARINDEX('<', jq.Sender_Email) + 1,
-                    CHARINDEX('>', jq.Sender_Email)
-                        - CHARINDEX('<', jq.Sender_Email) - 1
-                )))
-            ELSE LTRIM(RTRIM(jq.Sender_Email))
-        END AS clean_email
-    FROM [BLUE_BASCO].[dbo].[Job_Queue] jq WITH (NOLOCK)
-    WHERE jq.Status = 'COMPLETED'
-      AND jq.Received_Time IS NOT NULL
-      AND YEAR(jq.Received_Time) = 2026
-),
-SenderInfo AS (
-    SELECT
-        cs.Thread_ID,
-        cs.Received_Time,
-        cs.clean_email,
-        COALESCE(aihd.COUNTRY, scm.Country, 'Unknown') AS Country,
-        COALESCE(aihd.REGION, scm.Region, 'Unknown') AS Region,
-        COALESCE(aihd.PARENT_ACCOUNT_V2, aihd.PARENT_ACCOUNT, scm.Parent_Account, 'Unknown') AS Retailer
-    FROM CleanSenders cs
-    LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_SenderDetails] aihd WITH (NOLOCK)
-        ON cs.clean_email = aihd.CLEAN_SENDER_ID
-    LEFT JOIN [BASCO_REPORTING_AUTH].[dbo].[Sender_Country_Map] scm WITH (NOLOCK)
-        ON cs.clean_email = scm.Sender_Email
-)
 SELECT
-    cml.Email_Thread_ID,
-    cml.Content,
-    si.Retailer,
-    si.Country,
-    si.Region,
-    CONCAT(
-        'Q', DATEPART(QUARTER, si.Received_Time),
-        ' ', YEAR(si.Received_Time)
-    ) AS quarter_label
-FROM [BLUE_BASCO].[dbo].[Creative_Metadata_Log] cml WITH (NOLOCK)
-INNER JOIN SenderInfo si
-    ON cml.Email_Thread_ID = si.Thread_ID
-WHERE cml.Content IS NOT NULL
-  AND cml.Content NOT IN ('None', '', 'NA')
+    THREAD_ID AS Email_Thread_ID,
+    CONTENT AS Content,
+    PRODUCT AS Product,
+    GEN AS Gen,
+    PARENT_ACCOUNT AS Retailer,
+    COUNTRY AS Country,
+    REGION AS Region,
+    REPLACE(QUARTER, '-', ' ') AS quarter_label
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
+WHERE CONTENT IS NOT NULL
+  AND CONTENT NOT IN ('None', '', 'NA')
 """
