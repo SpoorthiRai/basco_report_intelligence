@@ -37,21 +37,15 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const { data: leagueData } = useLeagueTable('Q3 2026');
 
-  const [summaryData, setSummaryData] = useState<ModuleSummaryData>({
-    visualAdoption: { total_creatives: 48, used_intel: 46, adoption_pct: 95.8 },
-    ctaCampaign: { aligned_count: 298, misaligned_count: 359, no_cta_pct: 62.6, buy_cta_pct: 19.3 },
-    offerCta: { conversion_ready: 155, offer_missing_cta: 261, total_offers: 416 },
-    marketMaturity: { markets_count: 8, avg_score: 87.0, total_violations: 0, markets_at_risk: 1, regions_at_risk: 1 },
-  });
-
+  const [summaryData, setSummaryData] = useState<ModuleSummaryData>({});
 
   useEffect(() => {
     let isMounted = true;
     Promise.allSettled([
-      api.get('/api/reports/visual-adoption/?quarter=Q3 2026'),
-      api.get('/api/reports/cta-campaign/?quarter=Q3 2026'),
-      api.get('/api/reports/offer-cta/?quarter=Q3 2026'),
-      api.get('/api/reports/market-maturity/?quarter=Q3 2026'),
+      api.get('/api/reports/visual-adoption-v2/'),
+      api.get('/api/reports/cta-campaign/'),
+      api.get('/api/reports/offer-cta/'),
+      api.get('/api/reports/market-maturity/'),
     ]).then(([visRes, ctaRes, offRes, mmRes]) => {
       if (!isMounted) return;
 
