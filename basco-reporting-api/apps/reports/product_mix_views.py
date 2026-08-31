@@ -119,10 +119,18 @@ class ProductMixView(APIView):
         all_series_set = set()
         for row in rows:
             content = row.get('Content', '') or ''
+            if not content and (row.get('Product') or row.get('Gen')):
+                p = row.get('Product', '') or ''
+                g = row.get('Gen', '') or ''
+                content = f"{p}-{g}".strip('-')
+
             tokens = [
                 t.strip() for t in content.replace(';', '|').split('|')
                 if t.strip() and len(t.strip()) > 1
             ]
+            if not tokens and row.get('Product'):
+                tokens = [str(row.get('Product'))]
+
             for token in tokens:
                 family, gen_label = classify_token(token)
                 if gen_label and not gen_label.startswith('Unspecified') and gen_label != 'Standard':
