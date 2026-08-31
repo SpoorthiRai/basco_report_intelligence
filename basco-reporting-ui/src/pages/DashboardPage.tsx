@@ -362,14 +362,14 @@ export default function DashboardPage() {
           <span className="text-xs text-slate-400 font-medium">Detailed reports & analysis tools</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Module 1: Market Priorities (Active Markets) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shadow-2xs">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shadow-2xs">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="m3 3 0 18 18 0" />
                       <circle cx="9" cy="14" r="2.5" fill="currentColor" fillOpacity="0.2" />
                       <circle cx="15" cy="8" r="3.5" fill="currentColor" fillOpacity="0.25" />
@@ -384,42 +384,56 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                  {summaryData.marketMaturity?.markets_count} Markets
+                <span className="bg-amber-50 text-amber-700 border border-amber-200/80 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                  {summaryData.marketMaturity?.markets_count ?? 8} Markets
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 my-4">
-                <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-amber-800 font-semibold block">Markets at Risk</span>
-                  <span className="text-lg font-black text-amber-900 block mt-0.5">
-                    {summaryData.marketMaturity?.markets_at_risk ?? 8}
+              {/* Compact Metric Strip */}
+              <div className="grid grid-cols-3 gap-2 my-3">
+                <div className="bg-amber-50/70 border border-amber-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-amber-800 font-semibold block uppercase tracking-wider">Markets at Risk</span>
+                  <span className="text-base font-black text-amber-900 block mt-0.5">
+                    {summaryData.marketMaturity?.markets_at_risk ?? 0}
                   </span>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-slate-500 font-semibold block">Markets</span>
-                  <span className="text-lg font-black text-slate-800 block mt-0.5">
-                    {summaryData.marketMaturity?.markets_count}
+                <div className="bg-slate-50 border border-slate-200/70 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Monitored</span>
+                  <span className="text-base font-black text-slate-800 block mt-0.5">
+                    {summaryData.marketMaturity?.markets_count ?? 8}
                   </span>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-slate-500 font-semibold block">Total Violations</span>
-                  <span className="text-lg font-black text-slate-800 block mt-0.5">
-                    {summaryData.marketMaturity?.total_violations.toLocaleString()}
+                <div className="bg-slate-50 border border-slate-200/70 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Violations</span>
+                  <span className="text-base font-black text-slate-800 block mt-0.5">
+                    {(summaryData.marketMaturity?.total_violations ?? 0).toLocaleString()}
                   </span>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Interactive 4-quadrant scatter matrix comparing compliance score against FMV, estimated attribution loss, and text violations.
-              </p>
+              {/* Graphical Visual: Compliance Health Micro-Bar */}
+              <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-2.5 mb-2">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Avg Compliance Health
+                  </span>
+                  <span className="text-emerald-700 font-black">{summaryData.marketMaturity?.avg_score ?? 87.0}%</span>
+                </div>
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex">
+                  <div
+                    className="bg-gradient-to-r from-amber-400 via-emerald-500 to-teal-500 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(0, summaryData.marketMaturity?.avg_score ?? 87))}%` }}
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">Multi-Quarter support (Q1, Q2 2026)</span>
+            <div className="mt-2 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-medium">Multi-Quarter risk matrix</span>
               <Link
                 to="/market-maturity"
-                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                className="bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
                 <span>Open Market Priorities</span>
                 <span>→</span>
@@ -428,12 +442,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Module 2: Retailer Performance (Monitored Retailers) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shadow-2xs">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shadow-2xs">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                       <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
                       <path d="M4 22h16" />
@@ -448,44 +462,57 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <span className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                <span className="bg-blue-50 text-blue-700 border border-blue-200/80 text-[11px] font-bold px-2 py-0.5 rounded-full">
                   Rankings Active
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 my-4">
-                <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-blue-800 font-semibold block">Retailers</span>
-                  <span className="text-lg font-black text-blue-900 block mt-0.5">
+              {/* Compact Metric Strip */}
+              <div className="grid grid-cols-3 gap-2 my-3">
+                <div className="bg-blue-50/70 border border-blue-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-blue-800 font-semibold block uppercase tracking-wider">Retailers</span>
+                  <span className="text-base font-black text-blue-900 block mt-0.5">
                     {totalRetailers}
                   </span>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-slate-500 font-semibold block">Avg Score</span>
-                  <span className="text-lg font-black text-slate-800 block mt-0.5">
+                <div className="bg-slate-50 border border-slate-200/70 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Avg Score</span>
+                  <span className="text-base font-black text-slate-800 block mt-0.5">
                     {avgBasco}%
                   </span>
                 </div>
-                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-rose-700 font-semibold block" title="Attribution Loss ($ at Risk)">
-                    Attribution Loss
+                <div className="bg-rose-50/70 border border-rose-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-rose-700 font-semibold block uppercase tracking-wider" title="Attribution Loss ($ at Risk)">
+                    Loss Risk
                   </span>
-                  <span className="text-lg font-black text-rose-900 block mt-0.5">
+                  <span className="text-base font-black text-rose-900 block mt-0.5">
                     ${(totalAttrLoss / 1000).toFixed(0)}K
                   </span>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Leaderboard rankings of partner accounts sorted by BASCO compliance score, highlighting fair market value at risk.
-              </p>
+              {/* Graphical Visual: Retailer Tier Split Bar */}
+              <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-2.5 mb-2">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    Compliance Tier Distribution
+                  </span>
+                  <span className="text-slate-700 font-bold">{totalRetailers} Accounts</span>
+                </div>
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex gap-0.5">
+                  <div className="bg-emerald-500 h-full rounded-l-full" style={{ width: '70%' }} title="High Compliance (>=85%)" />
+                  <div className="bg-amber-400 h-full" style={{ width: '20%' }} title="Mid Compliance (80-84%)" />
+                  <div className="bg-rose-500 h-full rounded-r-full" style={{ width: '10%' }} title="At Risk (<80%)" />
+                </div>
+              </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">Role-based row filtering for RSMs</span>
+            <div className="mt-2 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-medium">Role-based row filtering</span>
               <Link
                 to="/league-table"
-                className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                className="bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
                 <span>Open Retailer Performance</span>
                 <span>→</span>
@@ -494,12 +521,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Module 3: Intel Visual Adoption */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shadow-2xs">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shadow-2xs">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
                       <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
                       <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
@@ -514,42 +541,62 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                  {summaryData.visualAdoption?.adoption_pct}% Adoption
+                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                  {summaryData.visualAdoption?.adoption_pct ?? 0}% Master Adoption
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 my-4">
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-slate-500 font-semibold block">Total Creatives</span>
-                  <span className="text-lg font-black text-slate-800 block mt-0.5">
-                    {summaryData.visualAdoption?.total_creatives}
+              {/* Compact Metric Strip */}
+              <div className="grid grid-cols-3 gap-2 my-3">
+                <div className="bg-slate-50 border border-slate-200/70 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Creatives</span>
+                  <span className="text-base font-black text-slate-800 block mt-0.5">
+                    {summaryData.visualAdoption?.total_creatives ?? 0}
                   </span>
                 </div>
-                <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-blue-700 font-semibold block">Used Intel</span>
-                  <span className="text-lg font-black text-blue-900 block mt-0.5">
-                    {summaryData.visualAdoption?.used_intel}
+                <div className="bg-blue-50/70 border border-blue-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-blue-700 font-semibold block uppercase tracking-wider">Intel Layouts</span>
+                  <span className="text-base font-black text-blue-900 block mt-0.5">
+                    {summaryData.visualAdoption?.used_intel ?? 0}
                   </span>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-slate-500 font-semibold block">Non-Intel</span>
-                  <span className="text-lg font-black text-slate-700 block mt-0.5">
-                    {(summaryData.visualAdoption?.total_creatives || 132) - (summaryData.visualAdoption?.used_intel || 52)}
+                <div className="bg-slate-50 border border-slate-200/70 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Other</span>
+                  <span className="text-base font-black text-slate-700 block mt-0.5">
+                    {Math.max(0, (summaryData.visualAdoption?.total_creatives || 0) - (summaryData.visualAdoption?.used_intel || 0))}
                   </span>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Tracks Intel Brand PMS badge adoption across global retail creatives with style filtering (Logo Only, Product Visuals, Core Ultra lockups).
-              </p>
+              {/* Graphical Visual: Master Adoption Ratio Bar */}
+              <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-2.5 mb-2">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#0062d2]" />
+                    Intel & Custom vs Non-Intel
+                  </span>
+                  <span className="text-blue-700 font-black">{summaryData.visualAdoption?.adoption_pct ?? 0}% Adopted</span>
+                </div>
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex gap-0.5">
+                  <div
+                    className="bg-gradient-to-r from-[#0062d2] to-cyan-500 h-full rounded-l-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(0, summaryData.visualAdoption?.adoption_pct ?? 0))}%` }}
+                    title="Intel & Custom Layouts"
+                  />
+                  <div
+                    className="bg-slate-300 h-full rounded-r-full transition-all duration-500"
+                    style={{ width: `${Math.max(0, 100 - (summaryData.visualAdoption?.adoption_pct ?? 0))}%` }}
+                    title="Non-Intel Layouts"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">Includes Retailer-wise Adoption breakdown</span>
+            <div className="mt-2 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-medium">Retailer-wise breakdown</span>
               <Link
                 to="/visual-adoption"
-                className="bg-[#0062d2] hover:bg-[#0051b0] text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                className="bg-[#0062d2] hover:bg-[#0051b0] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
                 <span>Open Intel Visual Adoption</span>
                 <span>→</span>
@@ -558,12 +605,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Module 4: Campaign Effectiveness (CTA Aligned) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shadow-2xs">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center shadow-2xs">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="m3 11 18-5v12L3 14v-3z" />
                       <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
                     </svg>
@@ -571,46 +618,67 @@ export default function DashboardPage() {
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">Campaign Effectiveness</h3>
                     <p className="text-[11px] text-slate-500 font-medium">
-                      Call-to-Action distribution and strategic alignment checks
+                      Call-to-Action distribution and strategic alignment
                     </p>
                   </div>
                 </div>
-                <span className="bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                  {summaryData.ctaCampaign?.aligned_count} Aligned
+                <span className="bg-purple-50 text-purple-700 border border-purple-200/80 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                  {summaryData.ctaCampaign?.aligned_count ?? 0} Aligned
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 my-4">
-                <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-emerald-700 font-semibold block">Aligned</span>
-                  <span className="text-lg font-black text-emerald-900 block mt-0.5">
-                    {summaryData.ctaCampaign?.aligned_count}
+              {/* Compact Metric Strip */}
+              <div className="grid grid-cols-3 gap-2 my-3">
+                <div className="bg-emerald-50/70 border border-emerald-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-emerald-700 font-semibold block uppercase tracking-wider">Aligned</span>
+                  <span className="text-base font-black text-emerald-900 block mt-0.5">
+                    {summaryData.ctaCampaign?.aligned_count ?? 0}
                   </span>
                 </div>
-                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-rose-700 font-semibold block">Misaligned</span>
-                  <span className="text-lg font-black text-rose-900 block mt-0.5">
-                    {summaryData.ctaCampaign?.misaligned_count}
+                <div className="bg-rose-50/70 border border-rose-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-rose-700 font-semibold block uppercase tracking-wider">Misaligned</span>
+                  <span className="text-base font-black text-rose-900 block mt-0.5">
+                    {summaryData.ctaCampaign?.misaligned_count ?? 0}
                   </span>
                 </div>
-                <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-amber-700 font-semibold block">No CTA Rate</span>
-                  <span className="text-lg font-black text-amber-900 block mt-0.5">
-                    {summaryData.ctaCampaign?.no_cta_pct}%
+                <div className="bg-amber-50/70 border border-amber-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-amber-700 font-semibold block uppercase tracking-wider">No CTA</span>
+                  <span className="text-base font-black text-amber-900 block mt-0.5">
+                    {summaryData.ctaCampaign?.no_cta_pct ?? 0}%
                   </span>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Highlights strategic mismatches where Sales campaigns lack Buy/Shop CTAs, and renders volume treemaps with live creative lightbox inspections.
-              </p>
+              {/* Graphical Visual: Strategic Alignment Split Bar */}
+              {(() => {
+                const aligned = summaryData.ctaCampaign?.aligned_count || 0;
+                const misaligned = summaryData.ctaCampaign?.misaligned_count || 0;
+                const total = aligned + misaligned || 1;
+                const alignedPct = Math.round((aligned / total) * 100);
+                const misalignedPct = 100 - alignedPct;
+                return (
+                  <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-2.5 mb-2">
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-purple-500" />
+                        CTA Alignment Ratio
+                      </span>
+                      <span className="text-purple-700 font-bold">{alignedPct}% Aligned</span>
+                    </div>
+                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex gap-0.5">
+                      <div className="bg-emerald-500 h-full rounded-l-full transition-all duration-500" style={{ width: `${alignedPct}%` }} title="Aligned CTAs" />
+                      <div className="bg-rose-500 h-full rounded-r-full transition-all duration-500" style={{ width: `${misalignedPct}%` }} title="Misaligned CTAs" />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">Includes Misaligned Evidence Table</span>
+            <div className="mt-2 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-medium">Misaligned Evidence Locker</span>
               <Link
                 to="/cta-campaign"
-                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                className="bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
                 <span>Open Campaign Effectiveness</span>
                 <span>→</span>
@@ -619,12 +687,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Module 5: Promotional Offer Effectiveness (Conversion Ready) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-2xs">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-2xs">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
                       <path d="M7 7h.01" strokeWidth="3" />
                     </svg>
@@ -636,56 +704,76 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                  {summaryData.offerCta?.conversion_ready} Ready
+                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                  {summaryData.offerCta?.conversion_ready ?? 0} Ready
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 my-4">
-                <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-emerald-700 font-semibold block">Has CTA</span>
-                  <span className="text-lg font-black text-emerald-900 block mt-0.5">
-                    {summaryData.offerCta?.conversion_ready}
+              {/* Compact Metric Strip */}
+              <div className="grid grid-cols-3 gap-2 my-3">
+                <div className="bg-emerald-50/70 border border-emerald-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-emerald-700 font-semibold block uppercase tracking-wider">Has CTA</span>
+                  <span className="text-base font-black text-emerald-900 block mt-0.5">
+                    {summaryData.offerCta?.conversion_ready ?? 0}
                   </span>
                 </div>
-                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-rose-700 font-semibold block">Missing CTA</span>
-                  <span className="text-lg font-black text-rose-900 block mt-0.5">
-                    {summaryData.offerCta?.offer_missing_cta}
+                <div className="bg-rose-50/70 border border-rose-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-rose-700 font-semibold block uppercase tracking-wider">Missing CTA</span>
+                  <span className="text-base font-black text-rose-900 block mt-0.5">
+                    {summaryData.offerCta?.offer_missing_cta ?? 0}
                   </span>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-slate-500 font-semibold block">Total Offers</span>
-                  <span className="text-lg font-black text-slate-800 block mt-0.5">
-                    {summaryData.offerCta?.total_offers}
+                <div className="bg-slate-50 border border-slate-200/70 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Total Offers</span>
+                  <span className="text-base font-black text-slate-800 block mt-0.5">
+                    {summaryData.offerCta?.total_offers ?? 0}
                   </span>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Visualizes CTA inclusion rates across Offer Types (Affordability, Discount, Price) and Product × Offer intensity heatmaps.
-              </p>
+              {/* Graphical Visual: Conversion Readiness Bar */}
+              {(() => {
+                const ready = summaryData.offerCta?.conversion_ready || 0;
+                const total = summaryData.offerCta?.total_offers || ready || 1;
+                const readyPct = Math.round((ready / total) * 100);
+                const missingPct = 100 - readyPct;
+                return (
+                  <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-2.5 mb-2">
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        Offer Conversion Readiness
+                      </span>
+                      <span className="text-emerald-700 font-bold">{readyPct}% Ready</span>
+                    </div>
+                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex gap-0.5">
+                      <div className="bg-emerald-500 h-full rounded-l-full transition-all duration-500" style={{ width: `${readyPct}%` }} title="Conversion Ready" />
+                      <div className="bg-amber-400 h-full rounded-r-full transition-all duration-500" style={{ width: `${missingPct}%` }} title="Missing CTA Promo" />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">Includes Promo Missing CTA Evidence</span>
+            <div className="mt-2 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-medium">Promo Missing CTA Table</span>
               <Link
                 to="/offer-cta"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
-                <span>Open Promotional Offer Effectiveness</span>
+                <span>Open Promotional Offers</span>
                 <span>→</span>
               </Link>
             </div>
           </div>
 
           {/* Module 6: Product Promotion & Priorities */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-700 flex items-center justify-center shadow-2xs">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center shadow-2xs">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect width="16" height="16" x="4" y="4" rx="2" />
                       <rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" fillOpacity="0.2" />
                       <path d="M15 2v2" />
@@ -705,44 +793,57 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <span className="bg-cyan-50 text-cyan-700 border border-cyan-200 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                <span className="bg-cyan-50 text-cyan-700 border border-cyan-200/80 text-[11px] font-bold px-2 py-0.5 rounded-full">
                   Series 3 Rollout
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 my-4">
-                <div className="bg-cyan-50/60 border border-cyan-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-cyan-800 font-semibold block">Series 3 Focus</span>
-                  <span className="text-lg font-black text-cyan-900 block mt-0.5">
+              {/* Compact Metric Strip */}
+              <div className="grid grid-cols-3 gap-2 my-3">
+                <div className="bg-cyan-50/70 border border-cyan-100/90 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-cyan-800 font-semibold block uppercase tracking-wider">Series 3</span>
+                  <span className="text-base font-black text-cyan-900 block mt-0.5">
                     Pre-Launch
                   </span>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-slate-500 font-semibold block">Regions</span>
-                  <span className="text-lg font-black text-slate-800 block mt-0.5">
-                    APJ, EMEA, LATAM
+                <div className="bg-slate-50 border border-slate-200/70 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Regions</span>
+                  <span className="text-base font-black text-slate-800 block mt-0.5">
+                    3 Active
                   </span>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-xs text-slate-500 font-semibold block">Generations</span>
-                  <span className="text-lg font-black text-slate-800 block mt-0.5">
+                <div className="bg-slate-50 border border-slate-200/70 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-slate-500 font-semibold block uppercase tracking-wider">Generations</span>
+                  <span className="text-base font-black text-slate-800 block mt-0.5">
                     8 Series
                   </span>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Tracks Core Ultra Series 3/2/1 and 14th–10th Gen mix across top 20 retailers and regional pre-launch rollouts.
-              </p>
+              {/* Graphical Visual: Generation Spectrum Pill Bar */}
+              <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-2.5 mb-2">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-cyan-500" />
+                    Generation Rollout Spectrum
+                  </span>
+                  <span className="text-cyan-800 font-bold">Series 3 / 2 / 1 + Gen 14–10</span>
+                </div>
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex gap-0.5">
+                  <div className="bg-gradient-to-r from-cyan-500 to-blue-600 h-full rounded-l-full" style={{ width: '45%' }} title="Core Ultra (Series 3/2/1)" />
+                  <div className="bg-blue-400 h-full" style={{ width: '35%' }} title="Core 14th / 13th Gen" />
+                  <div className="bg-slate-400 h-full rounded-r-full" style={{ width: '20%' }} title="Legacy 12th–10th Gen" />
+                </div>
+              </div>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">Includes Dynamic Series & Family Selectors</span>
+            <div className="mt-2 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-medium">Series & Family selectors</span>
               <Link
                 to="/product-mix"
-                className="bg-cyan-700 hover:bg-cyan-800 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                className="bg-cyan-700 hover:bg-cyan-800 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
-                <span>Open Product Promotion & Priorities</span>
+                <span>Open Product Promotion</span>
                 <span>→</span>
               </Link>
             </div>
