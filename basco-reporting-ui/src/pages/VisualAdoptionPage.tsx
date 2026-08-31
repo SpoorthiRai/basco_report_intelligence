@@ -224,8 +224,13 @@ export default function VisualAdoptionPage() {
           {loading && !data ? (
             <div className="h-8 bg-slate-700/60 rounded animate-pulse w-1/2 mt-2" />
           ) : (
-            <div className="text-2xl md:text-3xl font-black text-cyan-300 tracking-tight mt-1">
-              {data?.kpis?.used_intel_visuals?.toLocaleString() ?? 0}
+            <div className="flex items-baseline justify-between mt-1">
+              <div className="text-2xl md:text-3xl font-black text-cyan-300 tracking-tight">
+                {data?.kpis?.used_intel_visuals?.toLocaleString() ?? 0}
+              </div>
+              <span className="text-[10px] text-slate-300 font-medium">
+                (Intel Layouts)
+              </span>
             </div>
           )}
         </div>

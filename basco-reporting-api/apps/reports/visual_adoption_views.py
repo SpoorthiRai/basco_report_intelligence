@@ -9,18 +9,35 @@ from .visual_adoption_queries import (
 from .views import apply_user_scope, sort_quarters_desc
 
 
-def is_intel_layout(layout_str, intel_flag=None) -> bool:
+def is_intel_layout_only(layout_str) -> bool:
     """
-    Check if creative uses Intel Layout or Custom Intel Layout.
-    Formula: Master Intel Visual Adoption % = (count(intel layout) + count(custom intel layout)) / total creatives
+    Returns True ONLY for 'Intel Layouts' (standard Intel layouts, not custom).
     """
-    if layout_str:
-        l = str(layout_str).lower().strip()
-        if ('intel' in l and 'layout' in l) or ('custom' in l and 'intel' in l) or l in ('intel layouts', 'intel layout', 'custom-intel layouts', 'custom intel layouts', 'custom-intel layout', 'custom intel layout'):
-            return True
-    if intel_flag and str(intel_flag).lower().strip() == 'yes':
-        return True
-    return False
+    if not layout_str:
+        return False
+    l = str(layout_str).lower().strip()
+    return ('intel' in l and 'layout' in l) and ('custom' not in l)
+
+
+def is_custom_intel_layout(layout_str) -> bool:
+    """
+    Returns True for 'Custom-Intel Layouts' (customized Intel layouts).
+    """
+    if not layout_str:
+        return False
+    l = str(layout_str).lower().strip()
+    return ('custom' in l and 'intel' in l)
+
+
+def is_any_intel_layout(layout_str, intel_flag=None) -> bool:
+    """
+    Returns True for either 'Intel Layouts' or 'Custom-Intel Layouts' or Intel_Visual_Flag = 'Yes'.
+    """
+    return (
+        is_intel_layout_only(layout_str) 
+        or is_custom_intel_layout(layout_str) 
+        or (str(intel_flag).lower().strip() == 'yes' if intel_flag else False)
+    )
 
 
 class VisualAdoptionView(APIView):
@@ -93,24 +110,44 @@ class VisualAdoptionView(APIView):
             filtered_rows = [r for r in filtered_rows if r.get('Visual_Style') == visual_style_filter]
 
         total_creatives = sum(r.get('creative_count', 1) for r in filtered_rows)
-        # Master Intel Visual Adoption = count(intel layout) + count(custom intel layout)
-        used_intel = sum(
+
+        # Card 2: Intel Visuals Used = count(Intel Layouts)
+        intel_layouts_count = sum(
             r.get('creative_count', 1) for r in filtered_rows
-            if is_intel_layout(r.get('Layout_Category'), r.get('Intel_Visual_Flag'))
+            if is_intel_layout_only(r.get('Layout_Category'))
         )
-        adoption_pct = round(used_intel / total_creatives * 100, 1) if total_creatives > 0 else 0
+
+        # Custom-Intel Layouts count
+        custom_intel_count = sum(
+            r.get('creative_count', 1) for r in filtered_rows
+            if is_custom_intel_layout(r.get('Layout_Category'))
+        )
+
+        # Total Intel + Custom Intel Layouts
+        total_intel_layouts = sum(
+            r.get('creative_count', 1) for r in filtered_rows
+            if is_any_intel_layout(r.get('Layout_Category'), r.get('Intel_Visual_Flag'))
+        )
+
+        # Card 3: Master Intel Visual Adoption % = (count(Intel Layouts) + count(Custom-Intel Layouts)) / total creatives * 100
+        adoption_pct = round(total_intel_layouts / total_creatives * 100, 1) if total_creatives > 0 else 0
 
         # Retailer-wise adoption breakdown for horizontal chart
+        # Using the same LAYOUT_CATEGORY reference: (count(Intel Layouts) + count(Custom-Intel Layouts)) / total
         ret_map = {}
         for r in filtered_rows:
             ret = r.get('Retailer')
             if not ret or ret in ('', 'Unknown', 'Unmapped', 'None', 'NA', 'Intel Creative', 'Red Baron'):
                 continue
             if ret not in ret_map:
-                ret_map[ret] = {'total': 0, 'intel': 0}
+                ret_map[ret] = {'total': 0, 'intel': 0, 'intel_only': 0, 'custom': 0}
             cnt = r.get('creative_count', 1)
             ret_map[ret]['total'] += cnt
-            if is_intel_layout(r.get('Layout_Category'), r.get('Intel_Visual_Flag')):
+            if is_intel_layout_only(r.get('Layout_Category')):
+                ret_map[ret]['intel_only'] += cnt
+            if is_custom_intel_layout(r.get('Layout_Category')):
+                ret_map[ret]['custom'] += cnt
+            if is_any_intel_layout(r.get('Layout_Category'), r.get('Intel_Visual_Flag')):
                 ret_map[ret]['intel'] += cnt
 
         retailer_adoption = sorted([
@@ -118,6 +155,8 @@ class VisualAdoptionView(APIView):
                 'retailer': ret,
                 'total_creatives': stats['total'],
                 'intel_visual_creatives': stats['intel'],
+                'intel_layouts_count': stats['intel_only'],
+                'custom_intel_count': stats['custom'],
                 'adoption_pct': round(stats['intel'] / stats['total'] * 100, 1) if stats['total'] > 0 else 0
             }
             for ret, stats in ret_map.items()
@@ -190,7 +229,9 @@ class VisualAdoptionView(APIView):
         return Response({
             'kpis': {
                 'total_creatives':            total_creatives,
-                'used_intel_visuals':         used_intel,
+                'used_intel_visuals':         intel_layouts_count,
+                'intel_layouts_count':        intel_layouts_count,
+                'custom_intel_layouts_count': custom_intel_count,
                 'master_visual_adoption_pct': adoption_pct,
             },
             'retailer_adoption':          retailer_adoption,
