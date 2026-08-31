@@ -19,6 +19,7 @@ SELECT
     CONCAT(Quarter, ' ', Year) AS quarter,
     CONCAT(Quarter, ' ', Year) AS period,
     Artwork AS queries,
+    Artwork AS artwork,
     ROUND(CAST(Score * 100.0 AS FLOAT), 1) AS basco,
     0 AS violations,
     ROUND(CAST(ISNULL(FMV, Artwork * 35000) AS FLOAT), 0) AS fmv,

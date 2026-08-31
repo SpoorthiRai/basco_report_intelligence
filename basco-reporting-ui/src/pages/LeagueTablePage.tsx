@@ -8,6 +8,7 @@ export interface RetailerRow {
   country: string;
   region: "APJ" | "EMEA" | "LATAM" | "CANADA" | "US" | "PRC";
   queries: number;
+  artwork?: number;
   basco: number;
   violations: number;
   prev_basco: number | null;
@@ -269,7 +270,7 @@ export default function LeagueTablePage() {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "retailer" || key === "country" ? "asc" : "desc");
+      setSortDir(key === "retailer" || key === "country" || key === "quarter" || key === "region" ? "asc" : "desc");
     }
   }
 
@@ -500,7 +501,7 @@ export default function LeagueTablePage() {
             accentColor="#ef4444"
           />
           <KpiChip
-            label="Helpdesk Queries / Artworks"
+            label="Helpdesk Queries"
             value={String(totalQueries)}
             accentColor="#0062d2"
           />
@@ -563,11 +564,14 @@ export default function LeagueTablePage() {
           }}
         >
           <div style={{ overflowX: "auto", maxHeight: "480px", overflowY: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 850 }}>
               <thead style={{ position: "sticky", top: 0, zIndex: 10, background: "#071739" }}>
                 <tr style={{ background: "linear-gradient(90deg, #071739 0%, #0062d2 100%)" }}>
                   <th style={thStyle("center")} onClick={() => handleSort("trend")}>
                     # <SortIndicator col="trend" active={sortKey} dir={sortDir} />
+                  </th>
+                  <th style={thStyle("center")} onClick={() => handleSort("quarter")}>
+                    Quarter <SortIndicator col="quarter" active={sortKey} dir={sortDir} />
                   </th>
                   <th style={thStyle("left")} onClick={() => handleSort("retailer")}>
                     Retailer <SortIndicator col="retailer" active={sortKey} dir={sortDir} />
@@ -577,9 +581,6 @@ export default function LeagueTablePage() {
                   </th>
                   <th style={thStyle("center")} onClick={() => handleSort("region")}>
                     Region <SortIndicator col="region" active={sortKey} dir={sortDir} />
-                  </th>
-                  <th style={thStyle("right")} onClick={() => handleSort("queries")}>
-                    Artworks / Queries <SortIndicator col="queries" active={sortKey} dir={sortDir} />
                   </th>
                   <th style={thStyle("right")} onClick={() => handleSort("basco")}>
                     BASCO Score <SortIndicator col="basco" active={sortKey} dir={sortDir} />
@@ -606,7 +607,13 @@ export default function LeagueTablePage() {
                     }
                     onMouseLeave={() => setTooltip(null)}
                   >
-                    Attr. Loss ($) ℹ <SortIndicator col="attr_loss" active={sortKey} dir={sortDir} />
+                    Attribution Loss ($) ℹ <SortIndicator col="attr_loss" active={sortKey} dir={sortDir} />
+                  </th>
+                  <th style={thStyle("right")} onClick={() => handleSort("queries")}>
+                    Helpdesk Queries <SortIndicator col="queries" active={sortKey} dir={sortDir} />
+                  </th>
+                  <th style={thStyle("right")} onClick={() => handleSort("artwork")}>
+                    Artworks / Queries <SortIndicator col="artwork" active={sortKey} dir={sortDir} />
                   </th>
                   <th style={thStyle("center")} onClick={() => handleSort("trend")}>
                     Trend <SortIndicator col="trend" active={sortKey} dir={sortDir} />
@@ -617,7 +624,7 @@ export default function LeagueTablePage() {
                 {loading && data.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={11}
                       style={{
                         padding: "48px",
                         textAlign: "center",
@@ -635,7 +642,7 @@ export default function LeagueTablePage() {
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={11}
                       style={{
                         padding: "36px",
                         textAlign: "center",
@@ -652,7 +659,7 @@ export default function LeagueTablePage() {
                     const isEven = idx % 2 === 0;
                     return (
                       <tr
-                        key={`${row.retailer}-${row.country}-${idx}`}
+                        key={`${row.retailer}-${row.country}-${row.quarter || ''}-${idx}`}
                         style={{
                           background: isEven ? "#ffffff" : "#f8fafc",
                           borderBottom: "1px solid #f1f5f9",
@@ -667,7 +674,7 @@ export default function LeagueTablePage() {
                             : "#f8fafc";
                         }}
                       >
-                        {/* Rank */}
+                        {/* 1. Rank (#) */}
                         <td
                           style={{
                             padding: "11px 14px",
@@ -680,7 +687,23 @@ export default function LeagueTablePage() {
                           {idx + 1}
                         </td>
 
-                        {/* Retailer Name */}
+                        {/* 2. Quarter */}
+                        <td
+                          style={{
+                            padding: "11px 14px",
+                            textAlign: "center",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#0062d2",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          <span className="inline-block bg-blue-50 text-[#0062d2] px-2 py-0.5 rounded-md font-bold text-[11px] border border-blue-100/80">
+                            {row.quarter || row.period || "—"}
+                          </span>
+                        </td>
+
+                        {/* 3. Retailer Name */}
                         <td
                           style={{
                             padding: "11px 14px",
@@ -709,7 +732,7 @@ export default function LeagueTablePage() {
                           </div>
                         </td>
 
-                        {/* Country */}
+                        {/* 4. Country */}
                         <td
                           style={{
                             padding: "11px 14px",
@@ -721,7 +744,7 @@ export default function LeagueTablePage() {
                           {row.country}
                         </td>
 
-                        {/* Region Pill */}
+                        {/* 5. Region Pill */}
                         <td style={{ padding: "11px 14px", textAlign: "center" }}>
                           <span
                             className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded-full ${regionPillClass(
@@ -732,20 +755,7 @@ export default function LeagueTablePage() {
                           </span>
                         </td>
 
-                        {/* Queries / Artworks */}
-                        <td
-                          style={{
-                            padding: "11px 14px",
-                            textAlign: "right",
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: "#334155",
-                          }}
-                        >
-                          {row.queries}
-                        </td>
-
-                        {/* BASCO Score Bar */}
+                        {/* 6. BASCO Score Bar */}
                         <td style={{ padding: "11px 14px", textAlign: "right" }}>
                           <div
                             style={{
@@ -786,7 +796,7 @@ export default function LeagueTablePage() {
                           </div>
                         </td>
 
-                        {/* FMV ($) */}
+                        {/* 7. FMV ($) */}
                         <td
                           style={{
                             padding: "11px 14px",
@@ -799,7 +809,7 @@ export default function LeagueTablePage() {
                           {row.fmv != null ? fmtUSD(row.fmv) : "—"}
                         </td>
 
-                        {/* Attribution Loss ($) */}
+                        {/* 8. Attribution Loss ($) */}
                         <td
                           style={{
                             padding: "11px 14px",
@@ -812,7 +822,33 @@ export default function LeagueTablePage() {
                           {row.attr_loss != null && row.attr_loss > 0 ? fmtUSD(row.attr_loss) : "$0"}
                         </td>
 
-                        {/* Trend */}
+                        {/* 9. Helpdesk Queries */}
+                        <td
+                          style={{
+                            padding: "11px 14px",
+                            textAlign: "right",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "#334155",
+                          }}
+                        >
+                          {row.queries}
+                        </td>
+
+                        {/* 10. Artworks / Queries */}
+                        <td
+                          style={{
+                            padding: "11px 14px",
+                            textAlign: "right",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "#334155",
+                          }}
+                        >
+                          {row.artwork ?? row.queries}
+                        </td>
+
+                        {/* 11. Trend */}
                         <td style={{ padding: "11px 14px", textAlign: "center" }}>
                           <TrendIcon trend={row.trend} />
                         </td>
