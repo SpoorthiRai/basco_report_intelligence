@@ -59,10 +59,13 @@ export default function DashboardPage() {
 
       if (visRes.status === 'fulfilled' && visRes.value.data?.kpis) {
         const k = visRes.value.data.kpis;
+        const total = k.total_creatives || 0;
+        const usedIntel = (k.intel_layouts_count ?? k.used_intel_visuals ?? 0) + (k.custom_intel_layouts_count ?? 0);
+        const adoptionPct = k.master_visual_adoption_pct ?? (total > 0 ? Math.round((usedIntel / total) * 1000) / 10 : 0);
         newSummary.visualAdoption = {
-          total_creatives: k.total_creatives || 48,
-          used_intel: k.used_intel || 46,
-          adoption_pct: k.adoption_pct || 95.8,
+          total_creatives: total,
+          used_intel: usedIntel,
+          adoption_pct: adoptionPct,
         };
       }
 
