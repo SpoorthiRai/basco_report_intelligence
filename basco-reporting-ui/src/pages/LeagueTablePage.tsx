@@ -612,9 +612,6 @@ export default function LeagueTablePage() {
                   <th style={thStyle("right")} onClick={() => handleSort("queries")}>
                     Helpdesk Queries <SortIndicator col="queries" active={sortKey} dir={sortDir} />
                   </th>
-                  <th style={thStyle("right")} onClick={() => handleSort("artwork")}>
-                    Artworks / Queries <SortIndicator col="artwork" active={sortKey} dir={sortDir} />
-                  </th>
                   <th style={thStyle("center")} onClick={() => handleSort("trend")}>
                     Trend <SortIndicator col="trend" active={sortKey} dir={sortDir} />
                   </th>
@@ -624,7 +621,7 @@ export default function LeagueTablePage() {
                 {loading && data.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={10}
                       style={{
                         padding: "48px",
                         textAlign: "center",
@@ -642,7 +639,7 @@ export default function LeagueTablePage() {
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={10}
                       style={{
                         padding: "36px",
                         textAlign: "center",
@@ -835,20 +832,7 @@ export default function LeagueTablePage() {
                           {row.queries}
                         </td>
 
-                        {/* 10. Artworks / Queries */}
-                        <td
-                          style={{
-                            padding: "11px 14px",
-                            textAlign: "right",
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: "#334155",
-                          }}
-                        >
-                          {row.artwork ?? row.queries}
-                        </td>
-
-                        {/* 11. Trend */}
+                        {/* 10. Trend */}
                         <td style={{ padding: "11px 14px", textAlign: "center" }}>
                           <TrendIcon trend={row.trend} />
                         </td>
