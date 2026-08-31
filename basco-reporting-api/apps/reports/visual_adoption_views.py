@@ -36,15 +36,15 @@ class VisualAdoptionView(APIView):
             conn = get_warehouse_connection()
             cursor = conn.cursor()
 
-            # ── 1. Fetch main creative data for right-side visual details ──
+            # ── 1. Fetch main creative data ──
             cursor.execute(VISUAL_ADOPTION_MAIN_QUERY)
             cols = [c[0] for c in cursor.description]
             raw_rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
 
-            # ── 2. Fetch PMS master visuals list ──
+            # ── 2. Fetch master visuals list from metadata ──
             cursor.execute(PMS_VISUALS_QUERY)
             pms_cols = [c[0] for c in cursor.description]
-            pms_visuals = [dict(zip(pms_cols, r)) for r in cursor.fetchall()]
+            raw_pms = [dict(zip(pms_cols, r)) for r in cursor.fetchall()]
 
             conn.close()
 
@@ -57,9 +57,33 @@ class VisualAdoptionView(APIView):
         # ── 4. Derived Master Dropdown Options (scoped to user data) ──
         master_quarters = sort_quarters_desc(list(set(r.get('quarter_label') for r in rows if r.get('quarter_label'))))
         master_countries = sorted(list(set(r.get('Country') for r in rows if r.get('Country') and r['Country'] not in ('', 'Unknown', 'None'))))
-        master_visual_styles = sorted(list(set(r.get('Visual_Style') for r in rows if r.get('Visual_Style') and r['Visual_Style'] not in ('', 'None', 'NA'))))
+        master_visual_styles = sorted(list(set(r.get('Visual_Style') for r in rows if r.get('Visual_Style') and r['Visual_Style'] not in ('', 'None', 'NA', 'Unknown'))))
 
-        # ── 5. Apply Active UI Filters for KPIs and Retailer Breakdown ──
+        # ── 5. Build Master Visual Catalog from Metadata (VISUAL_CONTENT_URL & VISUAL_CONTENT_NAME) ──
+        visual_catalog = {}
+        for p in raw_pms:
+            name = p.get('PMSVisual_Name')
+            url = p.get('PMSVisual_URL')
+            if name and name not in ('None', '', 'NA') and url and url not in ('None', '', 'NA'):
+                visual_catalog[name] = url
+
+        for r in rows:
+            names = r.get('Visual_Content_Name', '') or ''
+            urls = r.get('Visual_Content_URL', '') or ''
+            name_tokens = [t.strip() for t in names.replace(';', '|').split('|') if t.strip() and t.strip() not in ('None', '', 'NA')]
+            url_tokens = [t.strip() for t in urls.replace(';', '|').split('|') if t.strip() and t.strip() not in ('None', '', 'NA')]
+            for i, name in enumerate(name_tokens):
+                if name and name not in visual_catalog and name != 'None':
+                    url = url_tokens[i] if i < len(url_tokens) else (url_tokens[0] if url_tokens else '')
+                    if url:
+                        visual_catalog[name] = url
+
+        pms_visuals = [
+            {'PMSVisual_ID': idx + 1, 'PMSVisual_Name': name, 'PMSVisual_URL': url}
+            for idx, (name, url) in enumerate(sorted(visual_catalog.items(), key=lambda x: x[0]))
+        ]
+
+        # ── 6. Apply Active UI Filters for KPIs and Retailer Breakdown ──
         filtered_rows = rows
         if quarter_filter and quarter_filter != 'All':
             filtered_rows = [r for r in filtered_rows if r.get('quarter_label') == quarter_filter]
@@ -76,7 +100,7 @@ class VisualAdoptionView(APIView):
         )
         adoption_pct = round(used_intel / total_creatives * 100, 1) if total_creatives > 0 else 0
 
-        # Retailer-wise adoption breakdown
+        # Retailer-wise adoption breakdown for horizontal chart
         ret_map = {}
         for r in filtered_rows:
             ret = r.get('Retailer')
@@ -99,7 +123,7 @@ class VisualAdoptionView(APIView):
             for ret, stats in ret_map.items()
         ], key=lambda x: (x['adoption_pct'], x['intel_visual_creatives']), reverse=True)
 
-        # ── 6. Expand pipe/semicolon-separated visuals for visual cards ──
+        # ── 7. Expand pipe/semicolon-separated visuals for visual cards ──
         expanded_rows = []
         for row in filtered_rows:
             names = row.get('Visual_Content_Name', '') or ''
@@ -107,22 +131,22 @@ class VisualAdoptionView(APIView):
             name_tokens = [
                 t.strip() for t in 
                 names.replace(';', '|').split('|') 
-                if t.strip()
+                if t.strip() and t.strip() not in ('None', '', 'NA')
             ]
             url_tokens = [
                 t.strip() for t in 
                 urls.replace(';', '|').split('|') 
-                if t.strip()
+                if t.strip() and t.strip() not in ('None', '', 'NA')
             ]
             for i, name in enumerate(name_tokens):
-                url = url_tokens[i] if i < len(url_tokens) else ''
+                url = url_tokens[i] if i < len(url_tokens) else (url_tokens[0] if url_tokens else '')
                 expanded_rows.append({
                     **row,
                     'Visual_Content_Name': name,
-                    'Visual_Content_URL':  url,
+                    'Visual_Content_URL':  url or visual_catalog.get(name, ''),
                 })
 
-        # ── 7. Per-visual stats (for selected visual) ──
+        # ── 8. Per-visual stats (for selected visual in Explore Intel Visuals) ──
         visual_stats = None
         retailer_visual_breakdown = []
 
@@ -138,16 +162,9 @@ class VisualAdoptionView(APIView):
                 visual_count / total_creatives * 100, 1
             ) if total_creatives > 0 else 0
 
-            pms_match = next(
-                (p for p in pms_visuals 
-                 if p['PMSVisual_Name'] == selected_visual), 
-                None
-            )
-            thumbnail = (
-                pms_match['PMSVisual_URL'] if pms_match 
-                else (visual_rows[0].get('Visual_Content_URL', '') 
-                      if visual_rows else '')
-            )
+            thumbnail = visual_catalog.get(selected_visual, '')
+            if not thumbnail and visual_rows:
+                thumbnail = visual_rows[0].get('Visual_Content_URL', '')
 
             visual_stats = {
                 'visual_name':    selected_visual,
@@ -159,6 +176,8 @@ class VisualAdoptionView(APIView):
             ret_visual_map = {}
             for r in visual_rows:
                 ret = r.get('Retailer', 'Unknown')
+                if not ret or ret in ('', 'Unknown', 'Unmapped', 'None', 'NA', 'Intel Creative', 'Red Baron'):
+                    continue
                 ret_visual_map[ret] = (
                     ret_visual_map.get(ret, 0) 
                     + r.get('creative_count', 1)

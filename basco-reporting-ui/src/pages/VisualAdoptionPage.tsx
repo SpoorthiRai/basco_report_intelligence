@@ -367,7 +367,10 @@ export default function VisualAdoptionPage() {
               <select
                 id="visual-select"
                 value={selectedVisual}
-                onChange={(e) => setSelectedVisual(e.target.value)}
+                onChange={(e) => {
+                  setSelectedVisual(e.target.value);
+                  setImgError(false);
+                }}
                 className="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer transition-all"
               >
                 {(data?.pms_visuals || []).map((pv) => (
