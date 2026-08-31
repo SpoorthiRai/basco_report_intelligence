@@ -35,7 +35,7 @@ interface ModuleSummaryData {
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const { data: leagueData } = useLeagueTable('Q2 2026');
+  const { data: leagueData } = useLeagueTable('Q3 2026');
 
   const [summaryData, setSummaryData] = useState<ModuleSummaryData>({
     visualAdoption: { total_creatives: 48, used_intel: 46, adoption_pct: 95.8 },
@@ -48,10 +48,10 @@ export default function DashboardPage() {
   useEffect(() => {
     let isMounted = true;
     Promise.allSettled([
-      api.get('/api/reports/visual-adoption/?quarter=Q2 2026'),
-      api.get('/api/reports/cta-campaign/?quarter=Q2 2026'),
-      api.get('/api/reports/offer-cta/?quarter=Q2 2026'),
-      api.get('/api/reports/market-maturity/?quarter=Q2 2026'),
+      api.get('/api/reports/visual-adoption/?quarter=Q3 2026'),
+      api.get('/api/reports/cta-campaign/?quarter=Q3 2026'),
+      api.get('/api/reports/offer-cta/?quarter=Q3 2026'),
+      api.get('/api/reports/market-maturity/?quarter=Q3 2026'),
     ]).then(([visRes, ctaRes, offRes, mmRes]) => {
       if (!isMounted) return;
 
@@ -143,7 +143,7 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2.5 mb-2">
               <span className="bg-blue-500/20 text-cyan-300 border border-cyan-400/30 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                Q2 2026 Insights (Latest)
+                Q3 2026 Insights
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
