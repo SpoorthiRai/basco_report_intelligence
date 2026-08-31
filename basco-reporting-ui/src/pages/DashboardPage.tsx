@@ -59,13 +59,10 @@ export default function DashboardPage() {
 
       if (visRes.status === 'fulfilled' && visRes.value.data?.kpis) {
         const k = visRes.value.data.kpis;
-        const total = k.total_creatives || 0;
-        const usedIntel = (k.intel_layouts_count ?? k.used_intel_visuals ?? 0) + (k.custom_intel_layouts_count ?? 0);
-        const adoptionPct = k.master_visual_adoption_pct ?? (total > 0 ? Math.round((usedIntel / total) * 1000) / 10 : 0);
         newSummary.visualAdoption = {
-          total_creatives: total,
-          used_intel: usedIntel,
-          adoption_pct: adoptionPct,
+          total_creatives: k.total_creatives || 0,
+          used_intel: k.used_intel_visuals ?? k.intel_layouts_count ?? 0,
+          adoption_pct: k.master_visual_adoption_pct ?? 0,
         };
       }
 
@@ -254,13 +251,13 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-slate-900 tracking-tight block">
-                {summaryData.visualAdoption?.adoption_pct || 74.7}%
+                {summaryData.visualAdoption?.adoption_pct ?? 0}%
               </span>
               <span className="text-xs font-bold text-slate-700 block mt-0.5">
-                Intel Visual Adoption
+                Master Visual Adoption
               </span>
               <span className="text-[11px] text-slate-400 font-medium block mt-1">
-                {summaryData.visualAdoption?.used_intel} / {summaryData.visualAdoption?.total_creatives} Intel Visuals
+                (Intel + Custom Layouts)
               </span>
             </div>
           </Link>
