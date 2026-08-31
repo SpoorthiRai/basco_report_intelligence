@@ -213,6 +213,13 @@ const CustomTooltip = ({ active, payload }: any) => {
           </div>
 
           <div className="flex justify-between items-center py-0.5">
+            <span className="text-slate-400">Attribution Loss:</span>
+            <span className="font-semibold text-rose-400">
+              ${Number(item.attr_loss ?? 0).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center py-0.5">
             <span className="text-slate-400">Total FMV:</span>
             <span className="font-semibold text-cyan-400">
               ${Number(item.fmv ?? 0).toLocaleString()}
@@ -276,7 +283,7 @@ export default function MarketMaturityPage() {
     return currentFmvData.map((d) => ({
       ...d,
       x: d.basco_score,
-      y: d.fmv,
+      y: d.attr_loss,
       radius: Math.max(7, Math.min(26, Math.round((d.fmv / maxVal) * 26))),
     }));
   }, [currentFmvData]);
@@ -291,11 +298,11 @@ export default function MarketMaturityPage() {
   // Dynamic Y-axis properties
   const yAxisConfig = useMemo(() => {
     return {
-      label: "Total Fair Market Value ($)",
+      label: "Attribution Loss ($)",
       formatter: (v: number) => `$${(v / 1000).toFixed(0)}K`,
-      domain: [0, (max: number) => Math.ceil((max * 1.15) / 250000) * 250000 || 1600000],
-      yRefLine: 500000,
-      yRefLabel: "FMV Threshold ($500K)",
+      domain: [0, (max: number) => Math.ceil((max * 1.15) / 50000) * 50000 || 300000],
+      yRefLine: 100000,
+      yRefLabel: "Attribution Loss Threshold ($100K)",
     };
   }, []);
 
@@ -525,7 +532,7 @@ export default function MarketMaturityPage() {
                 <YAxis
                   type="number"
                   dataKey="y"
-                  name={activeMetric}
+                  name="Attribution Loss"
                   domain={yAxisConfig.domain as any}
                   tickFormatter={yAxisConfig.formatter}
                   stroke="#94a3b8"
