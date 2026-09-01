@@ -16,9 +16,9 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 // ── Role badge ─────────────────────────────────────────────────────────────
 const roleBadge: Record<string, string> = {
-  ADMIN: 'bg-purple-100 text-purple-700',
-  RMM:   'bg-teal-100 text-teal-700',
-  RSM:   'bg-blue-100 text-blue-700',
+  ADMIN: 'bg-[#7A35F4]/10 text-[#7A35F4] border border-[#7A35F4]/20',
+  RMM:   'bg-[#16D3C3]/10 text-[#16D3C3] border border-[#16D3C3]/20',
+  RSM:   'bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/20',
 }
 
 // ── Empty create form state ────────────────────────────────────────────────
@@ -103,17 +103,17 @@ export default function UserManagementPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl md:text-2xl font-black text-[#071739] tracking-tight">
+            <h1 className="text-xl md:text-2xl font-black text-[#111827] tracking-tight">
               User Management &{" "}
-              <span className="bg-gradient-to-r from-[#0062d2] via-[#0284c7] to-[#6366f1] bg-clip-text text-transparent inline-block">
+              <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
                 Access Control
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-50 text-purple-700 border border-purple-200/80 shadow-2xs">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#7A35F4]/10 text-[#7A35F4] border border-[#7A35F4]/20 shadow-2xs">
               Admin Console
             </span>
           </div>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">
+          <p className="text-xs md:text-sm text-[#6B7280] mt-1">
             Provision portal user roles, manage regional scoping, and oversee account access privileges.
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function UserManagementPage() {
         {!showForm && (
           <button
             onClick={() => { setShowForm(true); setSuccess(null) }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#0062d2] via-[#0284c7] to-[#2563eb] hover:opacity-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#013FFC] to-[#5B8CFF] hover:opacity-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer self-start sm:self-auto"
           >
             <span>+ Add New User</span>
           </button>
@@ -130,32 +130,32 @@ export default function UserManagementPage() {
 
       {/* ── Quick Telemetry Summary Cards ───────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white/95 border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
+        <div className="bg-white/95 border border-[#E5E7EB] rounded-2xl p-4 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Accounts</span>
-            <span className="text-2xl font-black text-[#071739] mt-0.5 block">{users.length}</span>
+            <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Total Accounts</span>
+            <span className="text-2xl font-black text-[#111827] mt-0.5 block">{users.length}</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-base shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center font-bold text-base shadow-2xs">
             👥
           </div>
         </div>
 
-        <div className="bg-white/95 border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
+        <div className="bg-white/95 border border-[#E5E7EB] rounded-2xl p-4 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Active Users</span>
-            <span className="text-2xl font-black text-emerald-700 mt-0.5 block">{activeCount}</span>
+            <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-wider block">Active Users</span>
+            <span className="text-2xl font-black text-[#10B981] mt-0.5 block">{activeCount}</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-base shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-[#10B981]/10 text-[#10B981] flex items-center justify-center font-bold text-base shadow-2xs">
             ✓
           </div>
         </div>
 
-        <div className="bg-white/95 border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
+        <div className="bg-white/95 border border-[#E5E7EB] rounded-2xl p-4 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Inactive Accounts</span>
-            <span className="text-2xl font-black text-slate-600 mt-0.5 block">{inactiveCount}</span>
+            <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Inactive Accounts</span>
+            <span className="text-2xl font-black text-[#6B7280] mt-0.5 block">{inactiveCount}</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-base shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 text-[#6B7280] flex items-center justify-center font-bold text-base shadow-2xs">
             ⏸
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function UserManagementPage() {
 
       {/* Success banner */}
       {success && (
-        <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-800 font-bold shadow-2xs flex items-center justify-between">
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-[#10B981] font-bold shadow-2xs flex items-center justify-between">
           <span>✓ {success}</span>
           <button onClick={() => setSuccess(null)} className="text-emerald-900 font-bold text-xs cursor-pointer">✕</button>
         </div>
@@ -172,55 +172,55 @@ export default function UserManagementPage() {
 
       {/* ── Inline create form ───────────────────────────────────────────── */}
       {showForm && (
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Create New User Account</h2>
-            <button onClick={cancelForm} className="text-slate-400 hover:text-slate-600 font-bold text-xs cursor-pointer">✕ Close</button>
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6">
+          <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#E5E7EB]">
+            <h2 className="text-sm font-bold text-[#111827] uppercase tracking-wider">Create New User Account</h2>
+            <button onClick={cancelForm} className="text-[#6B7280] hover:text-[#111827] font-bold text-xs cursor-pointer">✕ Close</button>
           </div>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Email */}
             <div>
-              <label className="text-xs font-bold text-slate-600 block mb-1">Email Address</label>
+              <label className="text-xs font-bold text-[#111827] block mb-1">Email Address</label>
               <input
                 type="email" required
                 value={form.email}
                 onChange={(e) => handleField('email', e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
                 placeholder="user@company.com"
               />
             </div>
 
             {/* Full name */}
             <div>
-              <label className="text-xs font-bold text-slate-600 block mb-1">Full Name</label>
+              <label className="text-xs font-bold text-[#111827] block mb-1">Full Name</label>
               <input
                 type="text" required
                 value={form.full_name}
                 onChange={(e) => handleField('full_name', e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
                 placeholder="Jane Smith"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="text-xs font-bold text-slate-600 block mb-1">Temporary Password</label>
+              <label className="text-xs font-bold text-[#111827] block mb-1">Temporary Password</label>
               <input
                 type="password" required
                 value={form.password}
                 onChange={(e) => handleField('password', e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
                 placeholder="••••••••"
               />
             </div>
 
             {/* Role */}
             <div>
-              <label className="text-xs font-bold text-slate-600 block mb-1">Assigned Role</label>
+              <label className="text-xs font-bold text-[#111827] block mb-1">Assigned Role</label>
               <select
                 value={form.role}
                 onChange={(e) => handleField('role', e.target.value as CreateUserPayload['role'])}
-                className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-slate-800"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-bold text-[#111827]"
               >
                 <option value="RSM">RSM (Retail Sales Manager)</option>
                 <option value="RMM">RMM (Regional Marketing Manager)</option>
@@ -231,14 +231,14 @@ export default function UserManagementPage() {
             {/* Conditional: Retailer IDs (RSM only) */}
             {form.role === 'RSM' && (
               <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-slate-600 block mb-1">
-                  Scoped Retailer IDs <span className="text-slate-400 font-normal">(comma-separated)</span>
+                <label className="text-xs font-bold text-[#111827] block mb-1">
+                  Scoped Retailer IDs <span className="text-[#6B7280] font-normal">(comma-separated)</span>
                 </label>
                 <input
                   type="text"
                   value={form.retailer_ids}
                   onChange={(e) => handleField('retailer_ids', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
                   placeholder="e.g. Best Buy, Currys, MediaMarkt"
                 />
               </div>
@@ -247,12 +247,12 @@ export default function UserManagementPage() {
             {/* Conditional: Country (RMM only) */}
             {form.role === 'RMM' && (
               <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-slate-600 block mb-1">Assigned Country</label>
+                <label className="text-xs font-bold text-[#111827] block mb-1">Assigned Country</label>
                 <input
                   type="text"
                   value={form.country}
                   onChange={(e) => handleField('country', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
                   placeholder="e.g. United States, Germany, India"
                 />
               </div>
@@ -270,14 +270,14 @@ export default function UserManagementPage() {
               <button
                 type="submit"
                 disabled={createMutation.isPending}
-                className="px-5 py-2.5 bg-gradient-to-r from-[#0062d2] to-[#0284c7] hover:opacity-95 disabled:opacity-60 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-gradient-to-r from-[#013FFC] to-[#5B8CFF] hover:opacity-95 disabled:opacity-60 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
               >
                 {createMutation.isPending ? 'Provisioning…' : 'Create User Account'}
               </button>
               <button
                 type="button"
                 onClick={cancelForm}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2.5 bg-[#F8FAFC] border border-[#E5E7EB] hover:bg-slate-200/70 text-[#111827] text-xs font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -294,15 +294,15 @@ export default function UserManagementPage() {
           Could not load users list. Please check backend service status.
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
           <table className="w-full text-xs">
-            <thead className="bg-slate-50/90 border-b border-slate-200">
+            <thead className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
               <tr>
                 {['User Profile', 'Email', 'Role', 'Status', 'Scoped Retailers', 'Country', 'Actions'].map(
                   (h) => (
                     <th
                       key={h}
-                      className="px-4 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider"
+                      className="px-4 py-3.5 text-left text-[11px] font-bold text-[#6B7280] uppercase tracking-wider"
                     >
                       {h}
                     </th>
@@ -310,34 +310,34 @@ export default function UserManagementPage() {
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#E5E7EB]">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400 text-xs font-medium">
+                  <td colSpan={7} className="px-4 py-12 text-center text-[#6B7280] text-xs font-medium">
                     No users registered in the database.
                   </td>
                 </tr>
               ) : (
                 users.map((u: User) => (
-                  <tr key={u.id} className="hover:bg-blue-50/40 transition-colors">
+                  <tr key={u.id} className="hover:bg-[#013FFC]/5 transition-colors">
                     {/* User Profile */}
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-cyan-400 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#013FFC] to-[#16D3C3] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
                           {u.full_name?.charAt(0) || u.email.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-bold text-slate-900">{u.full_name || 'Anonymous'}</span>
+                        <span className="font-bold text-[#111827]">{u.full_name || 'Anonymous'}</span>
                       </div>
                     </td>
 
                     {/* Email */}
-                    <td className="px-4 py-3.5 text-slate-600 font-medium">{u.email}</td>
+                    <td className="px-4 py-3.5 text-[#6B7280] font-medium">{u.email}</td>
 
                     {/* Role badge */}
                     <td className="px-4 py-3.5">
                       <span
                         className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                          roleBadge[u.role] ?? 'bg-slate-100 text-slate-600'
+                          roleBadge[u.role] ?? 'bg-slate-100 text-[#6B7280]'
                         }`}
                       >
                         {u.role}
@@ -349,22 +349,22 @@ export default function UserManagementPage() {
                       <span
                         className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
                           u.is_active
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200/80'
+                            ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20'
+                            : 'bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20'
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-[#10B981]' : 'bg-[#EF4444]'}`} />
                         <span>{u.is_active ? 'Active' : 'Inactive'}</span>
                       </span>
                     </td>
 
                     {/* Retailer IDs */}
-                    <td className="px-4 py-3.5 text-slate-600 max-w-[180px] truncate font-medium">
+                    <td className="px-4 py-3.5 text-[#6B7280] max-w-[180px] truncate font-medium">
                       {u.retailer_ids?.length ? u.retailer_ids.join(', ') : 'All Accounts'}
                     </td>
 
                     {/* Country */}
-                    <td className="px-4 py-3.5 text-slate-600 font-medium">{u.country || 'Global'}</td>
+                    <td className="px-4 py-3.5 text-[#6B7280] font-medium">{u.country || 'Global'}</td>
 
                     {/* Actions */}
                     <td className="px-4 py-3.5">
@@ -372,7 +372,7 @@ export default function UserManagementPage() {
                         <button
                           onClick={() => deactivateMutation.mutate(u.id)}
                           disabled={deactivateMutation.isPending}
-                          className="text-xs font-bold text-rose-600 hover:text-rose-800 disabled:opacity-50 transition-colors cursor-pointer"
+                          className="text-xs font-bold text-[#EF4444] hover:text-[#EF4444]/80 disabled:opacity-50 transition-colors cursor-pointer"
                         >
                           Deactivate
                         </button>
@@ -380,12 +380,12 @@ export default function UserManagementPage() {
                         <button
                           onClick={() => activateMutation.mutate(u.id)}
                           disabled={activateMutation.isPending}
-                          className="text-xs font-bold text-emerald-600 hover:text-emerald-800 disabled:opacity-50 transition-colors cursor-pointer"
+                          className="text-xs font-bold text-[#10B981] hover:text-[#10B981]/80 disabled:opacity-50 transition-colors cursor-pointer"
                         >
                           Activate
                         </button>
                       ) : (
-                        <span className="text-xs text-slate-300 font-medium">Current User</span>
+                        <span className="text-xs text-slate-400 font-medium">Current User</span>
                       )}
                     </td>
                   </tr>

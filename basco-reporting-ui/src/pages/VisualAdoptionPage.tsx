@@ -136,17 +136,17 @@ export default function VisualAdoptionPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#071739]">
+            <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
               Intel{" "}
-              <span className="bg-gradient-to-r from-[#0062d2] via-[#0284c7] to-[#6366f1] bg-clip-text text-transparent inline-block">
+              <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
                 Visual Adoption
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-[#0062d2] border border-blue-200/80 shadow-2xs">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/20 shadow-2xs">
               Pre Launch
             </span>
           </div>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">
+          <p className="text-xs md:text-sm text-[#6B7280] mt-1">
             Track Intel Master Visual adoption and usage distribution across retail partners.
           </p>
         </div>
@@ -154,15 +154,15 @@ export default function VisualAdoptionPage() {
         {/* Quarter & Country Dropdowns */}
         <div className="flex items-center gap-2.5 flex-wrap">
           {/* Quarter dropdown */}
-          <div className="flex items-center gap-2 bg-white/95 border border-slate-200/90 shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700">
-            <span className="text-slate-400 font-medium">Quarter:</span>
+          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
+            <span className="text-[#6B7280] font-medium">Quarter:</span>
             <select
               value={quarterFilter}
               onChange={(e) => setQuarterFilter(e.target.value)}
-              className="bg-transparent text-slate-900 text-xs font-bold focus:outline-none cursor-pointer pr-1"
+              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
             >
               {(data?.filter_options?.quarters || ['All']).map((q) => (
-                <option key={q} value={q} className="bg-white text-slate-900">
+                <option key={q} value={q} className="bg-white text-[#111827]">
                   {q}
                 </option>
               ))}
@@ -170,15 +170,15 @@ export default function VisualAdoptionPage() {
           </div>
 
           {/* Country dropdown */}
-          <div className="flex items-center gap-2 bg-white/95 border border-slate-200/90 shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700">
-            <span className="text-slate-400 font-medium">Country:</span>
+          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
+            <span className="text-[#6B7280] font-medium">Country:</span>
             <select
               value={countryFilter}
               onChange={(e) => setCountryFilter(e.target.value)}
-              className="bg-transparent text-slate-900 text-xs font-bold focus:outline-none cursor-pointer pr-1"
+              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
             >
               {(data?.filter_options?.countries || ['All']).map((c) => (
-                <option key={c} value={c} className="bg-white text-slate-900">
+                <option key={c} value={c} className="bg-white text-[#111827]">
                   {c}
                 </option>
               ))}
@@ -203,29 +203,29 @@ export default function VisualAdoptionPage() {
       {/* ── KPI Cards: 3 Metric Tiles ────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Card 1: Total Creatives */}
-        <div className="bg-white rounded-2xl p-4.5 shadow-sm border border-slate-200/90 flex flex-col justify-between min-h-[104px]">
-          <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400">
+        <div className="bg-white rounded-2xl p-4.5 shadow-sm border border-[#E5E7EB] flex flex-col justify-between min-h-[104px]">
+          <span className="text-[10px] font-bold tracking-wider uppercase text-[#6B7280]">
             Total Creatives
           </span>
           {loading && !data ? (
             <div className="h-8 bg-slate-100 rounded animate-pulse w-1/2 mt-2" />
           ) : (
-            <div className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">
+            <div className="text-2xl md:text-3xl font-black text-[#111827] tracking-tight mt-1">
               {data?.kpis?.total_creatives?.toLocaleString() ?? 0}
             </div>
           )}
         </div>
 
         {/* Card 2: Intel Visuals Used */}
-        <div className="bg-gradient-to-br from-[#071739] to-[#0b224f] rounded-2xl p-4.5 shadow-md border border-slate-800 flex flex-col justify-between min-h-[104px] text-white">
-          <span className="text-[10px] font-bold tracking-wider uppercase text-slate-300">
+        <div className="bg-gradient-to-br from-[#071739] to-[#013FFC] rounded-2xl p-4.5 shadow-md border border-[#013FFC]/30 flex flex-col justify-between min-h-[104px] text-white">
+          <span className="text-[10px] font-bold tracking-wider uppercase text-slate-200">
             Intel Visuals Used
           </span>
           {loading && !data ? (
             <div className="h-8 bg-slate-700/60 rounded animate-pulse w-1/2 mt-2" />
           ) : (
             <div className="flex items-baseline justify-between mt-1">
-              <div className="text-2xl md:text-3xl font-black text-cyan-300 tracking-tight">
+              <div className="text-2xl md:text-3xl font-black text-[#0EA5E9] tracking-tight">
                 {data?.kpis?.used_intel_visuals?.toLocaleString() ?? 0}
               </div>
               <span className="text-[10px] text-slate-300 font-medium">
@@ -236,8 +236,8 @@ export default function VisualAdoptionPage() {
         </div>
 
         {/* Card 3: Master Intel Visual Adoption % */}
-        <div className="bg-gradient-to-br from-[#0062d2] via-[#0284c7] to-[#06b6d4] rounded-2xl p-4.5 shadow-md border border-blue-400/40 flex flex-col justify-between min-h-[104px] text-white">
-          <span className="text-[10px] font-bold tracking-wider uppercase text-blue-100">
+        <div className="bg-gradient-to-br from-[#013FFC] to-[#0EA5E9] rounded-2xl p-4.5 shadow-md border border-[#0EA5E9]/40 flex flex-col justify-between min-h-[104px] text-white">
+          <span className="text-[10px] font-bold tracking-wider uppercase text-white/90">
             Master Intel Visual Adoption %
           </span>
           {loading && !data ? (
@@ -247,7 +247,7 @@ export default function VisualAdoptionPage() {
               <div className="text-2xl md:text-3xl font-black text-white tracking-tight">
                 {data?.kpis?.master_visual_adoption_pct ?? 0}%
               </div>
-              <span className="text-[10px] text-blue-100 font-medium">
+              <span className="text-[10px] text-white/80 font-medium">
                 (Intel + Custom Layouts)
               </span>
             </div>
@@ -256,44 +256,50 @@ export default function VisualAdoptionPage() {
       </div>
 
       {/* ── 2-Column Main Section (60% / 40% Desktop Split) ──────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* ══════════════════════════════════════════════════════════ */}
         {/* LEFT COLUMN: 60% Width (lg:col-span-7)                     */}
         {/* ══════════════════════════════════════════════════════════ */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col">
           {/* Left Chart Card: Intel Visual Adoption by Retailer */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col">
-            {/* Header + Visual Style Filter */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-800 tracking-tight">
-                Intel Visual Adoption by Retailer
-              </h3>
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between h-full">
+            <div>
+              {/* Header + Visual Style Filter */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-[#E5E7EB]">
+                <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                  Intel Visual Adoption by Retailer
+                </h3>
 
-              {/* Amber/Orange Visual Style Filter Dropdown */}
-              <div className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 transition-colors text-white px-3 py-1.5 rounded-lg shadow-xs self-start sm:self-auto">
-                <span className="text-xs font-semibold">Visual Style:</span>
-                <select
-                  value={visualStyleFilter}
-                  onChange={(e) => setVisualStyleFilter(e.target.value)}
-                  className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"
-                >
-                  {(data?.filter_options?.visual_styles || ['All']).map((vs) => (
-                    <option key={vs} value={vs} className="bg-slate-900 text-white">
-                      {vs}
-                    </option>
-                  ))}
-                </select>
+                {/* Visual Style Filter Dropdown */}
+                <div className="flex items-center gap-1.5 bg-[#013FFC] hover:bg-[#013FFC]/90 transition-colors text-white px-3 py-1.5 rounded-lg shadow-xs self-start sm:self-auto">
+                  <span className="text-xs font-semibold">Visual Style:</span>
+                  <select
+                    value={visualStyleFilter}
+                    onChange={(e) => setVisualStyleFilter(e.target.value)}
+                    className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"
+                  >
+                    {(data?.filter_options?.visual_styles || ['All']).map((vs) => (
+                      <option key={vs} value={vs} className="bg-slate-900 text-white">
+                        {vs}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+
+              <p className="text-xs text-[#6B7280] mb-2">
+                Percentage of total retailer creatives utilizing approved Intel Master Visual branding.
+              </p>
             </div>
 
-            {/* Horizontal Bar Chart */}
-            <div className="w-full h-[420px]">
+            {/* Horizontal Bar Chart — Stretches cleanly to fill available height */}
+            <div className="w-full flex-1 min-h-[540px] mt-2">
               {loading && !data ? (
-                <div className="w-full h-full bg-slate-50 rounded-xl animate-pulse flex items-center justify-center">
-                  <span className="text-xs font-semibold text-slate-400">Loading chart data...</span>
+                <div className="w-full h-full bg-[#F8FAFC] rounded-xl animate-pulse flex items-center justify-center">
+                  <span className="text-xs font-semibold text-[#6B7280]">Loading chart data...</span>
                 </div>
               ) : topRetailersAdoption.length === 0 ? (
-                <div className="w-full h-full flex items-center justify-center text-xs font-medium text-slate-400">
+                <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[#6B7280]">
                   No retailer adoption data found for the selected filters.
                 </div>
               ) : (
@@ -303,20 +309,20 @@ export default function VisualAdoptionPage() {
                     data={topRetailersAdoption}
                     margin={{ top: 10, right: 48, left: 10, bottom: 10 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
                     <XAxis
                       type="number"
                       domain={[0, 100]}
                       ticks={[0, 25, 50, 75, 100]}
                       unit="%"
-                      tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                      tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }}
                     />
                     <YAxis
                       dataKey="retailer"
                       type="category"
                       width={140}
                       interval={0}
-                      tick={{ fontSize: 11, fill: '#1e293b', fontWeight: 600 }}
+                      tick={{ fontSize: 11, fill: '#111827', fontWeight: 600 }}
                     />
                     <Tooltip
                       formatter={(val: any, _name: any, item: any) => [
@@ -327,24 +333,24 @@ export default function VisualAdoptionPage() {
                       contentStyle={{
                         borderRadius: '0.75rem',
                         fontSize: '12px',
-                        borderColor: '#334155',
-                        backgroundColor: '#0f172a',
+                        borderColor: '#E5E7EB',
+                        backgroundColor: '#071739',
                         boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.25)',
                       }}
-                      itemStyle={{ color: '#38bdf8', fontWeight: 600 }}
+                      itemStyle={{ color: '#0EA5E9', fontWeight: 600 }}
                       labelStyle={{ color: '#ffffff', fontWeight: 700, marginBottom: '4px' }}
                     />
                     <Bar
                       dataKey="adoption_pct"
-                      fill="#0284c7"
+                      fill="#013FFC"
                       radius={[0, 5, 5, 0]}
-                      barSize={16}
+                      barSize={18}
                     >
                       <LabelList
                         dataKey="adoption_pct"
                         position="right"
                         formatter={(val: any) => `${val}%`}
-                        fill="#334155"
+                        fill="#111827"
                         fontSize={11}
                         fontWeight={700}
                       />
@@ -359,13 +365,13 @@ export default function VisualAdoptionPage() {
         {/* ══════════════════════════════════════════════════════════ */}
         {/* RIGHT COLUMN: 40% Width (lg:col-span-5)                    */}
         {/* ══════════════════════════════════════════════════════════ */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <div className="lg:col-span-5 flex flex-col gap-6 justify-between">
           {/* Master Visual Selector Card */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col gap-4">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col gap-4">
             <div>
               <label
                 htmlFor="visual-select"
-                className="text-xs font-bold uppercase tracking-wider text-slate-700 block mb-1.5"
+                className="text-xs font-bold uppercase tracking-wider text-[#111827] block mb-1.5"
               >
                 Explore Intel Visuals
               </label>
@@ -376,7 +382,7 @@ export default function VisualAdoptionPage() {
                   setSelectedVisual(e.target.value);
                   setImgError(false);
                 }}
-                className="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer transition-all"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] text-xs font-semibold rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#013FFC] focus:outline-none cursor-pointer transition-all"
               >
                 {(data?.pms_visuals || []).map((pv) => (
                   <option key={pv.PMSVisual_ID} value={pv.PMSVisual_Name}>
@@ -401,7 +407,7 @@ export default function VisualAdoptionPage() {
                   <span className="text-xs font-bold text-slate-300">
                     {selectedVisual || 'No Visual Selected'}
                   </span>
-                  <span className="text-[10px] text-slate-500 block mt-0.5">
+                  <span className="text-[10px] text-[#6B7280] block mt-0.5">
                     {imgError ? 'Image not reachable' : 'Preview placeholder'}
                   </span>
                 </div>
@@ -416,19 +422,19 @@ export default function VisualAdoptionPage() {
             {/* Selected Visual Performance Stats Card */}
             {data?.selected_visual_stats && (
               <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
                     Creatives Count
                   </span>
-                  <span className="text-xl font-black text-slate-800 mt-1">
+                  <span className="text-xl font-black text-[#111827] mt-1">
                     {data.selected_visual_stats.creative_count.toLocaleString()}
                   </span>
                 </div>
-                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
                     Overall Intel Visual Adoption
                   </span>
-                  <span className="text-xl font-black text-cyan-600 mt-1">
+                  <span className="text-xl font-black text-[#013FFC] mt-1">
                     {data.selected_visual_stats.adoption_pct}%
                   </span>
                 </div>
@@ -437,19 +443,19 @@ export default function VisualAdoptionPage() {
           </div>
 
           {/* Right Chart Card: Intel Visual Usage by Retailer */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col">
-            <h3 className="text-sm font-bold text-slate-800 tracking-tight mb-4 pb-3 border-b border-slate-100">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between flex-1">
+            <h3 className="text-sm font-bold text-[#111827] tracking-tight mb-4 pb-3 border-b border-[#E5E7EB]">
               Intel Visual Usage by Retailer
             </h3>
 
             {/* Horizontal Bar Chart */}
-            <div className="w-full h-[340px]">
+            <div className="w-full flex-1 min-h-[220px]">
               {loading && !data ? (
-                <div className="w-full h-full bg-slate-50 rounded-xl animate-pulse flex items-center justify-center">
-                  <span className="text-xs font-semibold text-slate-400">Loading breakdown...</span>
+                <div className="w-full h-full bg-[#F8FAFC] rounded-xl animate-pulse flex items-center justify-center">
+                  <span className="text-xs font-semibold text-[#6B7280]">Loading breakdown...</span>
                 </div>
               ) : topRetailersVisualBreakdown.length === 0 ? (
-                <div className="w-full h-full flex items-center justify-center text-xs font-medium text-slate-400">
+                <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[#6B7280]">
                   No creatives found using {selectedVisual || 'this visual'}.
                 </div>
               ) : (
@@ -459,10 +465,10 @@ export default function VisualAdoptionPage() {
                     data={topRetailersVisualBreakdown}
                     margin={{ top: 10, right: 40, left: 10, bottom: 10 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
                     <XAxis
                       type="number"
-                      tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                      tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }}
                       allowDecimals={false}
                     />
                     <YAxis
@@ -470,7 +476,7 @@ export default function VisualAdoptionPage() {
                       type="category"
                       width={130}
                       interval={0}
-                      tick={{ fontSize: 11, fill: '#1e293b', fontWeight: 600 }}
+                      tick={{ fontSize: 11, fill: '#111827', fontWeight: 600 }}
                     />
                     <Tooltip
                       formatter={(val: any) => [`${val} creatives`, 'Usage Count']}
@@ -478,16 +484,16 @@ export default function VisualAdoptionPage() {
                       contentStyle={{
                         borderRadius: '0.75rem',
                         fontSize: '12px',
-                        borderColor: '#334155',
-                        backgroundColor: '#0f172a',
+                        borderColor: '#E5E7EB',
+                        backgroundColor: '#071739',
                         boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.25)',
                       }}
-                      itemStyle={{ color: '#38bdf8', fontWeight: 600 }}
+                      itemStyle={{ color: '#0EA5E9', fontWeight: 600 }}
                       labelStyle={{ color: '#ffffff', fontWeight: 700, marginBottom: '4px' }}
                     />
                     <Bar
                       dataKey="count"
-                      fill="#38bdf8"
+                      fill="#0EA5E9"
                       radius={[0, 5, 5, 0]}
                       barSize={16}
                     >
@@ -495,7 +501,7 @@ export default function VisualAdoptionPage() {
                         dataKey="count"
                         position="right"
                         formatter={(val: any) => `${val}`}
-                        fill="#334155"
+                        fill="#111827"
                         fontSize={11}
                         fontWeight={700}
                       />

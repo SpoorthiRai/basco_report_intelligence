@@ -20,17 +20,17 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f0f6ff] text-slate-900 selection:bg-blue-500 selection:text-white relative overflow-hidden font-sans">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#111827] selection:bg-[#013FFC] selection:text-white relative overflow-hidden font-sans">
       
       {/* ── Ambient Radiant Mesh & Concentric Wave Ribbons Background ──────── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 select-none">
         {/* Soft atmospheric radial mesh gradients */}
-        <div className="absolute -top-[15%] -left-[10%] w-[55%] h-[65%] bg-gradient-to-br from-[#dbeafe] via-[#ede9fe] to-transparent rounded-full blur-3xl opacity-80" />
-        <div className="absolute top-[5%] -right-[5%] w-[60%] h-[75%] bg-gradient-to-bl from-[#fae8ff] via-[#e0e7ff] to-transparent rounded-full blur-3xl opacity-70" />
-        <div className="absolute bottom-[10%] left-[25%] w-[50%] h-[45%] bg-gradient-to-t from-[#cffafe] via-[#dbeafe] to-transparent rounded-full blur-2xl opacity-60" />
-        <div className="absolute top-[35%] left-[40%] w-[35%] h-[35%] bg-radial from-white/90 via-[#e0f2fe]/40 to-transparent rounded-full blur-2xl" />
+        <div className="absolute -top-[15%] -left-[10%] w-[55%] h-[65%] bg-gradient-to-br from-[#013FFC]/10 via-[#7A35F4]/8 to-transparent rounded-full blur-3xl opacity-80" />
+        <div className="absolute top-[5%] -right-[5%] w-[60%] h-[75%] bg-gradient-to-bl from-[#7A35F4]/10 via-[#16D3C3]/10 to-transparent rounded-full blur-3xl opacity-70" />
+        <div className="absolute bottom-[10%] left-[25%] w-[50%] h-[45%] bg-gradient-to-t from-[#16D3C3]/10 via-[#013FFC]/8 to-transparent rounded-full blur-2xl opacity-60" />
+        <div className="absolute top-[35%] left-[40%] w-[35%] h-[35%] bg-radial from-white/90 via-[#F8FAFC]/40 to-transparent rounded-full blur-2xl" />
 
-        {/* Concentric Gradient Wave Ribbon Streams matching the reference image */}
+        {/* Concentric Gradient Wave Ribbon Streams */}
         <svg
           className="absolute inset-0 w-full h-full"
           viewBox="0 0 1440 900"
@@ -40,24 +40,23 @@ export default function LandingPage() {
         >
           <defs>
             <linearGradient id="auroraGrad1" x1="0%" y1="70%" x2="100%" y2="20%">
-              <stop offset="0%" stopColor="#818cf8" stopOpacity="0.45" />
-              <stop offset="25%" stopColor="#c084fc" stopOpacity="0.65" />
-              <stop offset="55%" stopColor="#0062d2" stopOpacity="0.75" />
-              <stop offset="85%" stopColor="#06b6d4" stopOpacity="0.55" />
-              <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.3" />
+              <stop offset="0%" stopColor="#7A35F4" stopOpacity="0.4" />
+              <stop offset="35%" stopColor="#013FFC" stopOpacity="0.65" />
+              <stop offset="70%" stopColor="#16D3C3" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#5B8CFF" stopOpacity="0.4" />
             </linearGradient>
 
             <linearGradient id="auroraGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.3" />
-              <stop offset="40%" stopColor="#60a5fa" stopOpacity="0.5" />
-              <stop offset="75%" stopColor="#38bdf8" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#67e8f9" stopOpacity="0.25" />
+              <stop offset="0%" stopColor="#7A35F4" stopOpacity="0.3" />
+              <stop offset="45%" stopColor="#013FFC" stopOpacity="0.5" />
+              <stop offset="80%" stopColor="#16D3C3" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#5B8CFF" stopOpacity="0.25" />
             </linearGradient>
 
             <linearGradient id="auroraGrad3" x1="10%" y1="0%" x2="90%" y2="100%">
-              <stop offset="0%" stopColor="#e879f9" stopOpacity="0.4" />
-              <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#818cf8" stopOpacity="0.2" />
+              <stop offset="0%" stopColor="#7A35F4" stopOpacity="0.35" />
+              <stop offset="50%" stopColor="#16D3C3" stopOpacity="0.45" />
+              <stop offset="100%" stopColor="#013FFC" stopOpacity="0.3" />
             </linearGradient>
 
             {/* Subtle glow filter */}
@@ -121,38 +120,38 @@ export default function LandingPage() {
           {/* ── Left Column: Value Proposition & CTA ───────────────────────── */}
           <div className="lg:col-span-5 flex flex-col items-start space-y-6">
             <div>
-              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-[#071739] tracking-tight leading-[1.08]">
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-[#111827] tracking-tight leading-[1.08]">
                 Turn Retail<br />
                 Execution into<br />
-                <span className="bg-gradient-to-r from-[#0062d2] via-[#0284c7] to-[#6366f1] bg-clip-text text-transparent inline-block">
+                <span className="bg-gradient-to-r from-[#013FFC] via-[#0EA5E9] to-[#16D3C3] bg-clip-text text-transparent inline-block">
                   Marketing
                 </span><br />
-                <span className="bg-gradient-to-r from-[#0062d2] via-[#06b6d4] to-[#3b82f6] bg-clip-text text-transparent inline-block">
+                <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
                   Intelligence.
                 </span>
               </h1>
 
-              {/* Accent underline bar with Aurora Gradient */}
-              <div className="w-14 h-1.5 bg-gradient-to-r from-[#0062d2] via-[#06b6d4] to-[#6366f1] rounded-full mt-4 shadow-xs" />
+              {/* Accent underline bar with Brand to AI Gradient */}
+              <div className="w-14 h-1.5 bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] rounded-full mt-4 shadow-xs" />
             </div>
 
 
-            <p className="text-slate-600 text-sm sm:text-[15px] leading-relaxed max-w-md font-normal">
+            <p className="text-[#6B7280] text-sm sm:text-[15px] leading-relaxed max-w-md font-normal">
               Get complete visibility into retailer marketing performance, creative effectiveness, Intel brand presence, product promotion, and campaign activity—all in one place.
             </p>
 
             <div className="pt-2 space-y-3.5 w-full sm:w-auto">
               <button
                 onClick={handleCtaClick}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-[#0062d2] hover:bg-[#0052b4] active:bg-[#004294] text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 hover:shadow-xl hover:translate-y-[-1px] cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-[#013FFC] hover:bg-[#0036d9] active:bg-[#002cb3] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#013FFC]/25 transition-all duration-200 hover:shadow-xl hover:translate-y-[-1px] cursor-pointer"
               >
                 <span>View My Retailer Insights</span>
                 <span className="text-base">→</span>
               </button>
 
-              <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+              <div className="flex items-center gap-2 text-xs text-[#6B7280] font-medium">
                 <svg
-                  className="w-3.5 h-3.5 text-slate-400 shrink-0"
+                  className="w-3.5 h-3.5 text-[#6B7280] shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -171,8 +170,8 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto lg:max-w-none">
               
               {/* Card 1: Intel Visual Adoption (Gauge) */}
-              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-100/90 flex flex-col justify-between hover:shadow-2xl transition-all duration-300">
-                <div className="text-xs font-bold text-slate-700 tracking-tight">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-[#E5E7EB] flex flex-col justify-between hover:shadow-2xl transition-all duration-300">
+                <div className="text-xs font-bold text-[#111827] tracking-tight">
                   Intel Visual Adoption
                 </div>
 
@@ -184,7 +183,7 @@ export default function LandingPage() {
                         cx="50"
                         cy="50"
                         r="40"
-                        stroke="#e2e8f0"
+                        stroke="#E5E7EB"
                         strokeWidth="9"
                         fill="transparent"
                       />
@@ -201,30 +200,30 @@ export default function LandingPage() {
                       />
                       <defs>
                         <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#06b6d4" />
-                          <stop offset="100%" stopColor="#0062d2" />
+                          <stop offset="0%" stopColor="#16D3C3" />
+                          <stop offset="100%" stopColor="#013FFC" />
                         </linearGradient>
                       </defs>
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                      <span className="text-2xl font-black text-slate-900 leading-none">82%</span>
-                      <span className="text-[10px] text-slate-500 font-medium mt-1">Adoption Rate</span>
+                      <span className="text-2xl font-black text-[#111827] leading-none">82%</span>
+                      <span className="text-[10px] text-[#6B7280] font-medium mt-1">Adoption Rate</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-center text-[11px] font-semibold text-emerald-600 flex items-center justify-center gap-1 bg-emerald-50 py-1 px-2.5 rounded-full mx-auto">
+                <div className="text-center text-[11px] font-semibold text-[#10B981] flex items-center justify-center gap-1 bg-[#10B981]/10 py-1 px-2.5 rounded-full mx-auto">
                   <span>↑</span>
                   <span>12% vs Q4-2024</span>
                 </div>
               </div>
 
               {/* Card 2: Brand Attribution at Risk (Sparkline) */}
-              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-100/90 flex flex-col justify-between hover:shadow-2xl transition-all duration-300">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-[#E5E7EB] flex flex-col justify-between hover:shadow-2xl transition-all duration-300">
                 <div>
-                  <div className="text-xs font-bold text-slate-800">Brand Attribution at Risk</div>
-                  <div className="text-[11px] text-slate-400 font-medium mt-0.5">Est. Attribution Loss (FMV)</div>
-                  <div className="text-2xl sm:text-3xl font-black text-[#0062d2] mt-2">$2.8M</div>
+                  <div className="text-xs font-bold text-[#111827]">Brand Attribution at Risk</div>
+                  <div className="text-[11px] text-[#6B7280] font-medium mt-0.5">Est. Attribution Loss (FMV)</div>
+                  <div className="text-2xl sm:text-3xl font-black text-[#013FFC] mt-2">$2.8M</div>
                 </div>
 
                 {/* Mini sparkline curve */}
@@ -237,13 +236,13 @@ export default function LandingPage() {
                     <path
                       d="M0 35 Q 30 32, 60 25 T 110 18 T 160 5"
                       fill="none"
-                      stroke="#0062d2"
+                      stroke="#013FFC"
                       strokeWidth="2.5"
                     />
                     <defs>
                       <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#0062d2" stopOpacity="0.2" />
-                        <stop offset="100%" stopColor="#0062d2" stopOpacity="0.0" />
+                        <stop offset="0%" stopColor="#013FFC" stopOpacity="0.2" />
+                        <stop offset="100%" stopColor="#013FFC" stopOpacity="0.0" />
                       </linearGradient>
                     </defs>
                   </svg>
@@ -251,67 +250,67 @@ export default function LandingPage() {
               </div>
 
               {/* Card 3: Retailer Health Index (Wide across 2 cols) */}
-              <div className="sm:col-span-2 bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-100/90 hover:shadow-2xl transition-all duration-300">
-                <div className="text-xs font-bold text-slate-800 mb-3.5">
+              <div className="sm:col-span-2 bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-[#E5E7EB] hover:shadow-2xl transition-all duration-300">
+                <div className="text-xs font-bold text-[#111827] mb-3.5">
                   Retailer Health Index
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 text-center divide-x divide-slate-100">
+                <div className="grid grid-cols-4 gap-2 text-center divide-x divide-[#CBD5E1]/50">
                   <div className="px-1">
-                    <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-600 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-[#6B7280] mb-1">
+                      <span className="w-2 h-2 rounded-full bg-[#10B981]" />
                       <span>Strong</span>
                     </div>
-                    <div className="text-2xl sm:text-3xl font-black text-emerald-600">24</div>
+                    <div className="text-2xl sm:text-3xl font-black text-[#10B981]">24</div>
                   </div>
 
                   <div className="px-1">
-                    <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-600 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-[#6B7280] mb-1">
+                      <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
                       <span>Watch</span>
                     </div>
-                    <div className="text-2xl sm:text-3xl font-black text-amber-500">18</div>
+                    <div className="text-2xl sm:text-3xl font-black text-[#F59E0B]">18</div>
                   </div>
 
                   <div className="px-1">
-                    <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-600 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-[#6B7280] mb-1">
+                      <span className="w-2 h-2 rounded-full bg-[#013FFC]" />
                       <span>Lower Priority</span>
                     </div>
-                    <div className="text-2xl sm:text-3xl font-black text-blue-600">7</div>
+                    <div className="text-2xl sm:text-3xl font-black text-[#013FFC]">7</div>
                   </div>
 
                   <div className="px-1">
-                    <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-600 mb-1">
-                      <span className="w-2 h-2 rounded-full bg-rose-500" />
+                    <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-[#6B7280] mb-1">
+                      <span className="w-2 h-2 rounded-full bg-[#EF4444]" />
                       <span>Action Needed</span>
                     </div>
-                    <div className="text-2xl sm:text-3xl font-black text-rose-500">11</div>
+                    <div className="text-2xl sm:text-3xl font-black text-[#EF4444]">11</div>
                   </div>
                 </div>
               </div>
 
               {/* Card 4: Top Compliance Issue */}
-              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-100/90 flex flex-col justify-between hover:shadow-2xl transition-all duration-300">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-[#E5E7EB] flex flex-col justify-between hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">Top Compliance Issue</span>
-                  <span className="text-amber-500 text-sm">⚠️</span>
+                  <span className="text-xs font-bold text-[#111827]">Top Compliance Issue</span>
+                  <span className="text-[#FF6B35] text-sm font-bold">⚠️</span>
                 </div>
 
-                <div className="my-3 bg-blue-50/80 border border-blue-100/80 rounded-xl p-3 text-center">
-                  <span className="text-xs font-extrabold text-[#0a2540] tracking-wide block uppercase">
+                <div className="my-3 bg-[#013FFC]/5 border border-[#013FFC]/15 rounded-xl p-3 text-center">
+                  <span className="text-xs font-extrabold text-[#111827] tracking-wide block uppercase">
                     IMPROPER USAGE<br />OF ELEMENTS
                   </span>
                 </div>
 
-                <div className="text-[11px] text-slate-500 text-center font-medium">
+                <div className="text-[11px] text-[#6B7280] text-center font-medium">
                   32% of flagged issues
                 </div>
               </div>
 
               {/* Card 5: Product Promotion Mix (Bar Graph) */}
-              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-100/90 flex flex-col justify-between hover:shadow-2xl transition-all duration-300 space-y-2.5">
-                <div className="text-xs font-bold text-slate-800">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-[#E5E7EB] flex flex-col justify-between hover:shadow-2xl transition-all duration-300 space-y-2.5">
+                <div className="text-xs font-bold text-[#111827]">
                   Product Promotion Mix
                 </div>
 
@@ -319,12 +318,12 @@ export default function LandingPage() {
                   {/* Intel® Core™ Ultra – 45% */}
                   <div>
                     <div className="flex justify-between text-[11px] mb-1">
-                      <span className="font-semibold text-slate-700">Intel® Core™ Ultra</span>
-                      <span className="font-extrabold text-blue-700">45%</span>
+                      <span className="font-semibold text-[#111827]">Intel® Core™ Ultra</span>
+                      <span className="font-extrabold text-[#013FFC]">45%</span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-[#F8FAFC] border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-[#013FFC] to-[#5B8CFF] h-full rounded-full transition-all duration-500"
                         style={{ width: "45%" }}
                       />
                     </div>
@@ -333,12 +332,12 @@ export default function LandingPage() {
                   {/* Intel® Evo™ Edition – 32% */}
                   <div>
                     <div className="flex justify-between text-[11px] mb-1">
-                      <span className="font-semibold text-slate-700">Intel® Evo™ Edition</span>
-                      <span className="font-extrabold text-cyan-600">32%</span>
+                      <span className="font-semibold text-[#111827]">Intel® Evo™ Edition</span>
+                      <span className="font-extrabold text-[#16D3C3]">32%</span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-[#F8FAFC] border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-[#16D3C3] to-[#0EA5E9] h-full rounded-full transition-all duration-500"
                         style={{ width: "32%" }}
                       />
                     </div>
@@ -347,10 +346,10 @@ export default function LandingPage() {
                   {/* 14th Gen Intel® Core™ – 12% */}
                   <div>
                     <div className="flex justify-between text-[11px] mb-1">
-                      <span className="font-semibold text-slate-700">14th Gen Intel® Core™</span>
+                      <span className="font-semibold text-[#111827]">14th Gen Intel® Core™</span>
                       <span className="font-extrabold text-slate-800">12%</span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-[#F8FAFC] border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden">
                       <div
                         className="bg-gradient-to-r from-slate-700 to-slate-900 h-full rounded-full transition-all duration-500"
                         style={{ width: "12%" }}
@@ -361,12 +360,12 @@ export default function LandingPage() {
                   {/* Others – 11% */}
                   <div>
                     <div className="flex justify-between text-[11px] mb-1">
-                      <span className="font-semibold text-slate-700">Others</span>
-                      <span className="font-extrabold text-slate-500">11%</span>
+                      <span className="font-semibold text-[#111827]">Others</span>
+                      <span className="font-extrabold text-[#6B7280]">11%</span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-[#F8FAFC] border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden">
                       <div
-                        className="bg-slate-400 h-full rounded-full transition-all duration-500"
+                        className="bg-[#CBD5E1] h-full rounded-full transition-all duration-500"
                         style={{ width: "11%" }}
                       />
                     </div>
@@ -381,11 +380,11 @@ export default function LandingPage() {
 
         {/* ── Platform Value Section (4 Value Pillars) ─────────────────────── */}
         <section id="value-section" className="mt-14 pt-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-slate-100/90 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-[#E5E7EB] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             
             {/* Pillar 1: Performance at a glance */}
             <div className="flex flex-col items-start space-y-3">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50/90 text-[#0062d2] flex items-center justify-center border border-blue-100/80 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center border border-[#013FFC]/20 shadow-2xs">
                 <svg
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
@@ -402,15 +401,15 @@ export default function LandingPage() {
                   <polyline points="16 6 20 6 20 10" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-[#071739]">Performance at a glance</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <h3 className="text-sm font-bold text-[#111827]">Performance at a glance</h3>
+              <p className="text-xs text-[#6B7280] leading-relaxed">
                 Track how retailers are executing and where attention is needed.
               </p>
             </div>
 
             {/* Pillar 2: Actionable insights */}
             <div className="flex flex-col items-start space-y-3">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50/90 text-[#0062d2] flex items-center justify-center border border-blue-100/80 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#16D3C3]/15 text-[#0d7d74] flex items-center justify-center border border-[#16D3C3]/30 shadow-2xs">
                 <svg
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
@@ -427,15 +426,15 @@ export default function LandingPage() {
                   <path d="M15 5h4v4" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-[#071739]">Actionable insights</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <h3 className="text-sm font-bold text-[#111827]">Actionable insights</h3>
+              <p className="text-xs text-[#6B7280] leading-relaxed">
                 Identify gaps, opportunities, and priority actions that drive impact.
               </p>
             </div>
 
             {/* Pillar 3: Creative intelligence */}
             <div className="flex flex-col items-start space-y-3">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50/90 text-[#0062d2] flex items-center justify-center border border-blue-100/80 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#7A35F4]/10 text-[#7A35F4] flex items-center justify-center border border-[#7A35F4]/25 shadow-2xs">
                 <svg
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
@@ -450,15 +449,15 @@ export default function LandingPage() {
                   <polyline points="21 15 16 10 5 21" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-[#071739]">Creative intelligence</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <h3 className="text-sm font-bold text-[#111827]">Creative intelligence</h3>
+              <p className="text-xs text-[#6B7280] leading-relaxed">
                 See how Intel brand, visuals, messaging, and offers are being used.
               </p>
             </div>
 
             {/* Pillar 4: Role-based access */}
             <div className="flex flex-col items-start space-y-3">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50/90 text-[#0062d2] flex items-center justify-center border border-blue-100/80 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center border border-[#013FFC]/20 shadow-2xs">
                 <svg
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
@@ -474,8 +473,8 @@ export default function LandingPage() {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-[#071739]">Role-based access</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <h3 className="text-sm font-bold text-[#111827]">Role-based access</h3>
+              <p className="text-xs text-[#6B7280] leading-relaxed">
                 Personalized views for your accounts, markets, and retailers.
               </p>
             </div>
@@ -485,7 +484,7 @@ export default function LandingPage() {
 
         {/* ── Closing Statement ──────────────────────────────────────────────── */}
         <div className="text-center my-10">
-          <p className="text-base sm:text-lg font-black bg-gradient-to-r from-[#0062d2] via-[#0284c7] to-[#6366f1] bg-clip-text text-transparent tracking-tight">
+          <p className="text-base sm:text-lg font-black bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent tracking-tight">
             Your retailers. Your markets. The signals that matter.
           </p>
         </div>
@@ -506,7 +505,7 @@ export default function LandingPage() {
             <span className="text-slate-700">|</span>
             <a href="#terms" className="hover:text-white transition-colors">Terms of Use</a>
             <span className="text-slate-700">|</span>
-            <button onClick={() => navigate("/login")} className="hover:text-white text-[#38bdf8] flex items-center gap-1 transition-colors cursor-pointer">
+            <button onClick={() => navigate("/login")} className="hover:text-white text-[#16D3C3] flex items-center gap-1 transition-colors cursor-pointer">
               <span>Contact Support</span>
               <span>→</span>
             </button>

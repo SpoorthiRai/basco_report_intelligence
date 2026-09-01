@@ -47,36 +47,35 @@ function getScoreColor(score: number): {
 } {
   if (score < 80) {
     return {
-      fill: "#ef4444",
+      fill: "#EF4444",
       gradientId: "redBubbleGrad",
-      border: "#b91c1c",
-      badgeBg: "bg-rose-500/10",
-      badgeText: "text-rose-400",
+      border: "#B91C1C",
+      badgeBg: "bg-[#EF4444]/10",
+      badgeText: "text-[#EF4444]",
       label: "Critical Action (< 80%)",
     };
   }
   if (score <= 90) {
     return {
-      fill: "#f59e0b",
+      fill: "#F59E0B",
       gradientId: "amberBubbleGrad",
-      border: "#d97706",
-      badgeBg: "bg-amber-500/10",
-      badgeText: "text-amber-400",
+      border: "#D97706",
+      badgeBg: "bg-[#F59E0B]/10",
+      badgeText: "text-[#F59E0B]",
       label: "Moderate (80% – 90%)",
     };
   }
   return {
-    fill: "#10b981",
+    fill: "#10B981",
     gradientId: "greenBubbleGrad",
     border: "#059669",
-    badgeBg: "bg-emerald-500/10",
-    badgeText: "text-emerald-400",
+    badgeBg: "bg-[#10B981]/10",
+    badgeText: "text-[#10B981]",
     label: "Healthy (> 90%)",
   };
 }
 
-// ── Custom Dot for Bubble Chart ─────────────────────────────────────────────
-// ── Custom Dot with Smart Collision-Free Label Placement ───────────────────
+// ── Custom Dot for Bubble Chart with Smart Collision-Free Labels ────────────
 const CustomDot = (props: any) => {
   const { cx, cy, payload } = props;
   if (cx == null || cy == null || !payload) return null;
@@ -84,16 +83,10 @@ const CustomDot = (props: any) => {
   const { country, basco_score, radius } = payload;
   const colorInfo = getScoreColor(basco_score);
 
-  // Compute smart, collision-free label position
-  // 1. Check vertical boundaries so labels near top/bottom don't get clipped
-  const isNearTop = cy - radius < 30;
+  // Vertical boundary check
+  const isNearTop = cy - radius < 35;
   
-  // 2. Specific dense cluster distribution:
-  // - Close pairs at same X:
-  //   - Germany (top) vs Portugal (bottom)
-  //   - South Korea (top) vs India (bottom)
-  //   - Australia (top) vs France (bottom-left) vs Spain (bottom-right)
-  //   - Brazil (top-left) vs South Korea (top)
+  // Specific dense cluster placement strategies to avoid collision
   const bottomPlacements = [
     "India",
     "Portugal",
@@ -103,8 +96,11 @@ const CustomDot = (props: any) => {
     "Thailand",
     "Malaysia",
     "New Zealand",
+    "Egypt",
+    "Saudi Arabia",
+    "Netherlands",
   ];
-  const leftPlacements = ["Brazil", "Nordics"];
+  const leftPlacements = ["Brazil", "Nordics", "UAE"];
 
   let labelX = cx;
   let labelY = cy - radius - 7;
@@ -121,19 +117,19 @@ const CustomDot = (props: any) => {
     textAnchor = "end";
   }
 
-  const pillWidth = Math.max(country.length * 6.2 + 8, 30);
+  const pillWidth = Math.max(country.length * 6.2 + 10, 32);
   const pillHeight = 15;
   const pillX = textAnchor === "end" ? labelX - pillWidth : labelX - pillWidth / 2;
 
   return (
-    <g className="cursor-pointer">
+    <g className="cursor-pointer group">
       {/* Outer subtle glow ring */}
       <circle
         cx={cx}
         cy={cy}
-        r={radius + 2.5}
+        r={radius + 3}
         fill={colorInfo.fill}
-        fillOpacity={0.15}
+        fillOpacity={0.18}
         pointerEvents="none"
       />
       {/* Main Bubble */}
@@ -146,9 +142,9 @@ const CustomDot = (props: any) => {
         stroke="#ffffff"
         strokeWidth={2}
         filter="url(#bubbleShadow)"
-        className="transition-opacity duration-150 hover:opacity-100"
+        className="transition-all duration-200 hover:opacity-100 hover:stroke-width-[2.5px]"
       />
-      {/* Label Background Pill to prevent overlap with gridlines & bubbles */}
+      {/* Label Background Pill */}
       <rect
         x={pillX}
         y={pillY}
@@ -156,12 +152,12 @@ const CustomDot = (props: any) => {
         height={pillHeight}
         rx={4}
         fill="#ffffff"
-        fillOpacity={0.92}
+        fillOpacity={0.94}
         stroke="#e2e8f0"
         strokeWidth={1}
         className="pointer-events-none drop-shadow-2xs"
       />
-      {/* Country Label with high contrast text */}
+      {/* Country Label */}
       <text
         x={labelX}
         y={labelY}
@@ -301,10 +297,35 @@ export default function MarketMaturityPage() {
       label: "Attribution Loss ($)",
       formatter: (v: number) => `$${(v / 1000).toFixed(0)}K`,
       domain: [0, (max: number) => Math.ceil((max * 1.15) / 50000) * 50000 || 300000],
-      yRefLine: 100000,
-      yRefLabel: "Attribution Loss Threshold ($100K)",
     };
   }, []);
+
+  // Dynamic Quadrant Breakdown with Country Lists & Clear 2D Criteria
+  const quadrantStats = useMemo(() => {
+    const critical: string[] = [];
+    const highRisk: string[] = [];
+    const emerging: string[] = [];
+    const healthy: string[] = [];
+
+    currentDataset.forEach((d) => {
+      const isHighScore = d.basco_score >= 90;
+      const isModerateScore = d.basco_score >= 80 && d.basco_score < 90;
+      const isLowScore = d.basco_score < 80;
+      const isHighLoss = d.attr_loss > 100000;
+
+      if (isLowScore && isHighLoss) {
+        critical.push(d.country);
+      } else if ((isModerateScore || isHighScore) && isHighLoss) {
+        highRisk.push(d.country);
+      } else if (isLowScore && !isHighLoss) {
+        emerging.push(d.country);
+      } else {
+        healthy.push(d.country);
+      }
+    });
+
+    return { critical, highRisk, emerging, healthy };
+  }, [currentDataset]);
 
   const footNote = useMemo(() => {
     return `FMV data sourced from Intel POP records. ${currentDataset.length} countries shown for ${selectedQuarter}.`;
@@ -312,131 +333,103 @@ export default function MarketMaturityPage() {
 
   return (
     <div className="space-y-4 pb-6">
-      {/* ── Page Header & Top Telemetry Summary ─────────────────────────── */}
+      {/* ── Page Header & Top Telemetry Summary + Quarter Filter ─────────── */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl md:text-2xl font-black text-[#071739] tracking-tight">
-              Market Maturity Model
-            </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-[#0062d2] border border-blue-200/80 shadow-2xs">
-              Live Matrix
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h1 className="text-xl md:text-2xl font-black text-[#111827] tracking-tight">
+            Market Maturity Model
+          </h1>
+          <p className="text-xs text-[#6B7280] mt-0.5">
             BASCO Compliance Score vs. Risk & Violations • Compare market maturity cohorts across global regions.
           </p>
         </div>
 
-        {/* Top Summary Telemetry Chips (Period card removed) */}
+        {/* Top Summary Telemetry Chips & Quarter Filter Dropdown */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="bg-white/95 border border-slate-200/90 rounded-xl px-3.5 py-1.5 shadow-2xs">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tracked Markets</span>
-            <span className="text-base font-black text-[#071739]">{currentDataset.length}</span>
+          <div className="bg-white/95 border border-[#E5E7EB] rounded-xl px-3.5 py-1.5 shadow-2xs">
+            <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Tracked Markets</span>
+            <span className="text-base font-black text-[#111827]">{currentDataset.length}</span>
           </div>
-          <div className="bg-white/95 border border-slate-200/90 rounded-xl px-3.5 py-1.5 shadow-2xs">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Avg BASCO Score</span>
-            <span className="text-base font-black text-[#0062d2]">{avgCohortScore}%</span>
+          <div className="bg-white/95 border border-[#E5E7EB] rounded-xl px-3.5 py-1.5 shadow-2xs">
+            <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Avg BASCO Score</span>
+            <span className="text-base font-black text-[#013FFC]">{avgCohortScore}%</span>
           </div>
-        </div>
-      </div>
 
-      {/* ── Top Controls Bar: Metric Dimension Tabs + Quarter Filter ──── */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        {/* Left: Metric Dimension Selector */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-            Sizing Dimension:
-          </span>
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70 flex-wrap">
-            {metrics.map(({ id, icon, desc }) => (
-              <button
-                key={id}
-                type="button"
-                title={desc}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 bg-white text-[#0062d2] shadow-xs border border-blue-100 cursor-default"
-              >
-                <span>{icon}</span>
-                <span>{id}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+          {/* Quarter Selector Dropdown */}
+          <div ref={quarterRef} className="relative flex items-center">
+            <button
+              type="button"
+              onClick={() => setIsQuarterOpen((v) => !v)}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs border ${
+                selectedQuarter !== "All Quarters"
+                  ? "bg-[#013FFC] text-white border-[#013FFC]"
+                  : "bg-white text-[#111827] border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-slate-50"
+              } cursor-pointer`}
+            >
+              <span className="w-2 h-2 rounded-full bg-[#10B981] shadow-2xs"></span>
+              <span className="text-[#6B7280] font-medium">Quarter:</span>
+              <span>{selectedQuarter}</span>
+              <span className="text-[10px] transform transition-transform" style={{ transform: isQuarterOpen ? "rotate(180deg)" : "none" }}>
+                ▼
+              </span>
+            </button>
 
-        {/* Right: Quarter Selector Dropdown */}
-        <div ref={quarterRef} className="relative flex items-center gap-2 self-start md:self-auto">
-          <button
-            type="button"
-            onClick={() => setIsQuarterOpen((v) => !v)}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs border ${
-              selectedQuarter !== "All Quarters"
-                ? "bg-[#0062d2] text-white border-[#0062d2]"
-                : "bg-white text-slate-700 border-slate-300 hover:border-slate-400 hover:bg-slate-50"
-            } cursor-pointer`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-2xs"></span>
-            <span className="text-slate-400 font-medium">Quarter:</span>
-            <span>{selectedQuarter}</span>
-            <span className="text-[10px] transform transition-transform" style={{ transform: isQuarterOpen ? "rotate(180deg)" : "none" }}>
-              ▼
-            </span>
-          </button>
-
-          {isQuarterOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto">
-              <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                Select Maturity Period
+            {isQuarterOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-xl border border-[#E5E7EB] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto">
+                <div className="px-3 py-1.5 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider border-b border-[#E5E7EB]">
+                  Select Maturity Period
+                </div>
+                {availableQuarters.map((period) => {
+                  const isSelected = selectedQuarter === period;
+                  return (
+                    <button
+                      key={period}
+                      onClick={() => {
+                        setSelectedQuarter(period);
+                        setIsQuarterOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-colors ${
+                        isSelected
+                          ? "bg-[#013FFC]/10 text-[#013FFC]"
+                          : "text-[#111827] hover:bg-slate-100/80 cursor-pointer"
+                      }`}
+                    >
+                      <span>{period}</span>
+                      {isSelected && <span className="text-[#013FFC] font-bold">✓</span>}
+                    </button>
+                  );
+                })}
               </div>
-              {availableQuarters.map((period) => {
-                const isSelected = selectedQuarter === period;
-                return (
-                  <button
-                    key={period}
-                    onClick={() => {
-                      setSelectedQuarter(period);
-                      setIsQuarterOpen(false);
-                    }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-colors ${
-                      isSelected
-                        ? "bg-blue-50 text-[#0062d2]"
-                        : "text-slate-700 hover:bg-slate-100/80 cursor-pointer"
-                    }`}
-                  >
-                    <span>{period}</span>
-                    {isSelected && <span className="text-[#0062d2] font-bold">✓</span>}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
       {/* ── Main Full-Width Matrix Card ───────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-4 sm:p-5 flex flex-col justify-between">
         {/* Sub-header with Score Legend Badges */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-[#E5E7EB]">
           <div>
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+            <span className="text-xs font-bold text-[#111827] uppercase tracking-wider block">
               Quadrant Distribution Matrix
             </span>
-            <span className="text-[11px] text-slate-400 font-medium">
-              Bubble size represents <strong className="text-slate-700">{activeMetric}</strong>
+            <span className="text-[11px] text-[#6B7280] font-medium">
+              Bubble size represents <strong className="text-[#111827]">{activeMetric}</strong>
             </span>
           </div>
 
           {/* Score Legend Badges */}
           <div className="flex items-center gap-2 flex-wrap text-xs">
-            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold px-2.5 py-0.5 rounded-lg text-[11px]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span className="inline-flex items-center gap-1.5 bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/25 font-bold px-2.5 py-0.5 rounded-lg text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-[#10B981]"></span>
               <span>&gt; 90% Healthy</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200/80 font-bold px-2.5 py-0.5 rounded-lg text-[11px]">
-              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span className="inline-flex items-center gap-1.5 bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/25 font-bold px-2.5 py-0.5 rounded-lg text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
               <span>80% – 90% Moderate</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200/80 font-bold px-2.5 py-0.5 rounded-lg text-[11px]">
-              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span className="inline-flex items-center gap-1.5 bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/25 font-bold px-2.5 py-0.5 rounded-lg text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-[#EF4444]"></span>
               <span>&lt; 80% Critical Action</span>
             </span>
           </div>
@@ -444,66 +437,29 @@ export default function MarketMaturityPage() {
 
         {/* ── Scatter/Bubble Chart Container ─────────────────────────── */}
         <div className="relative mt-2">
-          {/* Background Quadrant Watermark Badges (Layered behind the chart) */}
-          {/* Top-Left: High Violations/Loss, Low Score */}
-          <div className="absolute top-[8px] left-[70px] z-0 pointer-events-none select-none opacity-75">
-            <div className="inline-flex items-center gap-1.5 bg-rose-50/70 text-rose-700/90 border border-rose-200/60 text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500/80"></span>
-              <span>🚨 Critical Action</span>
-              <span className="hidden lg:inline text-[10px] font-normal text-rose-500/90">(High Risk / Score &lt; 80%)</span>
-            </div>
-          </div>
-
-          {/* Top-Right: High Violations/Loss, High Score */}
-          <div className="absolute top-[8px] right-[24px] z-0 pointer-events-none select-none opacity-75">
-            <div className="inline-flex items-center gap-1.5 bg-amber-50/70 text-amber-700/90 border border-amber-200/60 text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80"></span>
-              <span>⚠️ Needs Support</span>
-              <span className="hidden lg:inline text-[10px] font-normal text-amber-600/90">(High Risk / High Volume)</span>
-            </div>
-          </div>
-
-          {/* Bottom-Left: Low Violations/Loss, Low Score */}
-          <div className="absolute bottom-[48px] left-[70px] z-0 pointer-events-none select-none opacity-75">
-            <div className="inline-flex items-center gap-1.5 bg-amber-50/70 text-amber-700/90 border border-amber-200/60 text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80"></span>
-              <span>⚠️ Needs Support</span>
-              <span className="hidden lg:inline text-[10px] font-normal text-amber-600/90">(Emerging Market)</span>
-            </div>
-          </div>
-
-          {/* Bottom-Right: Low Violations/Loss, High Score */}
-          <div className="absolute bottom-[48px] right-[24px] z-0 pointer-events-none select-none opacity-75">
-            <div className="inline-flex items-center gap-1.5 bg-emerald-50/70 text-emerald-700/90 border border-emerald-200/60 text-[11px] font-bold px-2.5 py-0.5 rounded-lg shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80"></span>
-              <span>✨ Healthy &amp; Mature</span>
-              <span className="hidden lg:inline text-[10px] font-normal text-emerald-600/90">(Score &gt; 90%)</span>
-            </div>
-          </div>
-
           {/* Recharts Scatter Chart - Foreground Layer (z-10) */}
-          <div className="relative z-10 h-[380px] w-full">
+          <div className="relative z-10 h-[450px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 15, right: 25, bottom: 25, left: 15 }}>
                 <defs>
                   <linearGradient id="redBubbleGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f87171" />
-                    <stop offset="100%" stopColor="#ef4444" />
+                    <stop offset="0%" stopColor="#F87171" />
+                    <stop offset="100%" stopColor="#EF4444" />
                   </linearGradient>
                   <linearGradient id="amberBubbleGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#fbbf24" />
-                    <stop offset="100%" stopColor="#f59e0b" />
+                    <stop offset="0%" stopColor="#FBBF24" />
+                    <stop offset="100%" stopColor="#F59E0B" />
                   </linearGradient>
                   <linearGradient id="greenBubbleGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#34d399" />
-                    <stop offset="100%" stopColor="#10b981" />
+                    <stop offset="0%" stopColor="#34D399" />
+                    <stop offset="100%" stopColor="#10B981" />
                   </linearGradient>
                   <filter id="bubbleShadow" x="-20%" y="-20%" width="140%" height="140%">
                     <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.18" />
                   </filter>
                 </defs>
 
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.8} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" strokeOpacity={0.8} />
 
                 {/* X-Axis: BASCO Score */}
                 <XAxis
@@ -512,15 +468,15 @@ export default function MarketMaturityPage() {
                   name="BASCO Score"
                   domain={[40, 100]}
                   ticks={[40, 50, 60, 70, 80, 90, 100]}
-                  stroke="#94a3b8"
-                  tick={{ fill: "#64748b", fontSize: 11, fontWeight: 600 }}
+                  stroke="#94A3B8"
+                  tick={{ fill: "#6B7280", fontSize: 11, fontWeight: 600 }}
                 >
                   <Label
                     value="BASCO Score (% Adherence)"
                     offset={-10}
                     position="insideBottom"
                     style={{
-                      fill: "#334155",
+                      fill: "#111827",
                       fontSize: "11px",
                       fontWeight: 700,
                       textAnchor: "middle",
@@ -535,8 +491,8 @@ export default function MarketMaturityPage() {
                   name="Attribution Loss"
                   domain={yAxisConfig.domain as any}
                   tickFormatter={yAxisConfig.formatter}
-                  stroke="#94a3b8"
-                  tick={{ fill: "#64748b", fontSize: 11, fontWeight: 600 }}
+                  stroke="#94A3B8"
+                  tick={{ fill: "#6B7280", fontSize: 11, fontWeight: 600 }}
                   width={65}
                 >
                   <Label
@@ -545,7 +501,7 @@ export default function MarketMaturityPage() {
                     position="insideLeft"
                     offset={-5}
                     style={{
-                      fill: "#334155",
+                      fill: "#111827",
                       fontSize: "11px",
                       fontWeight: 700,
                       textAnchor: "middle",
@@ -555,19 +511,19 @@ export default function MarketMaturityPage() {
 
                 <Tooltip
                   content={<CustomTooltip activeMetric={activeMetric} />}
-                  cursor={{ strokeDasharray: "3 3", stroke: "#94a3b8", strokeWidth: 1 }}
+                  cursor={{ strokeDasharray: "3 3", stroke: "#94A3B8", strokeWidth: 1 }}
                 />
 
                 {/* Target Line at 90% (Healthy Threshold) */}
                 <ReferenceLine
                   x={90}
-                  stroke="#0062d2"
+                  stroke="#013FFC"
                   strokeDasharray="4 4"
                   strokeWidth={2}
                   label={{
                     value: "Target BASCO (90%)",
                     position: "top",
-                    fill: "#0062d2",
+                    fill: "#013FFC",
                     fontSize: 10,
                     fontWeight: 700,
                   }}
@@ -576,30 +532,15 @@ export default function MarketMaturityPage() {
                 {/* Moderate Boundary Line at 80% */}
                 <ReferenceLine
                   x={80}
-                  stroke="#f59e0b"
+                  stroke="#F59E0B"
                   strokeDasharray="4 4"
                   strokeWidth={1.5}
                   label={{
                     value: "Moderate (80%)",
                     position: "top",
-                    fill: "#d97706",
+                    fill: "#D97706",
                     fontSize: 10,
                     fontWeight: 700,
-                  }}
-                />
-
-                {/* Horizontal Threshold Reference Line */}
-                <ReferenceLine
-                  y={yAxisConfig.yRefLine}
-                  stroke="#94a3b8"
-                  strokeDasharray="4 4"
-                  strokeWidth={1.5}
-                  label={{
-                    value: yAxisConfig.yRefLabel,
-                    position: "insideBottomLeft",
-                    fill: "#64748b",
-                    fontSize: 10,
-                    fontWeight: 600,
                   }}
                 />
 
@@ -611,6 +552,102 @@ export default function MarketMaturityPage() {
                 />
               </ScatterChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* ── 4-Quadrant Strategic Summary Cards (Clear 2D Criteria + Country Tags) ── */}
+        <div className="mt-3 pt-3 border-t border-[#E5E7EB] grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {/* Card 1: Critical Action */}
+          <div className="bg-[#EF4444]/5 border border-[#EF4444]/20 rounded-xl p-2.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] font-extrabold text-[#EF4444] flex items-center gap-1.5">
+                <span>🚨</span> Critical Action
+              </span>
+              <span className="text-xs font-black bg-[#EF4444]/15 text-[#EF4444] px-2 py-0.5 rounded-md">
+                {quadrantStats.critical.length}
+              </span>
+            </div>
+            <span className="text-[10px] text-[#6B7280] font-medium mt-1">
+              Score &lt; 80% &bull; Loss &gt; $100K
+            </span>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {quadrantStats.critical.map((c) => (
+                <span key={c} className="text-[9px] font-bold bg-[#EF4444]/10 text-[#EF4444] px-1.5 py-0.2 rounded border border-[#EF4444]/20">
+                  {c}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 2: High Volume Risk */}
+          <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/20 rounded-xl p-2.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] font-extrabold text-[#D97706] flex items-center gap-1.5">
+                <span>⚠️</span> High Volume Risk
+              </span>
+              <span className="text-xs font-black bg-[#F59E0B]/15 text-[#D97706] px-2 py-0.5 rounded-md">
+                {quadrantStats.highRisk.length}
+              </span>
+            </div>
+            <span className="text-[10px] text-[#6B7280] font-medium mt-1">
+              Score &ge; 80% &bull; Loss &gt; $100K
+            </span>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {quadrantStats.highRisk.map((c) => (
+                <span key={c} className="text-[9px] font-bold bg-[#F59E0B]/10 text-[#D97706] px-1.5 py-0.2 rounded border border-[#F59E0B]/20">
+                  {c}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 3: Emerging Market */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] font-extrabold text-slate-700 flex items-center gap-1.5">
+                <span>🌱</span> Emerging Market
+              </span>
+              <span className="text-xs font-black bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">
+                {quadrantStats.emerging.length}
+              </span>
+            </div>
+            <span className="text-[10px] text-[#6B7280] font-medium mt-1">
+              Score &lt; 80% &bull; Loss &le; $100K
+            </span>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {quadrantStats.emerging.map((c) => (
+                <span key={c} className="text-[9px] font-bold bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded border border-slate-300">
+                  {c}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 4: Healthy & Mature */}
+          <div className="bg-[#10B981]/5 border border-[#10B981]/20 rounded-xl p-2.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] font-extrabold text-[#059669] flex items-center gap-1.5">
+                <span>✨</span> Healthy &amp; Mature
+              </span>
+              <span className="text-xs font-black bg-[#10B981]/15 text-[#059669] px-2 py-0.5 rounded-md">
+                {quadrantStats.healthy.length}
+              </span>
+            </div>
+            <span className="text-[10px] text-[#6B7280] font-medium mt-1">
+              Score &ge; 90% &bull; Loss &le; $100K
+            </span>
+            <div className="mt-1.5 flex flex-wrap gap-1 max-h-[36px] overflow-y-auto">
+              {quadrantStats.healthy.slice(0, 3).map((c) => (
+                <span key={c} className="text-[9px] font-bold bg-[#10B981]/10 text-[#059669] px-1.5 py-0.2 rounded border border-[#10B981]/20">
+                  {c}
+                </span>
+              ))}
+              {quadrantStats.healthy.length > 3 && (
+                <span className="text-[9px] font-bold text-[#6B7280] px-1 py-0.2">
+                  +{quadrantStats.healthy.length - 3} more
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

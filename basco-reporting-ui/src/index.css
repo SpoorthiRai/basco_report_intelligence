@@ -1,5 +1,74 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary-blue: #013FFC;
+  --color-secondary-teal: #16D3C3;
+  --color-ai-purple: #7A35F4;
+  --color-contrast-orange: #FF6B35;
+  --color-hero-blue: #5B8CFF;
+
+  --color-bg-base: #F8FAFC;
+  --color-surface-card: #FFFFFF;
+  --color-border-subtle: #E5E7EB;
+  --color-divider-line: #CBD5E1;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+
+  --color-semantic-success: #10B981;
+  --color-semantic-warning: #F59E0B;
+  --color-semantic-error: #EF4444;
+  --color-semantic-info: #0EA5E9;
+}
+
+:root {
+  --primary-blue: #013FFC;
+  --secondary-teal: #16D3C3;
+  --ai-purple: #7A35F4;
+  --contrast-orange: #FF6B35;
+  --hero-blue: #5B8CFF;
+
+  --bg-base: #F8FAFC;
+  --surface-card: #FFFFFF;
+  --border-subtle: #E5E7EB;
+  --divider-line: #CBD5E1;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+
+  --semantic-success: #10B981;
+  --semantic-warning: #F59E0B;
+  --semantic-error: #EF4444;
+  --semantic-info: #0EA5E9;
+
+  --grad-brand: linear-gradient(135deg, #013FFC 0%, #16D3C3 100%);
+  --grad-ai: linear-gradient(135deg, #16D3C3 0%, #7A35F4 100%);
+  --grad-hero: linear-gradient(135deg, #013FFC 0%, #5B8CFF 100%);
+}
+
+body {
+  background-color: #F8FAFC;
+  color: #111827;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Custom Scrollbars ───────────────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
 /* ── Reusable form utilities ─────────────────────────────────────────────── */
 @layer components {
   .label {
@@ -7,8 +76,9 @@
   }
 
   .input {
-    @apply w-full bg-white text-gray-800 text-sm rounded-lg px-3.5 py-2 border border-gray-200
-           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-           placeholder-gray-300 transition;
+    @apply w-full bg-white text-gray-900 text-sm rounded-xl px-3.5 py-2.5 border border-gray-200
+           focus:outline-none focus:ring-2 focus:ring-[#013FFC] focus:border-transparent
+           placeholder-gray-400 transition;
   }
 }
+

@@ -13,8 +13,8 @@ interface ChartWrapperProps {
 
 export default function ChartWrapper({ title, children, height = 320 }: ChartWrapperProps) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mt-6">
-      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+    <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6 mt-6">
+      <h3 className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-4">
         {title}
       </h3>
       <ResponsiveContainer width="100%" height={height}>

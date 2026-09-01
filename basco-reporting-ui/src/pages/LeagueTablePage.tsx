@@ -31,33 +31,33 @@ function fmtUSD(val: number): string {
 }
 
 function bascoBarColor(score: number): string {
-  if (score > 90) return "#16a34a";
-  if (score >= 75) return "#f59e0b";
-  return "#ef4444";
+  if (score > 90) return "#10B981";
+  if (score >= 75) return "#F59E0B";
+  return "#EF4444";
 }
 
 function regionPillClass(region: string): string {
   switch (region) {
-    case "APJ":    return "bg-blue-100 text-blue-700";
-    case "EMEA":   return "bg-purple-100 text-purple-700";
-    case "LATAM":  return "bg-green-100 text-green-700";
-    case "CANADA": return "bg-amber-100 text-amber-700";
-    default:       return "bg-gray-100 text-gray-600";
+    case "APJ":    return "bg-[#013FFC]/10 text-[#013FFC]";
+    case "EMEA":   return "bg-[#0EA5E9]/10 text-[#0EA5E9]";
+    case "LATAM":  return "bg-[#64748B]/10 text-[#64748B]";
+    case "CANADA": return "bg-[#013FFC]/10 text-[#013FFC]";
+    default:       return "bg-[#64748B]/10 text-[#64748B]";
   }
 }
 
 function TrendIcon({ trend }: { trend: RetailerRow["trend"] }) {
   if (trend === "UP")
-    return <span style={{ color: "#22c55e", fontSize: 16, fontWeight: 700 }}>↑</span>;
+    return <span style={{ color: "#10B981", fontSize: 16, fontWeight: 700 }}>↑</span>;
   if (trend === "DOWN")
-    return <span style={{ color: "#ef4444", fontSize: 16, fontWeight: 700 }}>↓</span>;
+    return <span style={{ color: "#EF4444", fontSize: 16, fontWeight: 700 }}>↓</span>;
   if (trend === "FLAT")
-    return <span style={{ color: "#94a3b8", fontSize: 16, fontWeight: 700 }}>→</span>;
+    return <span style={{ color: "#6B7280", fontSize: 16, fontWeight: 700 }}>→</span>;
   return (
     <span
       style={{
         display: "inline-block",
-        backgroundColor: "#3b82f6",
+        backgroundColor: "#013FFC",
         color: "#fff",
         fontSize: 10,
         fontWeight: 700,
@@ -85,13 +85,13 @@ function KpiChip({
   accentColor?: string;
 }) {
   return (
-    <div className="flex flex-col justify-between bg-white/95 rounded-2xl border border-slate-200/90 p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all min-w-[170px] flex-1">
-      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+    <div className="flex flex-col justify-between bg-white/95 rounded-2xl border border-[#E5E7EB] p-4 shadow-sm hover:shadow-md hover:border-[#013FFC]/30 transition-all min-w-[170px] flex-1">
+      <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
         {label}
       </span>
       <span
         className="text-2xl font-black mt-1 tracking-tight"
-        style={{ color: accentColor ?? "#071739" }}
+        style={{ color: accentColor ?? "#111827" }}
       >
         {value}
       </span>
@@ -113,7 +113,7 @@ function SortIndicator({
   if (col !== active)
     return <span style={{ marginLeft: 4, opacity: 0.35, fontSize: 10 }}>⇅</span>;
   return (
-    <span style={{ marginLeft: 4, color: "#67e8f9", fontSize: 10 }}>
+    <span style={{ marginLeft: 4, color: "#16D3C3", fontSize: 10 }}>
       {dir === "asc" ? "▲" : "▼"}
     </span>
   );
@@ -144,7 +144,7 @@ export default function LeagueTablePage() {
   const [search, setSearch]   = useState("");
   const [region, setRegion]   = useState<RegionFilter>("All");
   const [sortKey, setSortKey] = useState<SortKey>("basco");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
@@ -270,7 +270,7 @@ export default function LeagueTablePage() {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "retailer" || key === "country" || key === "quarter" || key === "region" ? "asc" : "desc");
+      setSortDir(key === "basco" ? "asc" : (key === "retailer" || key === "country" || key === "quarter" || key === "region" ? "asc" : "desc"));
     }
   }
 
@@ -338,17 +338,14 @@ export default function LeagueTablePage() {
         >
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#071739]">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#111827]">
                 Retailer{" "}
-                <span className="bg-gradient-to-r from-[#0062d2] via-[#0284c7] to-[#6366f1] bg-clip-text text-transparent inline-block">
+                <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
                   Performance
                 </span>
               </h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-[#0062d2] border border-blue-200/80 shadow-2xs">
-                Live Data
-              </span>
             </div>
-            <p className="text-xs text-slate-500 font-medium mt-1">
+            <p className="text-xs text-[#6B7280] font-medium mt-1">
               BASCO Score &times; Helpdesk Usage • Filter by Quarter and Country
             </p>
           </div>
@@ -368,11 +365,11 @@ export default function LeagueTablePage() {
                 }}
                 className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs border ${
                   selectedQuarter !== "All Quarters"
-                    ? "bg-[#0062d2] text-white border-[#0062d2]"
-                    : "bg-white text-slate-700 border-slate-300 hover:border-slate-400 hover:bg-slate-50"
+                    ? "bg-[#013FFC] text-white border-[#013FFC]"
+                    : "bg-white text-[#111827] border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-slate-50"
                 }`}
               >
-                <span className="text-slate-400 font-medium">Quarter:</span>
+                <span className="text-[#6B7280] font-medium">Quarter:</span>
                 <span>{selectedQuarter}</span>
                 <span className="text-[10px] transform transition-transform" style={{ transform: isQuarterOpen ? "rotate(180deg)" : "none" }}>
                   ▼
@@ -380,8 +377,8 @@ export default function LeagueTablePage() {
               </button>
 
               {isQuarterOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto">
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-[#E5E7EB] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider border-b border-[#E5E7EB]">
                     Select Quarter
                   </div>
                   {availableQuarters.map((period) => {
@@ -395,12 +392,12 @@ export default function LeagueTablePage() {
                         }}
                         className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-colors ${
                           isSelected
-                            ? "bg-blue-50 text-[#0062d2]"
-                            : "text-slate-700 hover:bg-slate-100/80"
+                            ? "bg-[#013FFC]/10 text-[#013FFC]"
+                            : "text-[#111827] hover:bg-slate-100/80"
                         }`}
                       >
                         <span>{period}</span>
-                        {isSelected && <span className="text-[#0062d2] font-bold">✓</span>}
+                        {isSelected && <span className="text-[#013FFC] font-bold">✓</span>}
                       </button>
                     );
                   })}
@@ -418,11 +415,11 @@ export default function LeagueTablePage() {
                 }}
                 className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs border ${
                   selectedCountry !== "All Countries"
-                    ? "bg-[#0062d2] text-white border-[#0062d2]"
-                    : "bg-white text-slate-700 border-slate-300 hover:border-slate-400 hover:bg-slate-50"
+                    ? "bg-[#013FFC] text-white border-[#013FFC]"
+                    : "bg-white text-[#111827] border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-slate-50"
                 }`}
               >
-                <span className="text-slate-400 font-medium">Country:</span>
+                <span className="text-[#6B7280] font-medium">Country:</span>
                 <span>{selectedCountry}</span>
                 <span className="text-[10px] transform transition-transform" style={{ transform: isCountryOpen ? "rotate(180deg)" : "none" }}>
                   ▼
@@ -430,14 +427,14 @@ export default function LeagueTablePage() {
               </button>
 
               {isCountryOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-72 flex flex-col">
-                  <div className="p-2 border-b border-slate-100">
+                <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-[#E5E7EB] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-72 flex flex-col">
+                  <div className="p-2 border-b border-[#E5E7EB]">
                     <input
                       type="text"
                       value={countrySearch}
                       onChange={(e) => setCountrySearch(e.target.value)}
                       placeholder="Search country..."
-                      className="w-full bg-slate-50 border border-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#013FFC] font-medium text-[#111827]"
                       autoFocus
                     />
                   </div>
@@ -454,12 +451,12 @@ export default function LeagueTablePage() {
                           }}
                           className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-colors ${
                             isSelected
-                              ? "bg-blue-50 text-[#0062d2]"
-                              : "text-slate-700 hover:bg-slate-100/80"
+                              ? "bg-[#013FFC]/10 text-[#013FFC]"
+                              : "text-[#111827] hover:bg-slate-100/80"
                           }`}
                         >
                           <span>{c}</span>
-                          {isSelected && <span className="text-[#0062d2] font-bold">✓</span>}
+                          {isSelected && <span className="text-[#013FFC] font-bold">✓</span>}
                         </button>
                       );
                     })}
@@ -477,7 +474,7 @@ export default function LeagueTablePage() {
                   setSearch("");
                   setRegion("All");
                 }}
-                className="text-xs font-semibold text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-2 rounded-xl transition-colors border border-rose-200/60 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-[#EF4444] hover:text-[#EF4444] bg-[#EF4444]/10 hover:bg-[#EF4444]/20 px-3 py-2 rounded-xl transition-colors border border-[#EF4444]/25 flex items-center gap-1 cursor-pointer"
               >
                 <span>✕</span>
                 <span>Reset</span>
@@ -498,12 +495,12 @@ export default function LeagueTablePage() {
           <KpiChip
             label="Total FMV at Risk"
             value={totalFmvAtRisk}
-            accentColor="#ef4444"
+            accentColor="#EF4444"
           />
           <KpiChip
             label="Helpdesk Queries"
             value={String(totalQueries)}
-            accentColor="#0062d2"
+            accentColor="#013FFC"
           />
         </div>
 
@@ -516,10 +513,10 @@ export default function LeagueTablePage() {
               placeholder="Search retailer or country..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-50/80 border border-slate-200 text-xs rounded-xl pl-9 pr-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium text-slate-800 placeholder:text-slate-400 shadow-2xs"
+              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl pl-9 pr-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC]/20 font-medium text-[#111827] placeholder:text-[#6B7280] shadow-2xs"
             />
             <svg
-              className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -533,7 +530,7 @@ export default function LeagueTablePage() {
           </div>
 
           {/* Region Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70 flex-wrap">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-[#E5E7EB] flex-wrap">
             {(["All", "APJ", "EMEA", "LATAM"] as RegionFilter[]).map((r) => {
               const isActive = region === r;
               return (
@@ -542,8 +539,8 @@ export default function LeagueTablePage() {
                   onClick={() => setRegion(r)}
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     isActive
-                      ? "bg-white text-[#0062d2] shadow-xs border border-blue-100 font-extrabold"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                      ? "bg-white text-[#013FFC] shadow-xs border border-[#013FFC]/20 font-extrabold"
+                      : "text-[#6B7280] hover:text-[#111827] hover:bg-white/60"
                   }`}
                 >
                   {r}
@@ -557,7 +554,7 @@ export default function LeagueTablePage() {
         {/* ── Table Container (Scrollable with Sticky Header) ─────────────── */}
         <div
           style={{
-            border: "1px solid #e2e8f0",
+            border: "1px solid #E5E7EB",
             borderRadius: 12,
             overflow: "hidden",
             boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
@@ -566,7 +563,7 @@ export default function LeagueTablePage() {
           <div style={{ overflowX: "auto", maxHeight: "480px", overflowY: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 850 }}>
               <thead style={{ position: "sticky", top: 0, zIndex: 10, background: "#071739" }}>
-                <tr style={{ background: "linear-gradient(90deg, #071739 0%, #0062d2 100%)" }}>
+                <tr style={{ background: "linear-gradient(90deg, #071739 0%, #013FFC 100%)" }}>
                   <th style={thStyle("center")} onClick={() => handleSort("trend")}>
                     # <SortIndicator col="trend" active={sortKey} dir={sortDir} />
                   </th>
@@ -625,13 +622,13 @@ export default function LeagueTablePage() {
                       style={{
                         padding: "48px",
                         textAlign: "center",
-                        color: "#64748b",
+                        color: "#6B7280",
                         fontSize: 13,
                         fontWeight: 600,
                       }}
                     >
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-6 h-6 border-2 border-[#013FFC] border-t-transparent rounded-full animate-spin" />
                         <span>Loading 2026 Retailer Performance data...</span>
                       </div>
                     </td>
@@ -643,7 +640,7 @@ export default function LeagueTablePage() {
                       style={{
                         padding: "36px",
                         textAlign: "center",
-                        color: "#94a3b8",
+                        color: "#6B7280",
                         fontSize: 13,
                         fontWeight: 500,
                       }}
@@ -658,17 +655,17 @@ export default function LeagueTablePage() {
                       <tr
                         key={`${row.retailer}-${row.country}-${row.quarter || ''}-${idx}`}
                         style={{
-                          background: isEven ? "#ffffff" : "#f8fafc",
-                          borderBottom: "1px solid #f1f5f9",
+                          background: isEven ? "#ffffff" : "#F8FAFC",
+                          borderBottom: "1px solid #E5E7EB",
                           transition: "background 0.12s",
                         }}
                         onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLElement).style.background = "#f1f5f9";
+                          (e.currentTarget as HTMLElement).style.background = "#F1F5F9";
                         }}
                         onMouseLeave={(e) => {
                           (e.currentTarget as HTMLElement).style.background = isEven
                             ? "#ffffff"
-                            : "#f8fafc";
+                            : "#F8FAFC";
                         }}
                       >
                         {/* 1. Rank (#) */}
@@ -678,7 +675,7 @@ export default function LeagueTablePage() {
                             textAlign: "center",
                             fontSize: 12,
                             fontWeight: 700,
-                            color: idx < 3 ? "#0062d2" : "#64748b",
+                            color: idx < 3 ? "#013FFC" : "#6B7280",
                           }}
                         >
                           {idx + 1}
@@ -691,11 +688,11 @@ export default function LeagueTablePage() {
                             textAlign: "center",
                             fontSize: 11,
                             fontWeight: 700,
-                            color: "#0062d2",
+                            color: "#013FFC",
                             whiteSpace: "nowrap",
                           }}
                         >
-                          <span className="inline-block bg-blue-50 text-[#0062d2] px-2 py-0.5 rounded-md font-bold text-[11px] border border-blue-100/80">
+                          <span className="inline-block bg-[#013FFC]/10 text-[#013FFC] px-2 py-0.5 rounded-md font-bold text-[11px] border border-[#013FFC]/20">
                             {row.quarter || row.period || "—"}
                           </span>
                         </td>
@@ -706,7 +703,7 @@ export default function LeagueTablePage() {
                             padding: "11px 14px",
                             fontSize: 13,
                             fontWeight: 700,
-                            color: "#0f172a",
+                            color: "#111827",
                           }}
                         >
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -716,8 +713,8 @@ export default function LeagueTablePage() {
                                 style={{
                                   fontSize: 9,
                                   fontWeight: 800,
-                                  background: "#fef3c7",
-                                  color: "#92400e",
+                                  background: "#FEF3C7",
+                                  color: "#92400E",
                                   padding: "1px 5px",
                                   borderRadius: 4,
                                   letterSpacing: "0.05em",
@@ -766,7 +763,7 @@ export default function LeagueTablePage() {
                               style={{
                                 width: 55,
                                 height: 6,
-                                background: "#e2e8f0",
+                                background: "#E5E7EB",
                                 borderRadius: 999,
                                 overflow: "hidden",
                               }}
@@ -800,7 +797,7 @@ export default function LeagueTablePage() {
                             textAlign: "right",
                             fontSize: 12,
                             fontWeight: 700,
-                            color: row.fmv != null ? "#0284c7" : "#94a3b8",
+                            color: row.fmv != null ? "#0EA5E9" : "#6B7280",
                           }}
                         >
                           {row.fmv != null ? fmtUSD(row.fmv) : "—"}
@@ -813,7 +810,7 @@ export default function LeagueTablePage() {
                             textAlign: "right",
                             fontSize: 12,
                             fontWeight: 700,
-                            color: row.attr_loss != null && row.attr_loss > 0 ? "#e11d48" : "#94a3b8",
+                            color: row.attr_loss != null && row.attr_loss > 0 ? "#EF4444" : "#6B7280",
                           }}
                         >
                           {row.attr_loss != null && row.attr_loss > 0 ? fmtUSD(row.attr_loss) : "$0"}
@@ -852,15 +849,15 @@ export default function LeagueTablePage() {
             justifyContent: "space-between",
             alignItems: "center",
             fontSize: 11,
-            color: "#94a3b8",
+            color: "#6B7280",
             flexWrap: "wrap",
             gap: 8,
           }}
         >
           <span>
-            Showing <strong style={{ color: "#475569" }}>{filtered.length}</strong> of{" "}
-            <strong style={{ color: "#475569" }}>{baseRows.length}</strong> retailers for{" "}
-            <strong style={{ color: "#0062d2" }}>{selectedQuarter}</strong> • {selectedCountry}
+            Showing <strong style={{ color: "#111827" }}>{filtered.length}</strong> of{" "}
+            <strong style={{ color: "#111827" }}>{baseRows.length}</strong> retailers for{" "}
+            <strong style={{ color: "#013FFC" }}>{selectedQuarter}</strong> • {selectedCountry}
           </span>
           <span>FMV & Attribution Loss sourced from Intel POP Analytics Warehouse</span>
         </div>

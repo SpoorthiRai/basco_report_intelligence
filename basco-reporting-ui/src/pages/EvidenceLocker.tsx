@@ -75,16 +75,16 @@ function CreativeBannerVisual({ item, isCompliant }: { item: CreativeItem; isCom
   const oem = item.OEM_Values || (item.OEM_Flag === 'Yes' ? 'OEM Partner' : '');
 
   const bgGradient = isCompliant
-    ? 'linear-gradient(135deg, #071739 0%, #00458f 50%, #0062d2 100%)'
-    : 'linear-gradient(135deg, #1e1124 0%, #3b1828 50%, #1a1e36 100%)';
+    ? 'linear-gradient(135deg, #071739 0%, #013FFC 50%, #16D3C3 100%)'
+    : 'linear-gradient(135deg, #1e1124 0%, #7A35F4 50%, #071739 100%)';
 
   return (
     <div
       style={{ background: bgGradient }}
       className="w-full h-full p-4 flex flex-col justify-between relative overflow-hidden select-none"
     >
-      <div className="absolute -top-12 -right-12 w-32 h-32 bg-cyan-400/20 rounded-full blur-2xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-blue-600/25 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#16D3C3]/20 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-[#013FFC]/25 rounded-full blur-2xl pointer-events-none" />
 
       {/* Top Banner Row: OEM & Intel Core Badge */}
       <div className="flex items-center justify-between z-10">
@@ -97,7 +97,7 @@ function CreativeBannerVisual({ item, isCompliant }: { item: CreativeItem; isCom
 
       {/* Center Showcase Visual */}
       <div className="z-10 my-auto py-2 flex flex-col items-start">
-        <div className="inline-flex items-center gap-1 bg-cyan-500/20 border border-cyan-400/30 px-2 py-0.5 rounded-full text-[9px] font-bold text-cyan-200 uppercase tracking-wider mb-1">
+        <div className="inline-flex items-center gap-1 bg-[#16D3C3]/20 border border-[#16D3C3]/30 px-2 py-0.5 rounded-full text-[9px] font-bold text-[#16D3C3] uppercase tracking-wider mb-1">
           <span>⚡</span>
           <span>{campaign}</span>
         </div>
@@ -113,7 +113,7 @@ function CreativeBannerVisual({ item, isCompliant }: { item: CreativeItem; isCom
       <div className="flex items-end justify-between z-10 pt-2 border-t border-white/10">
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-5 rounded-md bg-white flex items-center justify-center p-0.5 shadow-xs">
-            <span className="text-[#0062d2] font-black text-[9px] tracking-tighter">intel</span>
+            <span className="text-[#013FFC] font-black text-[9px] tracking-tighter">intel</span>
           </div>
           <span className="text-[10px] font-bold text-white tracking-wide">
             Core™ Ultra
@@ -345,7 +345,7 @@ function CreativeModal({
       <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
 
         {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-[#071739] to-[#0062d2] rounded-t-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-[#071739] to-[#013FFC] rounded-t-2xl">
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">
               {item.Subject || item.Campaign_Name || 'Creative Detail'}
@@ -368,12 +368,12 @@ function CreativeModal({
         <div className="flex flex-col md:flex-row gap-0">
 
           {/* Left: full creative image */}
-          <div className="md:w-1/2 shrink-0 bg-slate-100 flex items-center justify-center min-h-[300px] relative">
+          <div className="md:w-1/2 shrink-0 bg-[#F8FAFC] flex items-center justify-center min-h-[300px] relative">
             {!imgError && normUrl ? (
               <>
                 {!imgLoaded && (
                   <div className="absolute inset-0 bg-slate-200 animate-pulse flex items-center justify-center">
-                    <span className="text-xs text-slate-400 font-semibold">Loading Asset...</span>
+                    <span className="text-xs text-[#6B7280] font-semibold">Loading Asset...</span>
                   </div>
                 )}
                 <img
@@ -394,8 +394,8 @@ function CreativeModal({
             <span
               className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide shadow-md ${
                 isCompliant
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-rose-500 text-white'
+                  ? 'bg-[#10B981] text-white'
+                  : 'bg-[#EF4444] text-white'
               }`}
             >
               {isCompliant ? '✅ Compliant' : '🔴 Non-Compliant'}
@@ -406,7 +406,7 @@ function CreativeModal({
           <div className="md:w-1/2 p-6 flex flex-col gap-4">
 
             {/* Mandate scoreboard */}
-            <div className="grid grid-cols-4 gap-2 bg-slate-50 border border-slate-100 rounded-xl p-3 text-center text-[11px] font-bold">
+            <div className="grid grid-cols-4 gap-2 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-center text-[11px] font-bold">
               {[
                 { label: 'Logo',  pass: logoPass },
                 { label: 'Badge', pass: badgePass },
@@ -414,7 +414,7 @@ function CreativeModal({
                 { label: 'CTA',   pass: ctaPass },
               ].map(({ label, pass }) => (
                 <div key={label}>
-                  <span className="text-slate-500 block text-[10px] font-semibold mb-0.5">{label}</span>
+                  <span className="text-[#6B7280] block text-[10px] font-semibold mb-0.5">{label}</span>
                   <span className="text-base">{pass ? '✅' : '❌'}</span>
                 </div>
               ))}
@@ -440,8 +440,8 @@ function CreativeModal({
               ].map(({ dt, dd }) =>
                 dd && dd !== 'None' && dd !== 'Unknown' ? (
                   <div key={dt}>
-                    <dt className="text-slate-400 font-semibold text-[10px] uppercase tracking-wide">{dt}</dt>
-                    <dd className="text-slate-800 font-semibold truncate" title={String(dd)}>{dd}</dd>
+                    <dt className="text-[#6B7280] font-semibold text-[10px] uppercase tracking-wide">{dt}</dt>
+                    <dd className="text-[#111827] font-semibold truncate" title={String(dd)}>{dd}</dd>
                   </div>
                 ) : null
               )}
@@ -450,8 +450,8 @@ function CreativeModal({
             {/* Objective */}
             {item.Objective && item.Objective !== 'None' && item.Objective !== 'Unknown' && (
               <div className="mt-auto">
-                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide mb-1">Objective</p>
-                <p className="text-xs text-slate-600 italic leading-relaxed">"{item.Objective}"</p>
+                <p className="text-[10px] text-[#6B7280] font-semibold uppercase tracking-wide mb-1">Objective</p>
+                <p className="text-xs text-[#111827] italic leading-relaxed">"{item.Objective}"</p>
               </div>
             )}
           </div>
@@ -605,12 +605,12 @@ export default function EvidenceLocker() {
   };
 
   return (
-    <section className="mt-8 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+    <section className="mt-8 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden flex flex-col">
       {/* ── Dark Header Bar ─────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-[#071739] via-[#0b224d] to-[#0062d2] px-6 py-5 text-white flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#071739] via-[#013FFC] to-[#5B8CFF] px-6 py-5 text-white flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#16D3C3]"></span>
             <h2 className="text-base md:text-lg font-bold tracking-tight text-white">
               Retailer Creative Performance
             </h2>
@@ -631,7 +631,7 @@ export default function EvidenceLocker() {
               id="quarter-filter"
               value={quarterFilter}
               onChange={(e) => setQuarterFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-cyan-400 cursor-pointer backdrop-blur-xs transition-colors"
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#16D3C3] cursor-pointer backdrop-blur-xs transition-colors"
             >
               {availableQuarters.map((q) => (
                 <option key={q} value={q} className="bg-slate-900 text-white">
@@ -650,7 +650,7 @@ export default function EvidenceLocker() {
               id="product-filter"
               value={productFilter}
               onChange={(e) => setProductFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-cyan-400 cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#16D3C3] cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
             >
               {availableProducts.map((p) => (
                 <option key={p} value={p} className="bg-slate-900 text-white">
@@ -669,7 +669,7 @@ export default function EvidenceLocker() {
               id="generation-filter"
               value={generationFilter}
               onChange={(e) => setGenerationFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-cyan-400 cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#16D3C3] cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
             >
               {availableGenerations.map((g) => (
                 <option key={g} value={g} className="bg-slate-900 text-white">
@@ -682,43 +682,43 @@ export default function EvidenceLocker() {
       </div>
 
       {/* ── Summary Bar & Action Tabs ───────────────────────────────────── */}
-      <div className="bg-slate-50 border-b border-slate-200/80 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Quarter & Live Counts Badges */}
         <div className="flex items-center gap-2 flex-wrap text-xs">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#0062d2]/10 text-[#0062d2] border border-[#0062d2]/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/20">
             <span>🗓</span>
             <span>{quarterFilter}</span>
           </span>
           {productFilter !== 'All' && productFilter !== 'All Products' && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-amber-50 text-amber-700 border border-amber-200">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20">
               <span>🏷</span>
               <span>{productFilter}</span>
               <button
                 type="button"
                 onClick={() => setProductFilter('All Products')}
-                className="ml-0.5 text-amber-500 hover:text-amber-800 font-extrabold leading-none cursor-pointer"
+                className="ml-0.5 text-[#F59E0B] hover:text-[#F59E0B]/80 font-extrabold leading-none cursor-pointer"
                 title="Clear product filter"
               >✕</button>
             </span>
           )}
           {generationFilter !== 'All' && generationFilter !== 'All Generations / Series' && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#16D3C3]/10 text-[#16D3C3] border border-[#16D3C3]/20">
               <span>⚡</span>
               <span>{generationFilter}</span>
               <button
                 type="button"
                 onClick={() => setGenerationFilter('All Generations / Series')}
-                className="ml-0.5 text-cyan-600 hover:text-cyan-900 font-extrabold leading-none cursor-pointer"
+                className="ml-0.5 text-[#16D3C3] hover:text-[#16D3C3]/80 font-extrabold leading-none cursor-pointer"
                 title="Clear generation filter"
               >✕</button>
             </span>
           )}
-          <span className="text-slate-300">|</span>
-          <span className="font-semibold text-emerald-700">
+          <span className="text-[#CBD5E1]">|</span>
+          <span className="font-semibold text-[#10B981]">
             ✅ Compliant: <strong>{liveCompliant}</strong>
           </span>
-          <span className="text-slate-300">|</span>
-          <span className="font-semibold text-rose-700">
+          <span className="text-[#CBD5E1]">|</span>
+          <span className="font-semibold text-[#EF4444]">
             🔴 Non-Compliant: <strong>{liveNonCompliant}</strong>
           </span>
         </div>
@@ -730,8 +730,8 @@ export default function EvidenceLocker() {
             onClick={() => setActiveTab('Compliant')}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'Compliant'
-                ? 'bg-emerald-600 text-white shadow-xs underline underline-offset-4 decoration-2'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                ? 'bg-[#10B981] text-white shadow-xs underline underline-offset-4 decoration-2'
+                : 'text-[#6B7280] hover:text-[#111827] hover:bg-slate-200/70'
             }`}
           >
             ✅ Compliant ({liveCompliant})
@@ -741,8 +741,8 @@ export default function EvidenceLocker() {
             onClick={() => setActiveTab('Non-Compliant')}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'Non-Compliant'
-                ? 'bg-rose-600 text-white shadow-xs underline underline-offset-4 decoration-2'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                ? 'bg-[#EF4444] text-white shadow-xs underline underline-offset-4 decoration-2'
+                : 'text-[#6B7280] hover:text-[#111827] hover:bg-slate-200/70'
             }`}
           >
             🔴 Non-Compliant ({liveNonCompliant})
@@ -761,7 +761,7 @@ export default function EvidenceLocker() {
               {[1, 2, 3, 4].map((n) => (
                 <div
                   key={n}
-                  className="bg-slate-100 rounded-xl border border-slate-200 flex flex-row overflow-hidden animate-pulse min-h-[140px]"
+                  className="bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] flex flex-row overflow-hidden animate-pulse min-h-[140px]"
                 >
                   <div className="w-52 shrink-0 bg-slate-200" />
                   <div className="flex-1 p-4 flex flex-col gap-3 justify-center">
@@ -782,7 +782,7 @@ export default function EvidenceLocker() {
             </div>
           ) : filteredCreatives.length === 0 ? (
             /* Empty State */
-            <div className="py-16 text-center text-slate-500 text-xs font-semibold bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+            <div className="py-16 text-center text-[#6B7280] text-xs font-semibold bg-[#F8FAFC] rounded-xl border border-dashed border-[#E5E7EB]">
               No creatives found for the selected filter ({activeTab} • Quarter: {quarterFilter} • Product: {productFilter}).
             </div>
           ) : (
@@ -807,15 +807,15 @@ export default function EvidenceLocker() {
                     tabIndex={0}
                     onClick={() => setSelectedCreative(item)}
                     onKeyDown={(e) => e.key === 'Enter' && setSelectedCreative(item)}
-                    className="bg-white rounded-xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-[#0062d2]/40 transition-all overflow-hidden flex flex-row cursor-pointer min-h-[148px] group"
+                    className="bg-white rounded-xl border border-[#E5E7EB] shadow-2xs hover:shadow-md hover:border-[#013FFC]/40 transition-all overflow-hidden flex flex-row cursor-pointer min-h-[148px] group"
                   >
                     {/* ── Left: image / banner (fixed width, fills card height) ── */}
-                    <div className="relative w-52 shrink-0 bg-slate-100 overflow-hidden flex items-center justify-center self-stretch">
+                    <div className="relative w-52 shrink-0 bg-[#F8FAFC] overflow-hidden flex items-center justify-center self-stretch">
 
                       {/* Placeholder while image loads */}
                       {!hasImgError && normUrl && !isLoaded && (
                         <div className="absolute inset-0 bg-slate-200 flex items-center justify-center animate-pulse z-0">
-                          <span className="text-[10px] text-slate-400 font-semibold">Loading…</span>
+                          <span className="text-[10px] text-[#6B7280] font-semibold">Loading…</span>
                         </div>
                       )}
 
@@ -838,8 +838,8 @@ export default function EvidenceLocker() {
                       <span
                         className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide shadow uppercase z-10 ${
                           isCompliant
-                            ? 'bg-emerald-500/90 text-white border border-emerald-300'
-                            : 'bg-rose-500/90 text-white border border-rose-300'
+                            ? 'bg-[#10B981]/90 text-white border border-[#10B981]'
+                            : 'bg-[#EF4444]/90 text-white border border-[#EF4444]'
                         }`}
                       >
                         {isCompliant ? '✅ Compliant' : '🔴 Non-Compliant'}
@@ -859,63 +859,63 @@ export default function EvidenceLocker() {
                       {/* Top row: OEM tag + Country chip */}
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         {item.OEM_Flag === 'Yes' || (item.OEM_Values && item.OEM_Values !== 'None') ? (
-                          <span className="inline-block bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200">
+                          <span className="inline-block bg-[#F8FAFC] text-[#111827] text-[10px] font-bold px-2 py-0.5 rounded border border-[#E5E7EB]">
                             OEM: {item.OEM_Values || 'Present'}
                           </span>
                         ) : (
-                          <span className="inline-block bg-slate-100 text-slate-500 text-[10px] font-semibold px-2 py-0.5 rounded border border-slate-200">
+                          <span className="inline-block bg-[#F8FAFC] text-[#6B7280] text-[10px] font-semibold px-2 py-0.5 rounded border border-[#E5E7EB]">
                             OEM NOT PRESENT
                           </span>
                         )}
                         {item.Country && (
-                          <span className="bg-slate-100 text-slate-600 text-[10px] font-medium px-2 py-0.5 rounded">
+                          <span className="bg-[#F8FAFC] text-[#6B7280] text-[10px] font-medium px-2 py-0.5 rounded">
                             {item.Country}
                           </span>
                         )}
                       </div>
 
                       {/* Subject / Campaign name */}
-                      <p className="text-xs font-semibold text-slate-800 line-clamp-1">
+                      <p className="text-xs font-semibold text-[#111827] line-clamp-1">
                         {item.Subject || item.Campaign_Name || '—'}
                       </p>
 
                       {/* Campaign Type & Content Pills */}
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {item.Campaign_Type && (
-                          <span className="bg-slate-100 text-slate-700 text-[10px] font-semibold px-2 py-0.5 rounded">
+                          <span className="bg-[#F8FAFC] text-[#111827] text-[10px] font-semibold px-2 py-0.5 rounded">
                             {item.Campaign_Type}
                           </span>
                         )}
                         {item.Content && (
-                          <span className="bg-blue-50 text-[#0062d2] text-[10px] font-semibold px-2 py-0.5 rounded border border-blue-100">
+                          <span className="bg-[#013FFC]/10 text-[#013FFC] text-[10px] font-semibold px-2 py-0.5 rounded border border-[#013FFC]/20">
                             {item.Content}
                           </span>
                         )}
                       </div>
 
                       {/* Mandates scoreboard */}
-                      <div className="grid grid-cols-4 gap-1 bg-slate-50 border border-slate-100 rounded-lg px-2 py-1.5 text-center text-[10px] font-bold">
+                      <div className="grid grid-cols-4 gap-1 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2 py-1.5 text-center text-[10px] font-bold">
                         <div title="Intel Logo">
-                          <span className="text-slate-400 block text-[9px]">Logo</span>
+                          <span className="text-[#6B7280] block text-[9px]">Logo</span>
                           <span>{logoPass ? '✅' : '❌'}</span>
                         </div>
                         <div title="Badge / Inside Messaging">
-                          <span className="text-slate-400 block text-[9px]">Badge</span>
+                          <span className="text-[#6B7280] block text-[9px]">Badge</span>
                           <span>{badgePass ? '✅' : '❌'}</span>
                         </div>
                         <div title="AI Messaging">
-                          <span className="text-slate-400 block text-[9px]">AI Msg</span>
+                          <span className="text-[#6B7280] block text-[9px]">AI Msg</span>
                           <span>{aiPass ? '✅' : '❌'}</span>
                         </div>
                         <div title="Call To Action">
-                          <span className="text-slate-400 block text-[9px]">CTA</span>
+                          <span className="text-[#6B7280] block text-[9px]">CTA</span>
                           <span>{ctaPass ? '✅' : '❌'}</span>
                         </div>
                       </div>
 
                       {/* Objective (2-line truncated) */}
                       {item.Objective && item.Objective !== 'None' && item.Objective !== 'Unknown' && (
-                        <p className="text-[11px] text-slate-500 italic line-clamp-2">
+                        <p className="text-[11px] text-[#6B7280] italic line-clamp-2">
                           "{item.Objective}"
                         </p>
                       )}
@@ -928,8 +928,8 @@ export default function EvidenceLocker() {
         </div>
 
         {/* ── Status Legend Panel (Right side) ─────────────────────────── */}
-        <aside className="w-full lg:w-72 shrink-0 bg-slate-50/80 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 self-start">
-          <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 border-b border-slate-200 pb-2">
+        <aside className="w-full lg:w-72 shrink-0 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-4 flex flex-col gap-3 self-start">
+          <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#111827] border-b border-[#E5E7EB] pb-2">
             Status Definitions
           </h3>
 
@@ -937,8 +937,8 @@ export default function EvidenceLocker() {
             <div className="flex items-start gap-2">
               <span className="text-base shrink-0 leading-none">🔴</span>
               <div>
-                <strong className="text-rose-700 block font-bold">Non-Compliance</strong>
-                <p className="text-slate-600 text-[11px] mt-0.5">
+                <strong className="text-[#EF4444] block font-bold">Non-Compliance</strong>
+                <p className="text-[#6B7280] text-[11px] mt-0.5">
                   The creative violates mandatory Intel brand guidelines and requires correction.
                 </p>
               </div>
@@ -947,8 +947,8 @@ export default function EvidenceLocker() {
             <div className="flex items-start gap-2">
               <span className="text-base shrink-0 leading-none">🔶</span>
               <div>
-                <strong className="text-amber-700 block font-bold">At Risk</strong>
-                <p className="text-slate-600 text-[11px] mt-0.5">
+                <strong className="text-[#F59E0B] block font-bold">At Risk</strong>
+                <p className="text-[#6B7280] text-[11px] mt-0.5">
                   The creative has missing mandatory elements and may become non-compliant if not addressed.
                 </p>
               </div>
@@ -957,8 +957,8 @@ export default function EvidenceLocker() {
             <div className="flex items-start gap-2">
               <span className="text-base shrink-0 leading-none">✅</span>
               <div>
-                <strong className="text-emerald-700 block font-bold">Compliant</strong>
-                <p className="text-slate-600 text-[11px] mt-0.5">
+                <strong className="text-[#10B981] block font-bold">Compliant</strong>
+                <p className="text-[#6B7280] text-[11px] mt-0.5">
                   The creative meets all required Intel brand, messaging, and visual mandates.
                 </p>
               </div>
