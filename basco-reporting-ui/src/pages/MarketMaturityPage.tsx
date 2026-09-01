@@ -240,10 +240,6 @@ export default function MarketMaturityPage() {
 
   const availableQuarters = apiResponse?.filter_options?.quarters || ["All Quarters", "Q3 2026", "Q2 2026", "Q1 2026", "Q4 2025", "Q3 2025", "Q2 2025", "Q1 2025"];
 
-  const metrics: { id: MetricType; icon: string; desc: string }[] = [
-    { id: "Total FMV", icon: "💰", desc: "Total Fair Market Value" },
-  ];
-
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

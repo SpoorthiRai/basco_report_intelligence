@@ -127,10 +127,6 @@ export default function OfferCTAPage() {
     };
   }, [quarterFilter, countryFilter, retailerFilter]);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const kpis = data?.kpis || {
     total_offer_creatives: 0,
     conversion_ready: 0,
