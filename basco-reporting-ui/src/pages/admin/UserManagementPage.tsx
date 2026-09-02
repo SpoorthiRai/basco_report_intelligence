@@ -16,9 +16,9 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 // ── Role badge ─────────────────────────────────────────────────────────────
 const roleBadge: Record<string, string> = {
-  ADMIN: 'bg-[#7A35F4]/10 text-[#7A35F4] border border-[#7A35F4]/20',
-  RMM:   'bg-[#16D3C3]/10 text-[#16D3C3] border border-[#16D3C3]/20',
-  RSM:   'bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/20',
+  ADMIN: 'bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/20',
+  RMM:   'bg-[#0D9488]/10 text-[#0F766E] border border-[#0D9488]/20',
+  RSM:   'bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20',
 }
 
 // ── Empty create form state ────────────────────────────────────────────────
@@ -105,11 +105,11 @@ export default function UserManagementPage() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl md:text-2xl font-black text-[#111827] tracking-tight">
               User Management &{" "}
-              <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
+              <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
                 Access Control
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#7A35F4]/10 text-[#7A35F4] border border-[#7A35F4]/20 shadow-2xs">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/20 shadow-2xs">
               Admin Console
             </span>
           </div>
@@ -121,7 +121,7 @@ export default function UserManagementPage() {
         {!showForm && (
           <button
             onClick={() => { setShowForm(true); setSuccess(null) }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#013FFC] to-[#5B8CFF] hover:opacity-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#1E429F] to-[#4A6FA5] hover:opacity-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-900/20 transition-all cursor-pointer self-start sm:self-auto"
           >
             <span>+ Add New User</span>
           </button>
@@ -135,7 +135,7 @@ export default function UserManagementPage() {
             <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Total Accounts</span>
             <span className="text-2xl font-black text-[#111827] mt-0.5 block">{users.length}</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center font-bold text-base shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-[#1E429F]/10 text-[#1E429F] flex items-center justify-center font-bold text-base shadow-2xs">
             👥
           </div>
         </div>
@@ -185,7 +185,7 @@ export default function UserManagementPage() {
                 type="email" required
                 value={form.email}
                 onChange={(e) => handleField('email', e.target.value)}
-                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F] font-medium"
                 placeholder="user@company.com"
               />
             </div>
@@ -197,7 +197,7 @@ export default function UserManagementPage() {
                 type="text" required
                 value={form.full_name}
                 onChange={(e) => handleField('full_name', e.target.value)}
-                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F] font-medium"
                 placeholder="Jane Smith"
               />
             </div>
@@ -209,7 +209,7 @@ export default function UserManagementPage() {
                 type="password" required
                 value={form.password}
                 onChange={(e) => handleField('password', e.target.value)}
-                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F] font-medium"
                 placeholder="••••••••"
               />
             </div>
@@ -220,7 +220,7 @@ export default function UserManagementPage() {
               <select
                 value={form.role}
                 onChange={(e) => handleField('role', e.target.value as CreateUserPayload['role'])}
-                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-bold text-[#111827]"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F] font-bold text-[#111827]"
               >
                 <option value="RSM">RSM (Retail Sales Manager)</option>
                 <option value="RMM">RMM (Regional Marketing Manager)</option>
@@ -238,7 +238,7 @@ export default function UserManagementPage() {
                   type="text"
                   value={form.retailer_ids}
                   onChange={(e) => handleField('retailer_ids', e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F] font-medium"
                   placeholder="e.g. Best Buy, Currys, MediaMarkt"
                 />
               </div>
@@ -252,7 +252,7 @@ export default function UserManagementPage() {
                   type="text"
                   value={form.country}
                   onChange={(e) => handleField('country', e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC] font-medium"
+                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F] font-medium"
                   placeholder="e.g. United States, Germany, India"
                 />
               </div>
@@ -270,7 +270,7 @@ export default function UserManagementPage() {
               <button
                 type="submit"
                 disabled={createMutation.isPending}
-                className="px-5 py-2.5 bg-gradient-to-r from-[#013FFC] to-[#5B8CFF] hover:opacity-95 disabled:opacity-60 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-gradient-to-r from-[#1E429F] to-[#4A6FA5] hover:opacity-95 disabled:opacity-60 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
               >
                 {createMutation.isPending ? 'Provisioning…' : 'Create User Account'}
               </button>
@@ -319,11 +319,11 @@ export default function UserManagementPage() {
                 </tr>
               ) : (
                 users.map((u: User) => (
-                  <tr key={u.id} className="hover:bg-[#013FFC]/5 transition-colors">
+                  <tr key={u.id} className="hover:bg-[#1E429F]/5 transition-colors">
                     {/* User Profile */}
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#013FFC] to-[#16D3C3] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#1E429F] to-[#0D9488] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
                           {u.full_name?.charAt(0) || u.email.charAt(0).toUpperCase()}
                         </div>
                         <span className="font-bold text-[#111827]">{u.full_name || 'Anonymous'}</span>

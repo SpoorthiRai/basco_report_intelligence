@@ -76,15 +76,15 @@ interface CTACampaignResponse {
 }
 
 const BUCKET_COLORS: Record<string, string> = {
-  'Buy/Shop CTA': '#013FFC',
-  'Urgency CTA': '#013FFC',
+  'Buy/Shop CTA': '#1E429F',
+  'Urgency CTA': '#1E429F',
   'Learn CTA': '#0EA5E9',
   'No CTA': '#64748B',
   'Other CTA': '#CBD5E1',
 };
 
 const TREEMAP_PALETTE = [
-  '#013FFC', // Rank 1 - Hero Cobalt
+  '#1E429F', // Rank 1 - Hero Sapphire
   '#1D4ED8', // Rank 2 - Royal Blue
   '#0284C7', // Rank 3 - Sky Teal
   '#0EA5E9', // Rank 4 - Cyan
@@ -316,11 +316,11 @@ export default function CTACampaignPage() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
               Campaign{" "}
-              <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
+              <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
                 Effectiveness
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#7A35F4]/10 text-[#7A35F4] border border-[#7A35F4]/20 shadow-2xs">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/20 shadow-2xs">
               Strategic Alignment
             </span>
           </div>
@@ -364,7 +364,7 @@ export default function CTACampaignPage() {
           </div>
 
           {/* Retailer dropdown */}
-          <div className="flex items-center gap-1.5 bg-[#013FFC] text-white px-3 py-1.5 rounded-lg shadow-sm">
+          <div className="flex items-center gap-1.5 bg-[#1E429F] text-white px-3 py-1.5 rounded-lg shadow-sm">
             <span className="text-xs font-semibold text-white/90">Retailer:</span>
             <select
               value={retailerFilter}
@@ -404,11 +404,11 @@ export default function CTACampaignPage() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
               Strategically Aligned
             </span>
-            <span className="w-2 h-2 rounded-full bg-[#013FFC]" />
+            <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
           </div>
           <div className="mt-2">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black tracking-tight text-[#013FFC]">
+              <span className="text-2xl font-black tracking-tight text-[#1E429F]">
                 {alignedPct}%
               </span>
               <span className="text-[10px] text-[#6B7280] font-semibold">
@@ -632,13 +632,13 @@ export default function CTACampaignPage() {
                 {treemapData.slice(0, 10).map((item, idx) => (
                   <div
                     key={item.phrase}
-                    className="bg-[#F8FAFC] border border-[#E5E7EB] hover:border-[#013FFC]/40 rounded-lg px-2 py-0.5 flex items-center gap-1.5 text-xs transition-colors"
+                    className="bg-[#F8FAFC] border border-[#E5E7EB] hover:border-[#1E429F]/40 rounded-lg px-2 py-0.5 flex items-center gap-1.5 text-xs transition-colors"
                   >
-                    <span className="text-[10px] font-extrabold text-[#013FFC]">#{idx + 1}</span>
+                    <span className="text-[10px] font-extrabold text-[#1E429F]">#{idx + 1}</span>
                     <span className="font-semibold text-[#111827] max-w-[120px] truncate text-[11px]" title={item.phrase}>
                       {item.phrase}
                     </span>
-                    <span className="bg-[#013FFC]/10 text-[#013FFC] text-[10px] font-extrabold px-1.5 py-0.2 rounded-md">
+                    <span className="bg-[#1E429F]/10 text-[#1E429F] text-[10px] font-extrabold px-1.5 py-0.2 rounded-md">
                       {item.size}
                     </span>
                   </div>
@@ -697,7 +697,7 @@ export default function CTACampaignPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedCreative(row)}
-                          className="group relative w-20 h-14 bg-slate-900 rounded-md overflow-hidden flex items-center justify-center border border-[#E5E7EB] shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#013FFC]"
+                          className="group relative w-20 h-14 bg-slate-900 rounded-md overflow-hidden flex items-center justify-center border border-[#E5E7EB] shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E429F]"
                           title="Click to view bigger creative"
                         >
                           <img
@@ -728,7 +728,7 @@ export default function CTACampaignPage() {
                         <span
                           className="px-2 py-0.5 rounded text-[10px] font-bold text-white whitespace-nowrap inline-block"
                           style={{
-                            backgroundColor: BUCKET_COLORS[row.cta_bucket || 'No CTA'] || '#013FFC',
+                            backgroundColor: BUCKET_COLORS[row.cta_bucket || 'No CTA'] || '#1E429F',
                           }}
                         >
                           {row.cta_bucket || 'No CTA'}

@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-blue: #013FFC;
-  --color-secondary-teal: #16D3C3;
-  --color-ai-purple: #7A35F4;
-  --color-contrast-orange: #FF6B35;
-  --color-hero-blue: #5B8CFF;
+  --color-primary-blue: #1E429F;
+  --color-secondary-teal: #0D9488;
+  --color-ai-purple: #6366F1;
+  --color-contrast-orange: #EA580C;
+  --color-hero-blue: #4A6FA5;
 
   --color-bg-base: #F8FAFC;
   --color-surface-card: #FFFFFF;
@@ -21,11 +21,11 @@
 }
 
 :root {
-  --primary-blue: #013FFC;
-  --secondary-teal: #16D3C3;
-  --ai-purple: #7A35F4;
-  --contrast-orange: #FF6B35;
-  --hero-blue: #5B8CFF;
+  --primary-blue: #1E429F;
+  --secondary-teal: #0D9488;
+  --ai-purple: #6366F1;
+  --contrast-orange: #EA580C;
+  --hero-blue: #4A6FA5;
 
   --bg-base: #F8FAFC;
   --surface-card: #FFFFFF;
@@ -39,9 +39,9 @@
   --semantic-error: #EF4444;
   --semantic-info: #0EA5E9;
 
-  --grad-brand: linear-gradient(135deg, #013FFC 0%, #16D3C3 100%);
-  --grad-ai: linear-gradient(135deg, #16D3C3 0%, #7A35F4 100%);
-  --grad-hero: linear-gradient(135deg, #013FFC 0%, #5B8CFF 100%);
+  --grad-brand: linear-gradient(135deg, #1E429F 0%, #0D9488 100%);
+  --grad-ai: linear-gradient(135deg, #0D9488 0%, #6366F1 100%);
+  --grad-hero: linear-gradient(135deg, #1E429F 0%, #4A6FA5 100%);
 }
 
 body {
@@ -77,8 +77,7 @@ body {
 
   .input {
     @apply w-full bg-white text-gray-900 text-sm rounded-xl px-3.5 py-2.5 border border-gray-200
-           focus:outline-none focus:ring-2 focus:ring-[#013FFC] focus:border-transparent
+           focus:outline-none focus:ring-2 focus:ring-[#1E429F] focus:border-transparent
            placeholder-gray-400 transition;
   }
 }
-

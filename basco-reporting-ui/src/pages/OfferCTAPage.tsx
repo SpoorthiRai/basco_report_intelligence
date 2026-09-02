@@ -67,9 +67,9 @@ interface OfferCTAResponse {
 function getHeatmapBgAndText(pct: number): { bg: string; text: string } {
   if (!pct || pct === 0) return { bg: 'transparent', text: 'text-transparent' };
   if (pct <= 15) return { bg: 'rgba(14, 165, 233, 0.15)', text: 'text-[#0EA5E9] font-bold' };
-  if (pct <= 30) return { bg: 'rgba(14, 165, 233, 0.35)', text: 'text-[#013FFC] font-bold' };
-  if (pct <= 50) return { bg: 'rgba(1, 63, 252, 0.70)', text: 'text-white font-black' };
-  return { bg: '#013FFC', text: 'text-white font-black' };
+  if (pct <= 30) return { bg: 'rgba(14, 165, 233, 0.35)', text: 'text-[#1E429F] font-bold' };
+  if (pct <= 50) return { bg: 'rgba(30, 66, 159, 0.70)', text: 'text-white font-black' };
+  return { bg: '#1E429F', text: 'text-white font-black' };
 }
 
 export default function OfferCTAPage() {
@@ -166,9 +166,9 @@ export default function OfferCTAPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
-              Promotional{" "}
-              <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
-                Offer Effectiveness
+              Promotional Offer{" "}
+              <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
+                Effectiveness
               </span>
             </h1>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 shadow-2xs">
@@ -307,11 +307,11 @@ export default function OfferCTAPage() {
                         boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                       }}
                     />
-                    {/* Bottom Stack: Has CTA (Blue #013FFC) */}
+                    {/* Bottom Stack: Has CTA (Blue #1E429F) */}
                     <Bar
                       dataKey="has_cta"
                       stackId="offerStack"
-                      fill="#013FFC"
+                      fill="#1E429F"
                       radius={[0, 0, 4, 4]}
                       barSize={36}
                     >
@@ -335,7 +335,7 @@ export default function OfferCTAPage() {
                       <LabelList
                         dataKey="cta_pct"
                         position="top"
-                        fill="#013FFC"
+                        fill="#1E429F"
                         fontSize={11}
                         fontWeight="900"
                         formatter={(v: any) => `${v}%`}
@@ -369,7 +369,7 @@ export default function OfferCTAPage() {
                           b.cta_pct >= 60
                             ? 'bg-[#10B981]/10 text-[#10B981]'
                             : b.cta_pct >= 35
-                            ? 'bg-[#013FFC]/10 text-[#013FFC]'
+                            ? 'bg-[#1E429F]/10 text-[#1E429F]'
                             : 'bg-[#EF4444]/10 text-[#EF4444]'
                         }`}
                       >
@@ -470,7 +470,7 @@ export default function OfferCTAPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedCreative(row)}
-                          className="group relative w-20 h-14 bg-slate-900 rounded-md overflow-hidden flex items-center justify-center border border-[#E5E7EB] shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#013FFC]"
+                          className="group relative w-20 h-14 bg-slate-900 rounded-md overflow-hidden flex items-center justify-center border border-[#E5E7EB] shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E429F]"
                           title="Click to view bigger creative"
                         >
                           <img
@@ -557,7 +557,7 @@ export default function OfferCTAPage() {
                   </thead>
                   <tbody className="divide-y divide-[#E5E7EB]">
                     {productHeatmap.map((row) => (
-                      <tr key={row.product} className="hover:bg-[#013FFC]/5 transition-colors">
+                      <tr key={row.product} className="hover:bg-[#1E429F]/5 transition-colors">
                         <td className="py-2 px-3 font-bold text-[#111827] border-r border-[#E5E7EB] whitespace-nowrap">
                           {row.product}
                         </td>
@@ -594,11 +594,11 @@ export default function OfferCTAPage() {
               <span className="text-[#6B7280]">16-30%</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: 'rgba(1, 63, 252, 0.70)' }} />
+              <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: 'rgba(26, 86, 219, 0.70)' }} />
               <span className="text-[#6B7280]">31-50%</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: '#013FFC' }} />
+              <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: '#1E429F' }} />
               <span className="text-[#6B7280]">51%+</span>
             </div>
           </div>
@@ -669,7 +669,7 @@ export default function OfferCTAPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedCreative(row)}
-                          className="group relative w-20 h-14 bg-slate-900 rounded-md overflow-hidden flex items-center justify-center border border-[#E5E7EB] shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#013FFC]"
+                          className="group relative w-20 h-14 bg-slate-900 rounded-md overflow-hidden flex items-center justify-center border border-[#E5E7EB] shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E429F]"
                           title="Click to view bigger creative"
                         >
                           <img

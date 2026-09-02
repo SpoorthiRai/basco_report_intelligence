@@ -38,10 +38,10 @@ function bascoBarColor(score: number): string {
 
 function regionPillClass(region: string): string {
   switch (region) {
-    case "APJ":    return "bg-[#013FFC]/10 text-[#013FFC]";
+    case "APJ":    return "bg-[#1E429F]/10 text-[#1E429F]";
     case "EMEA":   return "bg-[#0EA5E9]/10 text-[#0EA5E9]";
     case "LATAM":  return "bg-[#64748B]/10 text-[#64748B]";
-    case "CANADA": return "bg-[#013FFC]/10 text-[#013FFC]";
+    case "CANADA": return "bg-[#1E429F]/10 text-[#1E429F]";
     default:       return "bg-[#64748B]/10 text-[#64748B]";
   }
 }
@@ -57,7 +57,7 @@ function TrendIcon({ trend }: { trend: RetailerRow["trend"] }) {
     <span
       style={{
         display: "inline-block",
-        backgroundColor: "#013FFC",
+        backgroundColor: "#1E429F",
         color: "#fff",
         fontSize: 10,
         fontWeight: 700,
@@ -85,7 +85,7 @@ function KpiChip({
   accentColor?: string;
 }) {
   return (
-    <div className="flex flex-col justify-between bg-white/95 rounded-2xl border border-[#E5E7EB] p-4 shadow-sm hover:shadow-md hover:border-[#013FFC]/30 transition-all min-w-[170px] flex-1">
+    <div className="flex flex-col justify-between bg-white/95 rounded-2xl border border-[#E5E7EB] p-4 shadow-sm hover:shadow-md hover:border-[#1E429F]/30 transition-all min-w-[170px] flex-1">
       <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
         {label}
       </span>
@@ -113,7 +113,7 @@ function SortIndicator({
   if (col !== active)
     return <span style={{ marginLeft: 4, opacity: 0.35, fontSize: 10 }}>⇅</span>;
   return (
-    <span style={{ marginLeft: 4, color: "#16D3C3", fontSize: 10 }}>
+    <span style={{ marginLeft: 4, color: "#0D9488", fontSize: 10 }}>
       {dir === "asc" ? "▲" : "▼"}
     </span>
   );
@@ -340,7 +340,7 @@ export default function LeagueTablePage() {
             <div className="flex items-center gap-2.5">
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#111827]">
                 Retailer{" "}
-                <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
+                <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
                   Performance
                 </span>
               </h1>
@@ -365,7 +365,7 @@ export default function LeagueTablePage() {
                 }}
                 className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs border ${
                   selectedQuarter !== "All Quarters"
-                    ? "bg-[#013FFC] text-white border-[#013FFC]"
+                    ? "bg-[#1E429F] text-white border-[#1E429F]"
                     : "bg-white text-[#111827] border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-slate-50"
                 }`}
               >
@@ -392,12 +392,12 @@ export default function LeagueTablePage() {
                         }}
                         className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-colors ${
                           isSelected
-                            ? "bg-[#013FFC]/10 text-[#013FFC]"
+                            ? "bg-[#1E429F]/10 text-[#1E429F]"
                             : "text-[#111827] hover:bg-slate-100/80"
                         }`}
                       >
                         <span>{period}</span>
-                        {isSelected && <span className="text-[#013FFC] font-bold">✓</span>}
+                        {isSelected && <span className="text-[#1E429F] font-bold">✓</span>}
                       </button>
                     );
                   })}
@@ -415,7 +415,7 @@ export default function LeagueTablePage() {
                 }}
                 className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs border ${
                   selectedCountry !== "All Countries"
-                    ? "bg-[#013FFC] text-white border-[#013FFC]"
+                    ? "bg-[#1E429F] text-white border-[#1E429F]"
                     : "bg-white text-[#111827] border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-slate-50"
                 }`}
               >
@@ -434,7 +434,7 @@ export default function LeagueTablePage() {
                       value={countrySearch}
                       onChange={(e) => setCountrySearch(e.target.value)}
                       placeholder="Search country..."
-                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#013FFC] font-medium text-[#111827]"
+                      className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1E429F] font-medium text-[#111827]"
                       autoFocus
                     />
                   </div>
@@ -451,12 +451,12 @@ export default function LeagueTablePage() {
                           }}
                           className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-colors ${
                             isSelected
-                              ? "bg-[#013FFC]/10 text-[#013FFC]"
+                              ? "bg-[#1E429F]/10 text-[#1E429F]"
                               : "text-[#111827] hover:bg-slate-100/80"
                           }`}
                         >
                           <span>{c}</span>
-                          {isSelected && <span className="text-[#013FFC] font-bold">✓</span>}
+                          {isSelected && <span className="text-[#1E429F] font-bold">✓</span>}
                         </button>
                       );
                     })}
@@ -500,7 +500,7 @@ export default function LeagueTablePage() {
           <KpiChip
             label="Helpdesk Queries"
             value={String(totalQueries)}
-            accentColor="#013FFC"
+            accentColor="#1E429F"
           />
         </div>
 
@@ -513,7 +513,7 @@ export default function LeagueTablePage() {
               placeholder="Search retailer or country..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl pl-9 pr-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#013FFC]/20 font-medium text-[#111827] placeholder:text-[#6B7280] shadow-2xs"
+              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl pl-9 pr-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F]/20 font-medium text-[#111827] placeholder:text-[#6B7280] shadow-2xs"
             />
             <svg
               className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -539,7 +539,7 @@ export default function LeagueTablePage() {
                   onClick={() => setRegion(r)}
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     isActive
-                      ? "bg-white text-[#013FFC] shadow-xs border border-[#013FFC]/20 font-extrabold"
+                      ? "bg-white text-[#1E429F] shadow-xs border border-[#1E429F]/20 font-extrabold"
                       : "text-[#6B7280] hover:text-[#111827] hover:bg-white/60"
                   }`}
                 >
@@ -563,7 +563,7 @@ export default function LeagueTablePage() {
           <div style={{ overflowX: "auto", maxHeight: "480px", overflowY: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 850 }}>
               <thead style={{ position: "sticky", top: 0, zIndex: 10, background: "#071739" }}>
-                <tr style={{ background: "linear-gradient(90deg, #071739 0%, #013FFC 100%)" }}>
+                <tr style={{ background: "linear-gradient(90deg, #0B1325 0%, #1C3668 100%)" }}>
                   <th style={thStyle("center")} onClick={() => handleSort("trend")}>
                     # <SortIndicator col="trend" active={sortKey} dir={sortDir} />
                   </th>
@@ -628,7 +628,7 @@ export default function LeagueTablePage() {
                       }}
                     >
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <div className="w-6 h-6 border-2 border-[#013FFC] border-t-transparent rounded-full animate-spin" />
+                        <div className="w-6 h-6 border-2 border-[#1E429F] border-t-transparent rounded-full animate-spin" />
                         <span>Loading 2026 Retailer Performance data...</span>
                       </div>
                     </td>
@@ -675,7 +675,7 @@ export default function LeagueTablePage() {
                             textAlign: "center",
                             fontSize: 12,
                             fontWeight: 700,
-                            color: idx < 3 ? "#013FFC" : "#6B7280",
+                            color: idx < 3 ? "#1E429F" : "#6B7280",
                           }}
                         >
                           {idx + 1}
@@ -688,11 +688,11 @@ export default function LeagueTablePage() {
                             textAlign: "center",
                             fontSize: 11,
                             fontWeight: 700,
-                            color: "#013FFC",
+                            color: "#1E429F",
                             whiteSpace: "nowrap",
                           }}
                         >
-                          <span className="inline-block bg-[#013FFC]/10 text-[#013FFC] px-2 py-0.5 rounded-md font-bold text-[11px] border border-[#013FFC]/20">
+                          <span className="inline-block bg-[#1E429F]/10 text-[#1E429F] px-2 py-0.5 rounded-md font-bold text-[11px] border border-[#1E429F]/20">
                             {row.quarter || row.period || "—"}
                           </span>
                         </td>
@@ -797,7 +797,7 @@ export default function LeagueTablePage() {
                             textAlign: "right",
                             fontSize: 12,
                             fontWeight: 700,
-                            color: row.fmv != null ? "#0EA5E9" : "#6B7280",
+                            color: row.fmv != null ? "#1E429F" : "#6B7280",
                           }}
                         >
                           {row.fmv != null ? fmtUSD(row.fmv) : "—"}
@@ -857,7 +857,7 @@ export default function LeagueTablePage() {
           <span>
             Showing <strong style={{ color: "#111827" }}>{filtered.length}</strong> of{" "}
             <strong style={{ color: "#111827" }}>{baseRows.length}</strong> retailers for{" "}
-            <strong style={{ color: "#013FFC" }}>{selectedQuarter}</strong> • {selectedCountry}
+            <strong style={{ color: "#1E429F" }}>{selectedQuarter}</strong> • {selectedCountry}
           </span>
           <span>FMV & Attribution Loss sourced from Intel POP Analytics Warehouse</span>
         </div>

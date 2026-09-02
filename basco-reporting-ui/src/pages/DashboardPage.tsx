@@ -132,11 +132,11 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* ── Top Executive Welcome & Status Banner ──────────────────── */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-[#071739] via-[#013FFC] to-[#5B8CFF] rounded-3xl p-6 sm:p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#0B1325] via-[#122449] to-[#1C3668] rounded-3xl p-6 sm:p-8 text-white shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <div className="flex items-center gap-2.5 mb-2">
-              <span className="bg-white/15 text-[#16D3C3] border border-[#16D3C3]/40 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
+              <span className="bg-white/15 text-[#0D9488] border border-[#0D9488]/40 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
                 Q3 2026 Insights
               </span>
             </div>
@@ -195,10 +195,10 @@ export default function DashboardPage() {
           {/* Card 2: Monitored Retailers */}
           <Link
             to="/league-table"
-            className="group bg-white hover:bg-blue-50/50 rounded-2xl border border-[#E5E7EB] shadow-sm p-4.5 transition-all hover:shadow-md hover:border-[#013FFC]/40 flex flex-col justify-between"
+            className="group bg-white hover:bg-blue-50/50 rounded-2xl border border-[#E5E7EB] shadow-sm p-4.5 transition-all hover:shadow-md hover:border-[#1E429F]/40 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center group-hover:bg-[#013FFC] group-hover:text-white transition-colors shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-[#1E429F]/10 text-[#1E429F] flex items-center justify-center group-hover:bg-[#1E429F] group-hover:text-white transition-colors shadow-2xs">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                   <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
@@ -207,7 +207,7 @@ export default function DashboardPage() {
                   <path d="M6 4h12v5c0 3.31-2.69 6-6 6s-6-2.69-6-6V4Z" />
                 </svg>
               </div>
-              <span className="text-[10px] font-bold text-[#013FFC] bg-[#013FFC]/10 px-2 py-0.5 rounded-full group-hover:bg-[#013FFC]/20 transition-colors">
+              <span className="text-[10px] font-bold text-[#1E429F] bg-[#1E429F]/10 px-2 py-0.5 rounded-full group-hover:bg-[#1E429F]/20 transition-colors">
                 View →
               </span>
             </div>
@@ -259,21 +259,21 @@ export default function DashboardPage() {
           {/* Card 4: CTA Aligned */}
           <Link
             to="/cta-campaign"
-            className="group bg-white hover:bg-blue-50/50 rounded-2xl border border-[#E5E7EB] shadow-sm p-4.5 transition-all hover:shadow-md hover:border-[#013FFC]/40 flex flex-col justify-between"
+            className="group bg-white hover:bg-blue-50/50 rounded-2xl border border-[#E5E7EB] shadow-sm p-4.5 transition-all hover:shadow-md hover:border-[#1E429F]/40 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center group-hover:bg-[#013FFC] group-hover:text-white transition-colors shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-[#1E429F]/10 text-[#1E429F] flex items-center justify-center group-hover:bg-[#1E429F] group-hover:text-white transition-colors shadow-2xs">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m3 11 18-5v12L3 14v-3z" />
                   <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
                 </svg>
               </div>
-              <span className="text-[10px] font-bold text-[#013FFC] bg-[#013FFC]/10 px-2 py-0.5 rounded-full group-hover:bg-[#013FFC]/20 transition-colors">
+              <span className="text-[10px] font-bold text-[#1E429F] bg-[#1E429F]/10 px-2 py-0.5 rounded-full group-hover:bg-[#1E429F]/20 transition-colors">
                 View →
               </span>
             </div>
             <div className="mt-3">
-              <span className="text-2xl font-black text-[#013FFC] tracking-tight block">
+              <span className="text-2xl font-black text-[#1E429F] tracking-tight block">
                 {summaryData.ctaCampaign?.aligned_count || 814}
               </span>
               <span className="text-xs font-bold text-[#111827] block mt-0.5">
@@ -422,7 +422,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex">
                   <div
-                    className="bg-gradient-to-r from-[#F59E0B] via-[#10B981] to-[#16D3C3] h-full rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-[#F59E0B] via-[#10B981] to-[#0D9488] h-full rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(100, Math.max(0, summaryData.marketMaturity?.avg_score ?? 87))}%` }}
                   />
                 </div>
@@ -446,7 +446,7 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg bg-[#1E429F]/10 text-[#1E429F] flex items-center justify-center shadow-2xs">
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                       <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
@@ -462,15 +462,15 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <span className="bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/20 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20 text-[11px] font-bold px-2 py-0.5 rounded-full">
                   Rankings Active
                 </span>
               </div>
 
               {/* Compact Metric Strip */}
               <div className="grid grid-cols-3 gap-2 my-3">
-                <div className="bg-[#013FFC]/10 border border-[#013FFC]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#013FFC] font-semibold block uppercase tracking-wider">Retailers</span>
+                <div className="bg-[#1E429F]/10 border border-[#1E429F]/20 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Retailers</span>
                   <span className="text-base font-black text-[#111827] block mt-0.5">
                     {totalRetailers}
                   </span>
@@ -495,7 +495,7 @@ export default function DashboardPage() {
               <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#013FFC]" />
+                    <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
                     Compliance Tier Distribution
                   </span>
                   <span className="text-[#6B7280] font-bold">{totalRetailers} Accounts</span>
@@ -512,7 +512,7 @@ export default function DashboardPage() {
               <span className="text-[10px] text-[#6B7280] font-medium">Role-based row filtering</span>
               <Link
                 to="/league-table"
-                className="bg-[#013FFC] hover:bg-[#0036D9] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
+                className="bg-[#1E429F] hover:bg-[#162E6E] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
                 <span>Open Retailer Performance</span>
                 <span>→</span>
@@ -525,7 +525,7 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#16D3C3]/15 text-[#0d7d74] flex items-center justify-center shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg bg-[#0D9488]/15 text-[#0F766E] flex items-center justify-center shadow-2xs">
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
                       <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
@@ -554,8 +554,8 @@ export default function DashboardPage() {
                     {summaryData.visualAdoption?.total_creatives ?? 0}
                   </span>
                 </div>
-                <div className="bg-[#013FFC]/10 border border-[#013FFC]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#013FFC] font-semibold block uppercase tracking-wider">Intel Layouts</span>
+                <div className="bg-[#1E429F]/10 border border-[#1E429F]/20 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Intel Layouts</span>
                   <span className="text-base font-black text-[#111827] block mt-0.5">
                     {summaryData.visualAdoption?.used_intel ?? 0}
                   </span>
@@ -572,14 +572,14 @@ export default function DashboardPage() {
               <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#013FFC]" />
+                    <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
                     Intel & Custom vs Non-Intel
                   </span>
-                  <span className="text-[#013FFC] font-black">{summaryData.visualAdoption?.adoption_pct ?? 0}% Adopted</span>
+                  <span className="text-[#1E429F] font-black">{summaryData.visualAdoption?.adoption_pct ?? 0}% Adopted</span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
                   <div
-                    className="bg-gradient-to-r from-[#013FFC] to-[#16D3C3] h-full rounded-l-full transition-all duration-500"
+                    className="bg-gradient-to-r from-[#1E429F] to-[#0D9488] h-full rounded-l-full transition-all duration-500"
                     style={{ width: `${Math.min(100, Math.max(0, summaryData.visualAdoption?.adoption_pct ?? 0))}%` }}
                     title="Intel & Custom Layouts"
                   />
@@ -596,7 +596,7 @@ export default function DashboardPage() {
               <span className="text-[10px] text-[#6B7280] font-medium">Retailer-wise breakdown</span>
               <Link
                 to="/visual-adoption"
-                className="bg-[#013FFC] hover:bg-[#0036D9] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
+                className="bg-[#1E429F] hover:bg-[#162E6E] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
                 <span>Open Intel Visual Adoption</span>
                 <span>→</span>
@@ -609,7 +609,7 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#7A35F4]/10 text-[#7A35F4] flex items-center justify-center shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg bg-[#6366F1]/10 text-[#6366F1] flex items-center justify-center shadow-2xs">
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="m3 11 18-5v12L3 14v-3z" />
                       <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
@@ -622,7 +622,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <span className="bg-[#7A35F4]/10 text-[#7A35F4] border border-[#7A35F4]/25 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/25 text-[11px] font-bold px-2 py-0.5 rounded-full">
                   {summaryData.ctaCampaign?.aligned_count ?? 0} Aligned
                 </span>
               </div>
@@ -660,10 +660,10 @@ export default function DashboardPage() {
                   <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
                     <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
                       <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-[#7A35F4]" />
+                        <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
                         CTA Alignment Ratio
                       </span>
-                      <span className="text-[#7A35F4] font-bold">{alignedPct}% Aligned</span>
+                      <span className="text-[#6366F1] font-bold">{alignedPct}% Aligned</span>
                     </div>
                     <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
                       <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${alignedPct}%` }} title="Aligned CTAs" />
@@ -678,7 +678,7 @@ export default function DashboardPage() {
               <span className="text-[10px] text-[#6B7280] font-medium">Misaligned Evidence Locker</span>
               <Link
                 to="/cta-campaign"
-                className="bg-[#7A35F4] hover:bg-[#6825E0] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
+                className="bg-[#6366F1] hover:bg-[#4F46E5] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
                 <span>Open Campaign Effectiveness</span>
                 <span>→</span>
@@ -772,7 +772,7 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg bg-[#1E429F]/10 text-[#1E429F] flex items-center justify-center shadow-2xs">
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect width="16" height="16" x="4" y="4" rx="2" />
                       <rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" fillOpacity="0.2" />
@@ -793,15 +793,15 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <span className="bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/20 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20 text-[11px] font-bold px-2 py-0.5 rounded-full">
                   Series 3 Rollout
                 </span>
               </div>
 
               {/* Compact Metric Strip */}
               <div className="grid grid-cols-3 gap-2 my-3">
-                <div className="bg-[#013FFC]/10 border border-[#013FFC]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#013FFC] font-semibold block uppercase tracking-wider">Series 3</span>
+                <div className="bg-[#1E429F]/10 border border-[#1E429F]/20 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Series 3</span>
                   <span className="text-base font-black text-[#111827] block mt-0.5">
                     Pre-Launch
                   </span>
@@ -824,14 +824,14 @@ export default function DashboardPage() {
               <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#16D3C3]" />
+                    <span className="w-2 h-2 rounded-full bg-[#0D9488]" />
                     Generation Rollout Spectrum
                   </span>
-                  <span className="text-[#013FFC] font-bold">Series 3 / 2 / 1 + Gen 14–10</span>
+                  <span className="text-[#1E429F] font-bold">Series 3 / 2 / 1 + Gen 14–10</span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                  <div className="bg-gradient-to-r from-[#16D3C3] to-[#013FFC] h-full rounded-l-full" style={{ width: '45%' }} title="Core Ultra (Series 3/2/1)" />
-                  <div className="bg-[#5B8CFF] h-full" style={{ width: '35%' }} title="Core 14th / 13th Gen" />
+                  <div className="bg-gradient-to-r from-[#0D9488] to-[#1E429F] h-full rounded-l-full" style={{ width: '45%' }} title="Core Ultra (Series 3/2/1)" />
+                  <div className="bg-[#4A6FA5] h-full" style={{ width: '35%' }} title="Core 14th / 13th Gen" />
                   <div className="bg-[#CBD5E1] h-full rounded-r-full" style={{ width: '20%' }} title="Legacy 12th–10th Gen" />
                 </div>
               </div>
@@ -841,7 +841,7 @@ export default function DashboardPage() {
               <span className="text-[10px] text-[#6B7280] font-medium">Series & Family selectors</span>
               <Link
                 to="/product-mix"
-                className="bg-[#013FFC] hover:bg-[#0036D9] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
+                className="bg-[#1E429F] hover:bg-[#162E6E] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
                 <span>Open Product Promotion</span>
                 <span>→</span>

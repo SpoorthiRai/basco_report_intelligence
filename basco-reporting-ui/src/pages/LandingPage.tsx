@@ -20,14 +20,14 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#111827] selection:bg-[#013FFC] selection:text-white relative overflow-hidden font-sans">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#111827] selection:bg-[#1E429F] selection:text-white relative overflow-hidden font-sans">
       
       {/* ── Ambient Radiant Mesh & Concentric Wave Ribbons Background ──────── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 select-none">
         {/* Soft atmospheric radial mesh gradients */}
-        <div className="absolute -top-[15%] -left-[10%] w-[55%] h-[65%] bg-gradient-to-br from-[#013FFC]/10 via-[#7A35F4]/8 to-transparent rounded-full blur-3xl opacity-80" />
-        <div className="absolute top-[5%] -right-[5%] w-[60%] h-[75%] bg-gradient-to-bl from-[#7A35F4]/10 via-[#16D3C3]/10 to-transparent rounded-full blur-3xl opacity-70" />
-        <div className="absolute bottom-[10%] left-[25%] w-[50%] h-[45%] bg-gradient-to-t from-[#16D3C3]/10 via-[#013FFC]/8 to-transparent rounded-full blur-2xl opacity-60" />
+        <div className="absolute -top-[15%] -left-[10%] w-[55%] h-[65%] bg-gradient-to-br from-[#1E429F]/8 via-[#6366F1]/6 to-transparent rounded-full blur-3xl opacity-60" />
+        <div className="absolute top-[5%] -right-[5%] w-[60%] h-[75%] bg-gradient-to-bl from-[#6366F1]/8 via-[#0D9488]/8 to-transparent rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-[10%] left-[25%] w-[50%] h-[45%] bg-gradient-to-t from-[#0D9488]/8 via-[#1E429F]/6 to-transparent rounded-full blur-2xl opacity-50" />
         <div className="absolute top-[35%] left-[40%] w-[35%] h-[35%] bg-radial from-white/90 via-[#F8FAFC]/40 to-transparent rounded-full blur-2xl" />
 
         {/* Concentric Gradient Wave Ribbon Streams */}
@@ -40,28 +40,28 @@ export default function LandingPage() {
         >
           <defs>
             <linearGradient id="auroraGrad1" x1="0%" y1="70%" x2="100%" y2="20%">
-              <stop offset="0%" stopColor="#7A35F4" stopOpacity="0.4" />
-              <stop offset="35%" stopColor="#013FFC" stopOpacity="0.65" />
-              <stop offset="70%" stopColor="#16D3C3" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="#5B8CFF" stopOpacity="0.4" />
+              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.3" />
+              <stop offset="35%" stopColor="#1E429F" stopOpacity="0.45" />
+              <stop offset="70%" stopColor="#0D9488" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#4A6FA5" stopOpacity="0.3" />
             </linearGradient>
 
             <linearGradient id="auroraGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#7A35F4" stopOpacity="0.3" />
-              <stop offset="45%" stopColor="#013FFC" stopOpacity="0.5" />
-              <stop offset="80%" stopColor="#16D3C3" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#5B8CFF" stopOpacity="0.25" />
+              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.2" />
+              <stop offset="45%" stopColor="#1E429F" stopOpacity="0.35" />
+              <stop offset="80%" stopColor="#0D9488" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#4A6FA5" stopOpacity="0.2" />
             </linearGradient>
 
             <linearGradient id="auroraGrad3" x1="10%" y1="0%" x2="90%" y2="100%">
-              <stop offset="0%" stopColor="#7A35F4" stopOpacity="0.35" />
-              <stop offset="50%" stopColor="#16D3C3" stopOpacity="0.45" />
-              <stop offset="100%" stopColor="#013FFC" stopOpacity="0.3" />
+              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.25" />
+              <stop offset="50%" stopColor="#0D9488" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#1E429F" stopOpacity="0.25" />
             </linearGradient>
 
             {/* Subtle glow filter */}
             <filter id="ribbonGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
@@ -123,16 +123,16 @@ export default function LandingPage() {
               <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-[#111827] tracking-tight leading-[1.18]">
                 Turn Retail<br />
                 Execution into<br />
-                <span className="bg-gradient-to-r from-[#013FFC] via-[#0EA5E9] to-[#16D3C3] bg-clip-text text-transparent inline-block pb-2 -mb-2">
+                <span className="bg-gradient-to-r from-[#1E429F] via-[#0EA5E9] to-[#0D9488] bg-clip-text text-transparent inline-block pb-2 -mb-2">
                   Marketing
                 </span><br />
-                <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block pb-2 -mb-2">
+                <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block pb-2 -mb-2">
                   Intelligence.
                 </span>
               </h1>
 
               {/* Accent underline bar with Brand to AI Gradient */}
-              <div className="w-14 h-1.5 bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] rounded-full mt-4 shadow-xs" />
+              <div className="w-14 h-1.5 bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] rounded-full mt-4 shadow-xs" />
             </div>
 
 
@@ -143,7 +143,7 @@ export default function LandingPage() {
             <div className="pt-2 space-y-3.5 w-full sm:w-auto">
               <button
                 onClick={handleCtaClick}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-[#013FFC] hover:bg-[#0036d9] active:bg-[#002cb3] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#013FFC]/25 transition-all duration-200 hover:shadow-xl hover:translate-y-[-1px] cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-[#1E429F] hover:bg-[#162E6E] active:bg-[#102048] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#1E429F]/20 transition-all duration-200 hover:shadow-xl hover:translate-y-[-1px] cursor-pointer"
               >
                 <span>View My Retailer Insights</span>
                 <span className="text-base">→</span>
@@ -200,8 +200,8 @@ export default function LandingPage() {
                       />
                       <defs>
                         <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#16D3C3" />
-                          <stop offset="100%" stopColor="#013FFC" />
+                          <stop offset="0%" stopColor="#0D9488" />
+                          <stop offset="100%" stopColor="#1E429F" />
                         </linearGradient>
                       </defs>
                     </svg>
@@ -223,7 +223,7 @@ export default function LandingPage() {
                 <div>
                   <div className="text-xs font-bold text-[#111827]">Brand Attribution at Risk</div>
                   <div className="text-[11px] text-[#6B7280] font-medium mt-0.5">Est. Attribution Loss (FMV)</div>
-                  <div className="text-2xl sm:text-3xl font-black text-[#013FFC] mt-2">$2.8M</div>
+                  <div className="text-2xl sm:text-3xl font-black text-[#1E429F] mt-2">$2.8M</div>
                 </div>
 
                 {/* Mini sparkline curve */}
@@ -236,13 +236,13 @@ export default function LandingPage() {
                     <path
                       d="M0 35 Q 30 32, 60 25 T 110 18 T 160 5"
                       fill="none"
-                      stroke="#013FFC"
+                      stroke="#1E429F"
                       strokeWidth="2.5"
                     />
                     <defs>
                       <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#013FFC" stopOpacity="0.2" />
-                        <stop offset="100%" stopColor="#013FFC" stopOpacity="0.0" />
+                        <stop offset="0%" stopColor="#1E429F" stopOpacity="0.2" />
+                        <stop offset="100%" stopColor="#1E429F" stopOpacity="0.0" />
                       </linearGradient>
                     </defs>
                   </svg>
@@ -274,10 +274,10 @@ export default function LandingPage() {
 
                   <div className="px-1">
                     <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-[#6B7280] mb-1">
-                      <span className="w-2 h-2 rounded-full bg-[#013FFC]" />
+                      <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
                       <span>Lower Priority</span>
                     </div>
-                    <div className="text-2xl sm:text-3xl font-black text-[#013FFC]">7</div>
+                    <div className="text-2xl sm:text-3xl font-black text-[#1E429F]">7</div>
                   </div>
 
                   <div className="px-1">
@@ -294,10 +294,10 @@ export default function LandingPage() {
               <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xl border border-[#E5E7EB] flex flex-col justify-between hover:shadow-2xl transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#111827]">Top Compliance Issue</span>
-                  <span className="text-[#FF6B35] text-sm font-bold">⚠️</span>
+                  <span className="text-[#EA580C] text-sm font-bold">⚠️</span>
                 </div>
 
-                <div className="my-3 bg-[#013FFC]/5 border border-[#013FFC]/15 rounded-xl p-3 text-center">
+                <div className="my-3 bg-[#1E429F]/5 border border-[#1E429F]/15 rounded-xl p-3 text-center">
                   <span className="text-xs font-extrabold text-[#111827] tracking-wide block uppercase">
                     IMPROPER USAGE<br />OF ELEMENTS
                   </span>
@@ -319,11 +319,11 @@ export default function LandingPage() {
                   <div>
                     <div className="flex justify-between text-[11px] mb-1">
                       <span className="font-semibold text-[#111827]">Intel® Core™ Ultra</span>
-                      <span className="font-extrabold text-[#013FFC]">45%</span>
+                      <span className="font-extrabold text-[#1E429F]">45%</span>
                     </div>
                     <div className="w-full bg-[#F8FAFC] border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-[#013FFC] to-[#5B8CFF] h-full rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-[#1E429F] to-[#4A6FA5] h-full rounded-full transition-all duration-500"
                         style={{ width: "45%" }}
                       />
                     </div>
@@ -333,11 +333,11 @@ export default function LandingPage() {
                   <div>
                     <div className="flex justify-between text-[11px] mb-1">
                       <span className="font-semibold text-[#111827]">Intel® Evo™ Edition</span>
-                      <span className="font-extrabold text-[#16D3C3]">32%</span>
+                      <span className="font-extrabold text-[#0D9488]">32%</span>
                     </div>
                     <div className="w-full bg-[#F8FAFC] border border-[#E5E7EB] h-2.5 rounded-full overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-[#16D3C3] to-[#0EA5E9] h-full rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-[#0D9488] to-[#0EA5E9] h-full rounded-full transition-all duration-500"
                         style={{ width: "32%" }}
                       />
                     </div>
@@ -384,7 +384,7 @@ export default function LandingPage() {
             
             {/* Pillar 1: Performance at a glance */}
             <div className="flex flex-col items-start space-y-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center border border-[#013FFC]/20 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#1E429F]/10 text-[#1E429F] flex items-center justify-center border border-[#1E429F]/20 shadow-2xs">
                 <svg
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
@@ -409,7 +409,7 @@ export default function LandingPage() {
 
             {/* Pillar 2: Actionable insights */}
             <div className="flex flex-col items-start space-y-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#16D3C3]/15 text-[#0d7d74] flex items-center justify-center border border-[#16D3C3]/30 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#0D9488]/15 text-[#0F766E] flex items-center justify-center border border-[#0D9488]/30 shadow-2xs">
                 <svg
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
@@ -434,7 +434,7 @@ export default function LandingPage() {
 
             {/* Pillar 3: Creative intelligence */}
             <div className="flex flex-col items-start space-y-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#7A35F4]/10 text-[#7A35F4] flex items-center justify-center border border-[#7A35F4]/25 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#6366F1]/10 text-[#6366F1] flex items-center justify-center border border-[#6366F1]/25 shadow-2xs">
                 <svg
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
@@ -457,7 +457,7 @@ export default function LandingPage() {
 
             {/* Pillar 4: Role-based access */}
             <div className="flex flex-col items-start space-y-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#013FFC]/10 text-[#013FFC] flex items-center justify-center border border-[#013FFC]/20 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#1E429F]/10 text-[#1E429F] flex items-center justify-center border border-[#1E429F]/20 shadow-2xs">
                 <svg
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
@@ -484,7 +484,7 @@ export default function LandingPage() {
 
         {/* ── Closing Statement ──────────────────────────────────────────────── */}
         <div className="text-center my-10">
-          <p className="text-base sm:text-lg font-black bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent tracking-tight">
+          <p className="text-base sm:text-lg font-black bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent tracking-tight">
             Your retailers. Your markets. The signals that matter.
           </p>
         </div>
@@ -505,7 +505,7 @@ export default function LandingPage() {
             <span className="text-slate-700">|</span>
             <a href="#terms" className="hover:text-white transition-colors">Terms of Use</a>
             <span className="text-slate-700">|</span>
-            <button onClick={() => navigate("/login")} className="hover:text-white text-[#16D3C3] flex items-center gap-1 transition-colors cursor-pointer">
+            <button onClick={() => navigate("/login")} className="hover:text-white text-[#0D9488] flex items-center gap-1 transition-colors cursor-pointer">
               <span>Contact Support</span>
               <span>→</span>
             </button>

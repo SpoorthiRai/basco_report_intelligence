@@ -121,7 +121,7 @@ const navItems: NavItemDef[] = [
 const linkBase =
   'group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 relative overflow-hidden'
 const linkActive  =
-  'bg-gradient-to-r from-[#013FFC] to-[#16D3C3] text-white shadow-md shadow-[#013FFC]/25 font-bold'
+  'bg-gradient-to-r from-[#1E429F] to-[#0D9488] text-white shadow-md shadow-[#1E429F]/20 font-bold'
 const linkInactive =
   'text-slate-400 hover:bg-white/5 hover:text-white'
 
@@ -156,12 +156,12 @@ export default function Sidebar() {
               <>
                 <Icon
                   className={`w-4.5 h-4.5 transition-colors shrink-0 ${
-                    isActive ? 'text-white' : 'text-slate-400 group-hover:text-[#16D3C3]'
+                    isActive ? 'text-white' : 'text-slate-400 group-hover:text-[#0D9488]'
                   }`}
                 />
                 <span className="truncate">{label}</span>
                 {isActive && (
-                  <span className="absolute right-0 top-2 bottom-2 w-1 bg-[#16D3C3] rounded-l-full shadow-sm" />
+                  <span className="absolute right-0 top-2 bottom-2 w-1 bg-[#0D9488] rounded-l-full shadow-sm" />
                 )}
               </>
             )}
@@ -177,19 +177,19 @@ export default function Sidebar() {
             <NavLink
               to="/admin/users"
               className={({ isActive }) =>
-                `${linkBase} ${isActive ? 'bg-gradient-to-r from-[#7A35F4] to-[#013FFC] text-white shadow-md shadow-[#7A35F4]/25 font-bold' : linkInactive}`
+                `${linkBase} ${isActive ? 'bg-gradient-to-r from-[#6366F1] to-[#1E429F] text-white shadow-md shadow-[#6366F1]/20 font-bold' : linkInactive}`
               }
             >
               {({ isActive }) => (
                 <>
                   <UserManagementIcon
                     className={`w-4.5 h-4.5 transition-colors shrink-0 ${
-                      isActive ? 'text-white' : 'text-slate-400 group-hover:text-[#7A35F4]'
+                      isActive ? 'text-white' : 'text-slate-400 group-hover:text-[#6366F1]'
                     }`}
                   />
                   <span className="truncate">User Management</span>
                   {isActive && (
-                    <span className="absolute right-0 top-2 bottom-2 w-1 bg-[#7A35F4] rounded-l-full shadow-sm" />
+                    <span className="absolute right-0 top-2 bottom-2 w-1 bg-[#6366F1] rounded-l-full shadow-sm" />
                   )}
                 </>
               )}
@@ -202,7 +202,7 @@ export default function Sidebar() {
       {user && (
         <div className="p-3.5 border-t border-slate-800/80 bg-black/25">
           <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#013FFC] to-[#16D3C3] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#1E429F] to-[#0D9488] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
               {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">

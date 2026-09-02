@@ -348,7 +348,7 @@ export default function MarketMaturityPage() {
           </div>
           <div className="bg-white/95 border border-[#E5E7EB] rounded-xl px-3.5 py-1.5 shadow-2xs">
             <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Avg BASCO Score</span>
-            <span className="text-base font-black text-[#013FFC]">{avgCohortScore}%</span>
+            <span className="text-base font-black text-[#1E429F]">{avgCohortScore}%</span>
           </div>
 
           {/* Quarter Selector Dropdown */}
@@ -358,7 +358,7 @@ export default function MarketMaturityPage() {
               onClick={() => setIsQuarterOpen((v) => !v)}
               className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs border ${
                 selectedQuarter !== "All Quarters"
-                  ? "bg-[#013FFC] text-white border-[#013FFC]"
+                  ? "bg-[#1E429F] text-white border-[#1E429F]"
                   : "bg-white text-[#111827] border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-slate-50"
               } cursor-pointer`}
             >
@@ -386,12 +386,12 @@ export default function MarketMaturityPage() {
                       }}
                       className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-colors ${
                         isSelected
-                          ? "bg-[#013FFC]/10 text-[#013FFC]"
+                          ? "bg-[#1E429F]/10 text-[#1E429F]"
                           : "text-[#111827] hover:bg-slate-100/80 cursor-pointer"
                       }`}
                     >
                       <span>{period}</span>
-                      {isSelected && <span className="text-[#013FFC] font-bold">✓</span>}
+                      {isSelected && <span className="text-[#1E429F] font-bold">✓</span>}
                     </button>
                   );
                 })}
@@ -513,13 +513,13 @@ export default function MarketMaturityPage() {
                 {/* Target Line at 90% (Healthy Threshold) */}
                 <ReferenceLine
                   x={90}
-                  stroke="#013FFC"
+                  stroke="#1E429F"
                   strokeDasharray="4 4"
                   strokeWidth={2}
                   label={{
                     value: "Target BASCO (90%)",
                     position: "top",
-                    fill: "#013FFC",
+                    fill: "#1E429F",
                     fontSize: 10,
                     fontWeight: 700,
                   }}

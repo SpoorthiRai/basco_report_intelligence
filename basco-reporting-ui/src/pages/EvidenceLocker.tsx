@@ -75,16 +75,16 @@ function CreativeBannerVisual({ item, isCompliant }: { item: CreativeItem; isCom
   const oem = item.OEM_Values || (item.OEM_Flag === 'Yes' ? 'OEM Partner' : '');
 
   const bgGradient = isCompliant
-    ? 'linear-gradient(135deg, #071739 0%, #013FFC 50%, #16D3C3 100%)'
-    : 'linear-gradient(135deg, #1e1124 0%, #7A35F4 50%, #071739 100%)';
+    ? 'linear-gradient(135deg, #0B1325 0%, #1E429F 50%, #0D9488 100%)'
+    : 'linear-gradient(135deg, #181126 0%, #6366F1 50%, #0B1938 100%)';
 
   return (
     <div
       style={{ background: bgGradient }}
       className="w-full h-full p-4 flex flex-col justify-between relative overflow-hidden select-none"
     >
-      <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#16D3C3]/20 rounded-full blur-2xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-[#013FFC]/25 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#0D9488]/20 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-[#1E429F]/20 rounded-full blur-2xl pointer-events-none" />
 
       {/* Top Banner Row: OEM & Intel Core Badge */}
       <div className="flex items-center justify-between z-10">
@@ -97,7 +97,7 @@ function CreativeBannerVisual({ item, isCompliant }: { item: CreativeItem; isCom
 
       {/* Center Showcase Visual */}
       <div className="z-10 my-auto py-2 flex flex-col items-start">
-        <div className="inline-flex items-center gap-1 bg-[#16D3C3]/20 border border-[#16D3C3]/30 px-2 py-0.5 rounded-full text-[9px] font-bold text-[#16D3C3] uppercase tracking-wider mb-1">
+        <div className="inline-flex items-center gap-1 bg-[#0D9488]/20 border border-[#0D9488]/30 px-2 py-0.5 rounded-full text-[9px] font-bold text-[#0D9488] uppercase tracking-wider mb-1">
           <span>⚡</span>
           <span>{campaign}</span>
         </div>
@@ -113,7 +113,7 @@ function CreativeBannerVisual({ item, isCompliant }: { item: CreativeItem; isCom
       <div className="flex items-end justify-between z-10 pt-2 border-t border-white/10">
         <div className="flex items-center gap-1.5">
           <div className="w-5 h-5 rounded-md bg-white flex items-center justify-center p-0.5 shadow-xs">
-            <span className="text-[#013FFC] font-black text-[9px] tracking-tighter">intel</span>
+            <span className="text-[#1E429F] font-black text-[9px] tracking-tighter">intel</span>
           </div>
           <span className="text-[10px] font-bold text-white tracking-wide">
             Core™ Ultra
@@ -345,7 +345,7 @@ function CreativeModal({
       <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
 
         {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-[#071739] to-[#013FFC] rounded-t-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-[#0B1325] to-[#1C3668] rounded-t-2xl">
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">
               {item.Subject || item.Campaign_Name || 'Creative Detail'}
@@ -607,10 +607,10 @@ export default function EvidenceLocker() {
   return (
     <section className="mt-8 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden flex flex-col">
       {/* ── Dark Header Bar ─────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-[#071739] via-[#013FFC] to-[#5B8CFF] px-6 py-5 text-white flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#0B1325] via-[#122449] to-[#1C3668] px-6 py-5 text-white flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#16D3C3]"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#0D9488]"></span>
             <h2 className="text-base md:text-lg font-bold tracking-tight text-white">
               Retailer Creative Performance
             </h2>
@@ -631,7 +631,7 @@ export default function EvidenceLocker() {
               id="quarter-filter"
               value={quarterFilter}
               onChange={(e) => setQuarterFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#16D3C3] cursor-pointer backdrop-blur-xs transition-colors"
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors"
             >
               {availableQuarters.map((q) => (
                 <option key={q} value={q} className="bg-slate-900 text-white">
@@ -650,7 +650,7 @@ export default function EvidenceLocker() {
               id="product-filter"
               value={productFilter}
               onChange={(e) => setProductFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#16D3C3] cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
             >
               {availableProducts.map((p) => (
                 <option key={p} value={p} className="bg-slate-900 text-white">
@@ -669,7 +669,7 @@ export default function EvidenceLocker() {
               id="generation-filter"
               value={generationFilter}
               onChange={(e) => setGenerationFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#16D3C3] cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
             >
               {availableGenerations.map((g) => (
                 <option key={g} value={g} className="bg-slate-900 text-white">
@@ -685,7 +685,7 @@ export default function EvidenceLocker() {
       <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Quarter & Live Counts Badges */}
         <div className="flex items-center gap-2 flex-wrap text-xs">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20">
             <span>🗓</span>
             <span>{quarterFilter}</span>
           </span>
@@ -702,13 +702,13 @@ export default function EvidenceLocker() {
             </span>
           )}
           {generationFilter !== 'All' && generationFilter !== 'All Generations / Series' && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#16D3C3]/10 text-[#16D3C3] border border-[#16D3C3]/20">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#0D9488]/10 text-[#0D9488] border border-[#0D9488]/20">
               <span>⚡</span>
               <span>{generationFilter}</span>
               <button
                 type="button"
                 onClick={() => setGenerationFilter('All Generations / Series')}
-                className="ml-0.5 text-[#16D3C3] hover:text-[#16D3C3]/80 font-extrabold leading-none cursor-pointer"
+                className="ml-0.5 text-[#0D9488] hover:text-[#0D9488]/80 font-extrabold leading-none cursor-pointer"
                 title="Clear generation filter"
               >✕</button>
             </span>
@@ -807,7 +807,7 @@ export default function EvidenceLocker() {
                     tabIndex={0}
                     onClick={() => setSelectedCreative(item)}
                     onKeyDown={(e) => e.key === 'Enter' && setSelectedCreative(item)}
-                    className="bg-white rounded-xl border border-[#E5E7EB] shadow-2xs hover:shadow-md hover:border-[#013FFC]/40 transition-all overflow-hidden flex flex-row cursor-pointer min-h-[148px] group"
+                    className="bg-white rounded-xl border border-[#E5E7EB] shadow-2xs hover:shadow-md hover:border-[#1E429F]/40 transition-all overflow-hidden flex flex-row cursor-pointer min-h-[148px] group"
                   >
                     {/* ── Left: image / banner (fixed width, fills card height) ── */}
                     <div className="relative w-52 shrink-0 bg-[#F8FAFC] overflow-hidden flex items-center justify-center self-stretch">
@@ -887,7 +887,7 @@ export default function EvidenceLocker() {
                           </span>
                         )}
                         {item.Content && (
-                          <span className="bg-[#013FFC]/10 text-[#013FFC] text-[10px] font-semibold px-2 py-0.5 rounded border border-[#013FFC]/20">
+                          <span className="bg-[#1E429F]/10 text-[#1E429F] text-[10px] font-semibold px-2 py-0.5 rounded border border-[#1E429F]/20">
                             {item.Content}
                           </span>
                         )}

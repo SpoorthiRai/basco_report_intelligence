@@ -51,10 +51,10 @@ interface ProductMixResponse {
   };
 }
 
-// Standardized 3-color data visualization palette: Cobalt (#013FFC), Cyan/Teal (#0EA5E9), and Slate (#64748B)
+// Standardized 3-color data visualization palette: Sapphire (#1E429F), Cyan/Teal (#0EA5E9), and Slate (#64748B)
 const FAMILY_COLORS: Record<string, string> = {
-  'Intel Core Ultra': '#013FFC',       // 1. Primary Hero (Cobalt Blue)
-  'Gaming Core Ultra': '#013FFC',      // 1. Primary Hero (Cobalt Blue)
+  'Intel Core Ultra': '#1E429F',       // 1. Primary Hero (Sapphire Blue)
+  'Gaming Core Ultra': '#1E429F',      // 1. Primary Hero (Sapphire Blue)
   'Intel Core Processors': '#0EA5E9',  // 2. Secondary Mainstream (Teal/Cyan)
   'Intel Processors': '#0EA5E9',       // 2. Secondary Mainstream (Teal/Cyan)
   'Intel Evo Edition': '#0EA5E9',      // 2. Secondary Mainstream (Teal/Cyan)
@@ -162,11 +162,11 @@ export default function ProductMixPage() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
               Product{" "}
-              <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
+              <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
                 Promotion & Priorities
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/20 shadow-2xs">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20 shadow-2xs">
               Pre Launch
             </span>
           </div>
@@ -240,12 +240,12 @@ export default function ProductMixPage() {
               </h3>
               
               {/* Target Series Dropdown Selector */}
-              <div className="flex items-center gap-1.5 bg-[#013FFC]/10 border border-[#013FFC]/20 px-2.5 py-1.5 rounded-lg">
-                <span className="text-[11px] font-bold text-[#013FFC] whitespace-nowrap">Series:</span>
+              <div className="flex items-center gap-1.5 bg-[#1E429F]/10 border border-[#1E429F]/20 px-2.5 py-1.5 rounded-lg">
+                <span className="text-[11px] font-bold text-[#1E429F] whitespace-nowrap">Series:</span>
                 <select
                   value={targetSeriesFilter}
                   onChange={(e) => setTargetSeriesFilter(e.target.value)}
-                  className="bg-transparent text-[#013FFC] text-xs font-extrabold focus:outline-none cursor-pointer w-full"
+                  className="bg-transparent text-[#1E429F] text-xs font-extrabold focus:outline-none cursor-pointer w-full"
                 >
                   {seriesOptions.map((s) => (
                     <option key={s} value={s} className="text-[#111827] bg-white">
@@ -255,7 +255,7 @@ export default function ProductMixPage() {
                 </select>
               </div>
             </div>
-            <p className="text-[11px] text-[#013FFC] font-semibold mt-1.5">
+            <p className="text-[11px] text-[#1E429F] font-semibold mt-1.5">
               {getCodenameSubtitle(targetSeriesFilter)}
             </p>
           </div>
@@ -297,11 +297,11 @@ export default function ProductMixPage() {
                       boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                     }}
                   />
-                  {/* Bottom: selected series (Blue #013FFC) */}
+                  {/* Bottom: selected series (Blue #1E429F) */}
                   <Bar
                     dataKey="series_count"
                     stackId="adoptionStack"
-                    fill="#013FFC"
+                    fill="#1E429F"
                     radius={[0, 0, 4, 4]}
                     barSize={38}
                   >
@@ -325,7 +325,7 @@ export default function ProductMixPage() {
                     <LabelList
                       dataKey="series_pct"
                       position="top"
-                      fill="#013FFC"
+                      fill="#1E429F"
                       fontSize={11}
                       fontWeight="800"
                       formatter={(v: any) => `${v}%`}
@@ -352,7 +352,7 @@ export default function ProductMixPage() {
                     <span className="text-[#6B7280] font-medium text-[11px]">
                       {r.series_count ?? r.series3 ?? 0} / {r.total}
                     </span>
-                    <span className="bg-[#013FFC]/10 text-[#013FFC] text-[11px] font-extrabold px-1.5 py-0.5 rounded">
+                    <span className="bg-[#1E429F]/10 text-[#1E429F] text-[11px] font-extrabold px-1.5 py-0.5 rounded">
                       {r.series_pct ?? r.series3_pct ?? 0}%
                     </span>
                   </div>
@@ -457,7 +457,7 @@ export default function ProductMixPage() {
                 id="family-select"
                 value={familyFilter}
                 onChange={(e) => setFamilyFilter(e.target.value)}
-                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] text-xs font-semibold rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#013FFC] focus:outline-none cursor-pointer transition-all"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] text-xs font-semibold rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#1E429F] focus:outline-none cursor-pointer transition-all"
               >
                 {(data?.family_options || ['Intel Core Ultra']).map((fam) => (
                   <option key={fam} value={fam}>
@@ -516,7 +516,7 @@ export default function ProductMixPage() {
                   />
                   <Bar
                     dataKey="count"
-                    fill="#013FFC"
+                    fill="#1E429F"
                     radius={[4, 4, 0, 0]}
                     barSize={32}
                   >

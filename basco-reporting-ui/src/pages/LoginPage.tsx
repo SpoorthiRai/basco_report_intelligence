@@ -38,17 +38,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-[#F8FAFC] via-[#F8FAFC] to-[#FFFFFF] text-[#111827] selection:bg-[#013FFC] selection:text-white relative overflow-hidden font-sans">
+    <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-[#F8FAFC] via-[#F8FAFC] to-[#FFFFFF] text-[#111827] selection:bg-[#1E429F] selection:text-white relative overflow-hidden font-sans">
       
       {/* ── Ambient Decorative Waves Background ────────────────────────────── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 select-none">
         {/* Soft atmospheric radial mesh glows */}
-        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[60%] bg-gradient-to-br from-[#013FFC]/10 via-[#7A35F4]/8 to-transparent rounded-full blur-3xl opacity-75" />
-        <div className="absolute top-[10%] -right-[5%] w-[55%] h-[70%] bg-gradient-to-bl from-[#7A35F4]/10 via-[#16D3C3]/10 to-transparent rounded-full blur-3xl opacity-80" />
-        <div className="absolute bottom-[0%] left-[20%] w-[60%] h-[50%] bg-gradient-to-t from-[#16D3C3]/10 via-[#013FFC]/8 to-transparent rounded-full blur-2xl opacity-60" />
+        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[60%] bg-gradient-to-br from-[#1E429F]/6 via-[#6366F1]/4 to-transparent rounded-full blur-3xl opacity-60" />
+        <div className="absolute top-[10%] -right-[5%] w-[55%] h-[70%] bg-gradient-to-bl from-[#0EA5E9]/5 via-[#0D9488]/4 to-transparent rounded-full blur-3xl opacity-60" />
+        <div className="absolute bottom-[0%] left-[20%] w-[60%] h-[50%] bg-gradient-to-t from-[#0D9488]/6 via-[#1E429F]/4 to-transparent rounded-full blur-2xl opacity-50" />
 
         <svg
-          className="absolute inset-0 w-full h-full"
+          className="absolute inset-0 w-full h-full opacity-35"
           viewBox="0 0 1440 900"
           preserveAspectRatio="xMidYMid slice"
           fill="none"
@@ -56,18 +56,18 @@ export default function LoginPage() {
         >
           <defs>
             <linearGradient id="loginWave1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#7A35F4" stopOpacity="0.4" />
-              <stop offset="35%" stopColor="#013FFC" stopOpacity="0.55" />
-              <stop offset="70%" stopColor="#16D3C3" stopOpacity="0.65" />
-              <stop offset="100%" stopColor="#5B8CFF" stopOpacity="0.45" />
+              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.25" />
+              <stop offset="35%" stopColor="#1E429F" stopOpacity="0.3" />
+              <stop offset="70%" stopColor="#0D9488" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#4A6FA5" stopOpacity="0.25" />
             </linearGradient>
             <linearGradient id="loginWave2" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#7A35F4" stopOpacity="0.35" />
-              <stop offset="50%" stopColor="#16D3C3" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#013FFC" stopOpacity="0.25" />
+              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.2" />
+              <stop offset="50%" stopColor="#0D9488" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#1E429F" stopOpacity="0.2" />
             </linearGradient>
             <filter id="loginGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
@@ -126,12 +126,12 @@ export default function LoginPage() {
                 <span className="text-[#111827] block pb-1">
                   Retail Marketing
                 </span>
-                <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block pb-2 -mb-2">
-                  Insights
+                <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block pb-2 -mb-2">
+                  Intelligence Portal
                 </span>
               </h1>
               <p className="text-[#6B7280] text-sm sm:text-base mt-4 max-w-md leading-relaxed font-normal">
-                Actionable intelligence on retailer marketing performance, creative effectiveness, offers, and product promotion— all in one place.
+                Unified retail analytics, partner brand compliance audits, and real-time execution tracking.
               </p>
             </div>
 
@@ -141,10 +141,10 @@ export default function LoginPage() {
               
               {/* Bar Chart Illustration */}
               <div className="absolute left-6 bottom-10 flex items-end gap-2.5 opacity-90 z-10">
-                <div className="w-4.5 h-16 bg-gradient-to-t from-[#013FFC] to-[#16D3C3] rounded-t-sm shadow-sm" />
-                <div className="w-4.5 h-24 bg-gradient-to-t from-[#013FFC] to-[#16D3C3] rounded-t-sm shadow-sm" />
-                <div className="w-4.5 h-36 bg-gradient-to-t from-[#013FFC] to-[#16D3C3] rounded-t-sm shadow-sm" />
-                <div className="w-4.5 h-28 bg-gradient-to-t from-[#013FFC] to-[#16D3C3] rounded-t-sm shadow-sm" />
+                <div className="w-4.5 h-16 bg-gradient-to-t from-[#1E429F] to-[#0D9488] rounded-t-sm shadow-sm" />
+                <div className="w-4.5 h-24 bg-gradient-to-t from-[#1E429F] to-[#0D9488] rounded-t-sm shadow-sm" />
+                <div className="w-4.5 h-36 bg-gradient-to-t from-[#1E429F] to-[#0D9488] rounded-t-sm shadow-sm" />
+                <div className="w-4.5 h-28 bg-gradient-to-t from-[#1E429F] to-[#0D9488] rounded-t-sm shadow-sm" />
               </div>
 
               {/* Line Trend Curve with Connected Circular Nodes */}
@@ -152,23 +152,23 @@ export default function LoginPage() {
                 <path
                   d="M 10 100 L 70 70 L 130 85 L 190 35 L 250 15"
                   fill="none"
-                  stroke="#013FFC"
+                  stroke="#1E429F"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                 />
-                <circle cx="10" cy="100" r="4" fill="#013FFC" stroke="#fff" strokeWidth="2" />
-                <circle cx="70" cy="70" r="4" fill="#013FFC" stroke="#fff" strokeWidth="2" />
-                <circle cx="130" cy="85" r="4" fill="#013FFC" stroke="#fff" strokeWidth="2" />
-                <circle cx="190" cy="35" r="4" fill="#013FFC" stroke="#fff" strokeWidth="2" />
-                <circle cx="250" cy="15" r="5" fill="#013FFC" stroke="#fff" strokeWidth="2.5" />
+                <circle cx="10" cy="100" r="4" fill="#1E429F" stroke="#fff" strokeWidth="2" />
+                <circle cx="70" cy="70" r="4" fill="#1E429F" stroke="#fff" strokeWidth="2" />
+                <circle cx="130" cy="85" r="4" fill="#1E429F" stroke="#fff" strokeWidth="2" />
+                <circle cx="190" cy="35" r="4" fill="#1E429F" stroke="#fff" strokeWidth="2" />
+                <circle cx="250" cy="15" r="5" fill="#1E429F" stroke="#fff" strokeWidth="2.5" />
               </svg>
 
               {/* Multi-tone Donut Ring Visual in bottom left */}
-              <div className="absolute -left-2 bottom-0 w-24 h-24 rounded-full border-[7px] border-[#16D3C3] border-t-[#7A35F4] border-r-[#013FFC] opacity-85 z-10" />
+              <div className="absolute -left-2 bottom-0 w-24 h-24 rounded-full border-[7px] border-[#0D9488] border-t-[#6366F1] border-r-[#1E429F] opacity-85 z-10" />
 
               {/* World Dots Map Matrix Silhouettes in background */}
               <div className="absolute right-0 bottom-4 w-64 h-36 opacity-35">
-                <svg viewBox="0 0 300 150" className="w-full h-full fill-[#013FFC]">
+                <svg viewBox="0 0 300 150" className="w-full h-full fill-[#1E429F]">
                   <circle cx="30" cy="35" r="3" />
                   <circle cx="45" cy="45" r="2.5" />
                   <circle cx="65" cy="40" r="3.5" />
@@ -193,7 +193,7 @@ export default function LoginPage() {
             <div className="w-full max-w-[420px] bg-white rounded-3xl shadow-2xl p-8 sm:p-10 border border-[#E5E7EB] relative">
               
               {/* Security Blue Lock Icon in Circular Badge */}
-              <div className="w-16 h-16 bg-[#013FFC]/10 text-[#013FFC] rounded-full flex items-center justify-center border border-[#013FFC]/20 shadow-2xs mx-auto mb-5">
+              <div className="w-16 h-16 bg-[#1E429F]/10 text-[#1E429F] rounded-full flex items-center justify-center border border-[#1E429F]/20 shadow-2xs mx-auto mb-5">
                 <svg
                   className="w-7 h-7"
                   fill="none"
@@ -209,10 +209,10 @@ export default function LoginPage() {
               {/* Welcome Header */}
               <div className="text-center mb-6">
                 <h2 className="text-2xl sm:text-[26px] font-black text-[#111827] tracking-tight">
-                  Welcome back
+                  Portal Authentication
                 </h2>
                 <p className="text-xs sm:text-sm text-[#6B7280] mt-1 font-normal">
-                  Sign in to access your retail marketing insights.
+                  Enter your authorized credentials to access BASCO reporting.
                 </p>
               </div>
 
@@ -229,7 +229,7 @@ export default function LoginPage() {
                     required
                     autoComplete="email"
                     placeholder="name@intel.com"
-                    className="w-full bg-[#F8FAFC] text-[#111827] text-sm rounded-xl px-4 py-3 border border-[#E5E7EB] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#013FFC] focus:border-transparent font-medium transition-all"
+                    className="w-full bg-[#F8FAFC] text-[#111827] text-sm rounded-xl px-4 py-3 border border-[#E5E7EB] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E429F] focus:border-transparent font-medium transition-all"
                   />
                 </div>
 
@@ -244,14 +244,14 @@ export default function LoginPage() {
                     required
                     autoComplete="current-password"
                     placeholder="••••••••"
-                    className="w-full bg-[#F8FAFC] text-[#111827] text-sm rounded-xl px-4 py-3 border border-[#E5E7EB] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#013FFC] focus:border-transparent font-medium transition-all"
+                    className="w-full bg-[#F8FAFC] text-[#111827] text-sm rounded-xl px-4 py-3 border border-[#E5E7EB] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E429F] focus:border-transparent font-medium transition-all"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#013FFC] hover:bg-[#0036d9] active:bg-[#002cb3] disabled:opacity-60 text-white text-sm font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-[#013FFC]/25 transition-all cursor-pointer group mt-2"
+                  className="w-full bg-[#1E429F] hover:bg-[#162E6E] active:bg-[#102048] disabled:opacity-60 text-white text-sm font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-[#1E429F]/20 transition-all cursor-pointer group mt-2"
                 >
                   {loading ? (
                     <LoadingSpinner />
@@ -297,8 +297,8 @@ export default function LoginPage() {
 
                 <div className="pt-2">
                   <a
-                    href="mailto:support@basco.com"
-                    className="text-xs font-semibold text-[#013FFC] hover:underline inline-flex items-center gap-1"
+                    href="mailto:support@intel-basco.internal"
+                    className="text-xs font-semibold text-[#1E429F] hover:underline inline-flex items-center gap-1"
                   >
                     <span>Need help accessing BASCO?</span>
                     <span>&gt;</span>
@@ -326,7 +326,7 @@ export default function LoginPage() {
             <span className="text-slate-700">|</span>
             <a href="#terms" className="hover:text-white transition-colors">Terms of Use</a>
             <span className="text-slate-700">|</span>
-            <a href="mailto:support@basco.com" className="hover:text-white text-[#16D3C3] flex items-center gap-1 transition-colors">
+            <a href="mailto:support@basco.com" className="hover:text-white text-[#0D9488] flex items-center gap-1 transition-colors">
               <span>Contact Support</span>
               <span>→</span>
             </a>

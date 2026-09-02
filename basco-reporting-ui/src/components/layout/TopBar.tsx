@@ -4,9 +4,9 @@
 import { useAuthStore } from '../../store/authStore'
 
 const roleBadge: Record<string, string> = {
-  ADMIN: 'bg-[#7A35F4]/10 text-[#7A35F4] border border-[#7A35F4]/25 shadow-2xs',
-  RMM:   'bg-[#16D3C3]/15 text-[#0d7d74] border border-[#16D3C3]/30 shadow-2xs',
-  RSM:   'bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/25 shadow-2xs',
+  ADMIN: 'bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/25 shadow-2xs',
+  RMM:   'bg-[#0D9488]/15 text-[#0F766E] border border-[#0D9488]/30 shadow-2xs',
+  RSM:   'bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/25 shadow-2xs',
 }
 
 export default function TopBar() {

@@ -138,11 +138,11 @@ export default function VisualAdoptionPage() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
               Intel{" "}
-              <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
-                Visual Adoption
+              <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
+                Adoption Intelligence
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#013FFC]/10 text-[#013FFC] border border-[#013FFC]/20 shadow-2xs">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20 shadow-2xs">
               Pre Launch
             </span>
           </div>
@@ -217,7 +217,7 @@ export default function VisualAdoptionPage() {
         </div>
 
         {/* Card 2: Intel Visuals Used */}
-        <div className="bg-gradient-to-br from-[#071739] to-[#013FFC] rounded-2xl p-4.5 shadow-md border border-[#013FFC]/30 flex flex-col justify-between min-h-[104px] text-white">
+        <div className="bg-gradient-to-br from-[#0B1325] to-[#1C3668] rounded-2xl p-4.5 shadow-md border border-[#1C3668]/30 flex flex-col justify-between min-h-[104px] text-white">
           <span className="text-[10px] font-bold tracking-wider uppercase text-slate-200">
             Intel Visuals Used
           </span>
@@ -236,7 +236,7 @@ export default function VisualAdoptionPage() {
         </div>
 
         {/* Card 3: Master Intel Visual Adoption % */}
-        <div className="bg-gradient-to-br from-[#013FFC] to-[#0EA5E9] rounded-2xl p-4.5 shadow-md border border-[#0EA5E9]/40 flex flex-col justify-between min-h-[104px] text-white">
+        <div className="bg-gradient-to-br from-[#1C3668] to-[#0EA5E9] rounded-2xl p-4.5 shadow-md border border-[#0EA5E9]/40 flex flex-col justify-between min-h-[104px] text-white">
           <span className="text-[10px] font-bold tracking-wider uppercase text-white/90">
             Master Intel Visual Adoption %
           </span>
@@ -271,7 +271,7 @@ export default function VisualAdoptionPage() {
                 </h3>
 
                 {/* Visual Style Filter Dropdown */}
-                <div className="flex items-center gap-1.5 bg-[#013FFC] hover:bg-[#013FFC]/90 transition-colors text-white px-3 py-1.5 rounded-lg shadow-xs self-start sm:self-auto">
+                <div className="flex items-center gap-1.5 bg-[#1E429F] hover:bg-[#162E6E] transition-colors text-white px-3 py-1.5 rounded-lg shadow-xs self-start sm:self-auto">
                   <span className="text-xs font-semibold">Visual Style:</span>
                   <select
                     value={visualStyleFilter}
@@ -342,7 +342,7 @@ export default function VisualAdoptionPage() {
                     />
                     <Bar
                       dataKey="adoption_pct"
-                      fill="#013FFC"
+                      fill="#1E429F"
                       radius={[0, 5, 5, 0]}
                       barSize={18}
                     >
@@ -382,7 +382,7 @@ export default function VisualAdoptionPage() {
                   setSelectedVisual(e.target.value);
                   setImgError(false);
                 }}
-                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] text-xs font-semibold rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#013FFC] focus:outline-none cursor-pointer transition-all"
+                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-[#111827] text-xs font-semibold rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#1E429F] focus:outline-none cursor-pointer transition-all"
               >
                 {(data?.pms_visuals || []).map((pv) => (
                   <option key={pv.PMSVisual_ID} value={pv.PMSVisual_Name}>
@@ -434,7 +434,7 @@ export default function VisualAdoptionPage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
                     Overall Intel Visual Adoption
                   </span>
-                  <span className="text-xl font-black text-[#013FFC] mt-1">
+                  <span className="text-xl font-black text-[#1E429F] mt-1">
                     {data.selected_visual_stats.adoption_pct}%
                   </span>
                 </div>
