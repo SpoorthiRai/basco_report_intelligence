@@ -120,13 +120,13 @@ export default function LandingPage() {
           {/* ── Left Column: Value Proposition & CTA ───────────────────────── */}
           <div className="lg:col-span-5 flex flex-col items-start space-y-6">
             <div>
-              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-[#111827] tracking-tight leading-[1.08]">
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-[#111827] tracking-tight leading-[1.18]">
                 Turn Retail<br />
                 Execution into<br />
-                <span className="bg-gradient-to-r from-[#013FFC] via-[#0EA5E9] to-[#16D3C3] bg-clip-text text-transparent inline-block">
+                <span className="bg-gradient-to-r from-[#013FFC] via-[#0EA5E9] to-[#16D3C3] bg-clip-text text-transparent inline-block pb-2 -mb-2">
                   Marketing
                 </span><br />
-                <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
+                <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block pb-2 -mb-2">
                   Intelligence.
                 </span>
               </h1>

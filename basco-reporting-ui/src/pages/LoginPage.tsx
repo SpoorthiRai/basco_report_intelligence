@@ -122,11 +122,11 @@ export default function LoginPage() {
           {/* ── Left Column: Overview & Analytics Graphics Backdrop ────────── */}
           <div className="lg:col-span-6 flex flex-col justify-center space-y-6">
             <div>
-              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black tracking-tight leading-[1.08]">
-                <span className="text-[#111827] block">
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black tracking-tight leading-[1.18]">
+                <span className="text-[#111827] block pb-1">
                   Retail Marketing
                 </span>
-                <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block">
+                <span className="bg-gradient-to-r from-[#013FFC] via-[#16D3C3] to-[#7A35F4] bg-clip-text text-transparent inline-block pb-2 -mb-2">
                   Insights
                 </span>
               </h1>
