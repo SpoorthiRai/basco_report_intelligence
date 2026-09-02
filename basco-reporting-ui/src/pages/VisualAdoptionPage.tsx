@@ -49,6 +49,7 @@ interface VisualAdoptionResponse {
   };
   retailer_adoption: RetailerAdoption[];
   pms_visuals: PMSVisual[];
+  default_visual?: string;
   selected_visual_stats: SelectedVisualStats | null;
   retailer_visual_breakdown: RetailerVisualBreakdown[];
   filter_options: {
@@ -99,9 +100,12 @@ export default function VisualAdoptionPage() {
         if (!isMounted) return;
         if (res.data) {
           setData(res.data);
-          // If no visual currently selected and pms_visuals returned, default to the first one
-          if (!selectedVisual && res.data.pms_visuals && res.data.pms_visuals.length > 0) {
-            setSelectedVisual(res.data.pms_visuals[0].PMSVisual_Name);
+          // By default, select the latest visual returned by the backend
+          if (!selectedVisual) {
+            const defaultName = res.data.default_visual || res.data.pms_visuals?.[0]?.PMSVisual_Name;
+            if (defaultName) {
+              setSelectedVisual(defaultName);
+            }
           }
         }
       })

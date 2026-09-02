@@ -95,10 +95,61 @@ class VisualAdoptionView(APIView):
                     if url:
                         visual_catalog[name] = url
 
+        # ── 5.1 Track Recency & Usage Metrics for Each Visual ──
+        quarter_rank = {q: idx for idx, q in enumerate(master_quarters)}
+
+        visual_metrics = {}
+        for r in rows:
+            q_label = r.get('quarter_label')
+            cnt = r.get('creative_count', 1)
+            names = r.get('Visual_Content_Name', '') or ''
+            tokens = [t.strip() for t in names.replace(';', '|').split('|') if t.strip() and t.strip() not in ('None', '', 'NA')]
+            for name in tokens:
+                if name not in visual_catalog:
+                    continue
+                if name not in visual_metrics:
+                    visual_metrics[name] = {
+                        'best_quarter_rank': quarter_rank.get(q_label, 999),
+                        'latest_quarter_count': 0,
+                        'total_count': 0,
+                    }
+                q_r = quarter_rank.get(q_label, 999)
+                if q_r < visual_metrics[name]['best_quarter_rank']:
+                    visual_metrics[name]['best_quarter_rank'] = q_r
+                    visual_metrics[name]['latest_quarter_count'] = cnt
+                elif q_r == visual_metrics[name]['best_quarter_rank']:
+                    visual_metrics[name]['latest_quarter_count'] += cnt
+                visual_metrics[name]['total_count'] += cnt
+
+        # Sort visual catalog so latest visuals (most recent quarter, highest creative count) appear first
+        def visual_sort_key(name):
+            m = visual_metrics.get(name)
+            if m:
+                return (m['best_quarter_rank'], -m['latest_quarter_count'], -m['total_count'], name.lower())
+            return (9999, 0, 0, name.lower())
+
+        sorted_visual_names = sorted(visual_catalog.keys(), key=visual_sort_key)
+
         pms_visuals = [
-            {'PMSVisual_ID': idx + 1, 'PMSVisual_Name': name, 'PMSVisual_URL': url}
-            for idx, (name, url) in enumerate(sorted(visual_catalog.items(), key=lambda x: x[0]))
+            {'PMSVisual_ID': idx + 1, 'PMSVisual_Name': name, 'PMSVisual_URL': visual_catalog[name]}
+            for idx, name in enumerate(sorted_visual_names)
         ]
+
+        # Determine the latest default visual (scoped to active quarter filter if set)
+        default_visual = None
+        if quarter_filter and quarter_filter != 'All':
+            q_r = quarter_rank.get(quarter_filter)
+            q_visuals = [
+                name for name in sorted_visual_names 
+                if visual_metrics.get(name, {}).get('best_quarter_rank') == q_r
+            ]
+            default_visual = q_visuals[0] if q_visuals else (pms_visuals[0]['PMSVisual_Name'] if pms_visuals else None)
+        else:
+            default_visual = pms_visuals[0]['PMSVisual_Name'] if pms_visuals else None
+
+        # If user didn't specify a visual, default to the latest visual
+        if not selected_visual or selected_visual not in visual_catalog:
+            selected_visual = default_visual
 
         # ── 6. Apply Active UI Filters for KPIs and Retailer Breakdown ──
         filtered_rows = rows
@@ -236,6 +287,7 @@ class VisualAdoptionView(APIView):
             },
             'retailer_adoption':          retailer_adoption,
             'pms_visuals':                pms_visuals,
+            'default_visual':             default_visual,
             'selected_visual_stats':      visual_stats,
             'retailer_visual_breakdown':  retailer_visual_breakdown,
             'filter_options': {
