@@ -127,11 +127,11 @@ export default function LoginPage() {
                   Retail Marketing
                 </span>
                 <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block pb-2 -mb-2">
-                  Intelligence Portal
+                  Intelligence
                 </span>
               </h1>
               <p className="text-[#6B7280] text-sm sm:text-base mt-4 max-w-md leading-relaxed font-normal">
-                Unified retail analytics, partner brand compliance audits, and real-time execution tracking.
+                One view of how Intel is showing up across retailers, markets, campaigns and creative.
               </p>
             </div>
 
@@ -209,10 +209,10 @@ export default function LoginPage() {
               {/* Welcome Header */}
               <div className="text-center mb-6">
                 <h2 className="text-2xl sm:text-[26px] font-black text-[#111827] tracking-tight">
-                  Portal Authentication
+                  Welcome back
                 </h2>
                 <p className="text-xs sm:text-sm text-[#6B7280] mt-1 font-normal">
-                  Enter your authorized credentials to access BASCO reporting.
+                  Sign in to access your BASCO intelligence workspace.
                 </p>
               </div>
 
@@ -276,7 +276,7 @@ export default function LoginPage() {
                 <div className="flex items-center justify-center gap-3">
                   <div className="h-px bg-[#CBD5E1] flex-1" />
                   <span className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">
-                    Secure and trusted
+                    Secure access
                   </span>
                   <div className="h-px bg-[#CBD5E1] flex-1" />
                 </div>
@@ -292,7 +292,7 @@ export default function LoginPage() {
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                     <path d="M7 11V7a5 5 0 0110 0v4" />
                   </svg>
-                  <span>Access is based on your assigned account and market permissions.</span>
+                  <span>Your experience is tailored to your assigned accounts and markets.</span>
                 </div>
 
                 <div className="pt-2">
@@ -300,8 +300,8 @@ export default function LoginPage() {
                     href="mailto:support@intel-basco.internal"
                     className="text-xs font-semibold text-[#1E429F] hover:underline inline-flex items-center gap-1"
                   >
-                    <span>Need help accessing BASCO?</span>
-                    <span>&gt;</span>
+                    <span>Need help signing in?</span>
+                    <span>→</span>
                   </a>
                 </div>
               </div>
@@ -312,27 +312,7 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* ── Navy Footer ────────────────────────────────────────────────────── */}
-      <footer className="w-full bg-[#061226] text-slate-400 py-6 px-6 sm:px-10 lg:px-14 border-t border-slate-800/60 relative z-10">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="font-extrabold text-white text-sm tracking-wide">BASCO</span>
-            <span className="text-slate-600">|</span>
-            <span className="text-xs text-slate-400">© 2025 Intel Corporation. All rights reserved.</span>
-          </div>
 
-          <div className="flex items-center gap-4 text-xs font-medium text-slate-300">
-            <a href="#privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-            <span className="text-slate-700">|</span>
-            <a href="#terms" className="hover:text-white transition-colors">Terms of Use</a>
-            <span className="text-slate-700">|</span>
-            <a href="mailto:support@basco.com" className="hover:text-white text-[#0D9488] flex items-center gap-1 transition-colors">
-              <span>Contact Support</span>
-              <span>→</span>
-            </a>
-          </div>
-        </div>
-      </footer>
 
     </div>
   );

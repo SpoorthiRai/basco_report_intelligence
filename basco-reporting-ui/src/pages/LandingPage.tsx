@@ -137,7 +137,7 @@ export default function LandingPage() {
 
 
             <p className="text-[#6B7280] text-sm sm:text-[15px] leading-relaxed max-w-md font-normal">
-              Get complete visibility into retailer marketing performance, creative effectiveness, Intel brand presence, product promotion, and campaign activity—all in one place.
+              See how Intel shows up across retail marketing – and turn every signal into a clearer opportunity to act.
             </p>
 
             <div className="pt-2 space-y-3.5 w-full sm:w-auto">
@@ -145,7 +145,7 @@ export default function LandingPage() {
                 onClick={handleCtaClick}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-[#1E429F] hover:bg-[#162E6E] active:bg-[#102048] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#1E429F]/20 transition-all duration-200 hover:shadow-xl hover:translate-y-[-1px] cursor-pointer"
               >
-                <span>View My Retailer Insights</span>
+                <span>Explore Retail Intelligence</span>
                 <span className="text-base">→</span>
               </button>
 
@@ -382,7 +382,7 @@ export default function LandingPage() {
         <section id="value-section" className="mt-14 pt-4">
           <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-[#E5E7EB] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             
-            {/* Pillar 1: Performance at a glance */}
+            {/* Pillar 1: See Performance Clearly */}
             <div className="flex flex-col items-start space-y-3">
               <div className="w-11 h-11 rounded-2xl bg-[#1E429F]/10 text-[#1E429F] flex items-center justify-center border border-[#1E429F]/20 shadow-2xs">
                 <svg
@@ -401,13 +401,13 @@ export default function LandingPage() {
                   <polyline points="16 6 20 6 20 10" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-[#111827]">Performance at a glance</h3>
+              <h3 className="text-sm font-bold text-[#111827]">See Performance Clearly</h3>
               <p className="text-xs text-[#6B7280] leading-relaxed">
                 Track how retailers are executing and where attention is needed.
               </p>
             </div>
 
-            {/* Pillar 2: Actionable insights */}
+            {/* Pillar 2: Spot Opportunities Faster */}
             <div className="flex flex-col items-start space-y-3">
               <div className="w-11 h-11 rounded-2xl bg-[#0D9488]/15 text-[#0F766E] flex items-center justify-center border border-[#0D9488]/30 shadow-2xs">
                 <svg
@@ -426,13 +426,13 @@ export default function LandingPage() {
                   <path d="M15 5h4v4" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-[#111827]">Actionable insights</h3>
+              <h3 className="text-sm font-bold text-[#111827]">Spot Opportunities Faster</h3>
               <p className="text-xs text-[#6B7280] leading-relaxed">
                 Identify gaps, opportunities, and priority actions that drive impact.
               </p>
             </div>
 
-            {/* Pillar 3: Creative intelligence */}
+            {/* Pillar 3: Understand Creative Execution */}
             <div className="flex flex-col items-start space-y-3">
               <div className="w-11 h-11 rounded-2xl bg-[#6366F1]/10 text-[#6366F1] flex items-center justify-center border border-[#6366F1]/25 shadow-2xs">
                 <svg
@@ -449,13 +449,13 @@ export default function LandingPage() {
                   <polyline points="21 15 16 10 5 21" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-[#111827]">Creative intelligence</h3>
+              <h3 className="text-sm font-bold text-[#111827]">Understand Creative Execution</h3>
               <p className="text-xs text-[#6B7280] leading-relaxed">
                 See how Intel brand, visuals, messaging, and offers are being used.
               </p>
             </div>
 
-            {/* Pillar 4: Role-based access */}
+            {/* Pillar 4: Focus on What Matters to You */}
             <div className="flex flex-col items-start space-y-3">
               <div className="w-11 h-11 rounded-2xl bg-[#1E429F]/10 text-[#1E429F] flex items-center justify-center border border-[#1E429F]/20 shadow-2xs">
                 <svg
@@ -473,7 +473,7 @@ export default function LandingPage() {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-[#111827]">Role-based access</h3>
+              <h3 className="text-sm font-bold text-[#111827]">Focus on What Matters to You</h3>
               <p className="text-xs text-[#6B7280] leading-relaxed">
                 Personalized views for your accounts, markets, and retailers.
               </p>
@@ -491,27 +491,7 @@ export default function LandingPage() {
 
       </main>
 
-      {/* ── Navy Footer ────────────────────────────────────────────────────── */}
-      <footer className="w-full bg-[#061226] text-slate-400 py-6 px-6 sm:px-10 lg:px-14 border-t border-slate-800/60 relative z-10">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="font-extrabold text-white text-sm tracking-wide">BASCO</span>
-            <span className="text-slate-600">|</span>
-            <span className="text-xs text-slate-400">© 2025 Intel Corporation. All rights reserved.</span>
-          </div>
 
-          <div className="flex items-center gap-4 text-xs font-medium text-slate-300">
-            <a href="#privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-            <span className="text-slate-700">|</span>
-            <a href="#terms" className="hover:text-white transition-colors">Terms of Use</a>
-            <span className="text-slate-700">|</span>
-            <button onClick={() => navigate("/login")} className="hover:text-white text-[#0D9488] flex items-center gap-1 transition-colors cursor-pointer">
-              <span>Contact Support</span>
-              <span>→</span>
-            </button>
-          </div>
-        </div>
-      </footer>
 
     </div>
   );

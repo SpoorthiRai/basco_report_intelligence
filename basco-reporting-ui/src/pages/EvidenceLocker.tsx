@@ -326,7 +326,6 @@ function CreativeModal({
 
   const logoPass  = isMandatePass(item.Intel_Visual_Flag);
   const badgePass = isMandatePass(item.Inside_Messaging);
-  const aiPass    = isMandatePass(item.AI_Messaging);
   const ctaPass   = isMandatePass(item.CTA_Flag);
 
   return (
@@ -405,12 +404,11 @@ function CreativeModal({
           {/* Right: metadata */}
           <div className="md:w-1/2 p-6 flex flex-col gap-4">
 
-            {/* Mandate scoreboard */}
-            <div className="grid grid-cols-4 gap-2 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-center text-[11px] font-bold">
+            {/* Mandate scoreboard (3 core visual pillars) */}
+            <div className="grid grid-cols-3 gap-2 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-center text-[11px] font-bold">
               {[
                 { label: 'Logo',  pass: logoPass },
                 { label: 'Badge', pass: badgePass },
-                { label: 'AI Msg', pass: aiPass },
                 { label: 'CTA',   pass: ctaPass },
               ].map(({ label, pass }) => (
                 <div key={label}>
@@ -419,6 +417,8 @@ function CreativeModal({
                 </div>
               ))}
             </div>
+
+
 
             {/* Metadata rows */}
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
@@ -616,7 +616,7 @@ export default function EvidenceLocker() {
             </h2>
           </div>
           <p className="text-xs text-slate-300 mt-1">
-            Compliant Vs. Non-Compliant Creatives • Visual Audit Breakdown
+            Review the creative execution behind retailer performance and identify where brand requirements need attention.
           </p>
         </div>
 
@@ -797,7 +797,6 @@ export default function EvidenceLocker() {
 
                 const logoPass  = isMandatePass(item.Intel_Visual_Flag);
                 const badgePass = isMandatePass(item.Inside_Messaging);
-                const aiPass    = isMandatePass(item.AI_Messaging);
                 const ctaPass   = isMandatePass(item.CTA_Flag);
 
                 return (
@@ -893,8 +892,8 @@ export default function EvidenceLocker() {
                         )}
                       </div>
 
-                      {/* Mandates scoreboard */}
-                      <div className="grid grid-cols-4 gap-1 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2 py-1.5 text-center text-[10px] font-bold">
+                      {/* Mandates scoreboard (3 core pillars) */}
+                      <div className="grid grid-cols-3 gap-1 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2 py-1 text-center text-[10px] font-bold">
                         <div title="Intel Logo">
                           <span className="text-[#6B7280] block text-[9px]">Logo</span>
                           <span>{logoPass ? '✅' : '❌'}</span>
@@ -903,15 +902,13 @@ export default function EvidenceLocker() {
                           <span className="text-[#6B7280] block text-[9px]">Badge</span>
                           <span>{badgePass ? '✅' : '❌'}</span>
                         </div>
-                        <div title="AI Messaging">
-                          <span className="text-[#6B7280] block text-[9px]">AI Msg</span>
-                          <span>{aiPass ? '✅' : '❌'}</span>
-                        </div>
                         <div title="Call To Action">
                           <span className="text-[#6B7280] block text-[9px]">CTA</span>
                           <span>{ctaPass ? '✅' : '❌'}</span>
                         </div>
                       </div>
+
+
 
                       {/* Objective (2-line truncated) */}
                       {item.Objective && item.Objective !== 'None' && item.Objective !== 'Unknown' && (
@@ -939,7 +936,7 @@ export default function EvidenceLocker() {
               <div>
                 <strong className="text-[#EF4444] block font-bold">Non-Compliance</strong>
                 <p className="text-[#6B7280] text-[11px] mt-0.5">
-                  The creative violates mandatory Intel brand guidelines and requires correction.
+                  Mandatory Intel brand requirements are not met and correction is required.
                 </p>
               </div>
             </div>
@@ -949,7 +946,7 @@ export default function EvidenceLocker() {
               <div>
                 <strong className="text-[#F59E0B] block font-bold">At Risk</strong>
                 <p className="text-[#6B7280] text-[11px] mt-0.5">
-                  The creative has missing mandatory elements and may become non-compliant if not addressed.
+                  Key brand elements require attention to maintain compliance.
                 </p>
               </div>
             </div>
@@ -959,7 +956,7 @@ export default function EvidenceLocker() {
               <div>
                 <strong className="text-[#10B981] block font-bold">Compliant</strong>
                 <p className="text-[#6B7280] text-[11px] mt-0.5">
-                  The creative meets all required Intel brand, messaging, and visual mandates.
+                  Required Intel brand and messaging standards are met.
                 </p>
               </div>
             </div>

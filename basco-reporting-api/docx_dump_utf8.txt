@@ -1,0 +1,87 @@
+BASCO Retail Marketing Insights
+Landing Page & Login Page Content
+PAGE 1 – LANDING PAGE
+1. Header
+Branding:BASCO × Intel
+Header Link:About BASCO →
+2. Hero Section
+Headline –
+Turn Retail Execution into Marketing Intelligence.
+Supporting Copy
+Get complete visibility into retailer marketing performance, creative effectiveness, Intel brand presence, product promotion, and campaign activity–all in one place.
+Primary CTA
+View My Retailer Insights →
+Sign-In Prompt
+Sign in with credentials
+3. Visual Intelligence Preview
+Purpose:Provide a visual preview of the type and richness of intelligence available within the platform. These elements are illustrative and should primarily act as a design device rather than a detailed dashboard on the landing page.
+Intel Visual Adoption
+82%Adoption Rate
+↑ 12% vs Q4-2024
+Retailer Performance
+Strong24
+Watch18
+Lower Priority7
+Action Needed11
+Brand Attribution at Risk
+$2.8MEstimated Attribution Loss (FMV)
+Top Compliance Issue
+Improper Usage of Elements
+32% of flagged issues
+Product Promotion Mix
+Intel® Core™ Ultra – 45%Intel® Evo™ Edition – 32%14th Gen Intel® Core™ – 12%Others – 11%
+4. Platform Value Section
+Performance at a Glance
+Track how retailers are executing and where attention is needed.
+Actionable Insights
+Identify gaps, opportunities, and priority actions that drive impact.
+Creative Intelligence
+See how Intel brand, visuals, messaging, and offers are being used.
+Role-Based Access
+Personalized views for your accounts, markets, and retailers.
+5. Closing Statement
+Your retailers. Your markets. The signals that matter.
+PAGE 2 – LOGIN PAGE
+1. Branding
+BASCO × Intel
+2. Platform Introduction
+Platform Name
+Retail Marketing Insights
+Supporting Copy
+Actionable intelligence on retailer marketing performance, creative effectiveness, offers, and product promotion–all in one place.
+3. Login Panel
+Welcome Message
+Welcome back
+Sign in to access your retail marketing insights.
+Primary CTA
+Sign in with Intel →
+Security Indicator
+Secure and trusted
+Access Information
+Access is based on your assigned account and market permissions.
+Support Link
+Need help accessing BASCO? →
+4. Footer
+BASCO
+© 2026 Intel Corporation. All rights reserved.
+Links:Privacy Policy | Terms of Use | Contact Support
+CONTENT & UX PRINCIPLES
+The landing and login experience should remain intentionally light on copy. The objective is not to explain the entire BASCO program before users enter the platform, but to establish the value of the experience and create confidence in the intelligence available behind the login.
+Landing Page
+The page should communicate three things quickly:
+What is this?A retail marketing intelligence experience powered by BASCO.
+Why should I care?It provides visibility into retailer execution and helps identify where attention or action is needed.
+What should I do next?Access my retailer insights.
+The dashboard preview should therefore carry much of the storytelling visually.
+Login Page
+The login experience should feel like a continuation of the BASCO platform rather than a separate IT authentication screen.
+Keep authentication simple and prominent, with supporting content limited to:
+What the user is accessing
+How they sign in
+Why their view may be personalized
+Where they can get help
+POSITIONING PRINCIPLE
+The external-facing experience should position BASCO beyond reporting or compliance monitoring.
+The intended progression is:
+Retail execution  Intelligence  Decisions  Action
+The platform should therefore consistently feel like a source of retail marketing intelligence and decision support, rather than simply a repository of dashboards and data.

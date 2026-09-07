@@ -46,32 +46,6 @@ function regionPillClass(region: string): string {
   }
 }
 
-function TrendIcon({ trend }: { trend: RetailerRow["trend"] }) {
-  if (trend === "UP")
-    return <span style={{ color: "#10B981", fontSize: 16, fontWeight: 700 }}>↑</span>;
-  if (trend === "DOWN")
-    return <span style={{ color: "#EF4444", fontSize: 16, fontWeight: 700 }}>↓</span>;
-  if (trend === "FLAT")
-    return <span style={{ color: "#6B7280", fontSize: 16, fontWeight: 700 }}>→</span>;
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        backgroundColor: "#1E429F",
-        color: "#fff",
-        fontSize: 10,
-        fontWeight: 700,
-        padding: "2px 6px",
-        borderRadius: 999,
-        letterSpacing: "0.05em",
-        lineHeight: 1.4,
-      }}
-    >
-      NEW
-    </span>
-  );
-}
-
 const FMV_TOOLTIP = "Fair Market Value (FMV) and Attribution data from Intel POP marketing warehouse.";
 
 // ── KPI Chip Component ─────────────────────────────────────────────────────────
@@ -346,7 +320,7 @@ export default function LeagueTablePage() {
               </h1>
             </div>
             <p className="text-xs text-[#6B7280] font-medium mt-1">
-              BASCO Score &times; Helpdesk Usage • Filter by Quarter and Country
+              Compare retailer brand performance, understand value at risk, and identify where attention is needed.
             </p>
           </div>
 
@@ -609,16 +583,13 @@ export default function LeagueTablePage() {
                   <th style={thStyle("right")} onClick={() => handleSort("queries")}>
                     Helpdesk Queries <SortIndicator col="queries" active={sortKey} dir={sortDir} />
                   </th>
-                  <th style={thStyle("center")} onClick={() => handleSort("trend")}>
-                    Trend <SortIndicator col="trend" active={sortKey} dir={sortDir} />
-                  </th>
                 </tr>
               </thead>
               <tbody>
                 {loading && data.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={10}
+                      colSpan={9}
                       style={{
                         padding: "48px",
                         textAlign: "center",
@@ -636,7 +607,7 @@ export default function LeagueTablePage() {
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={10}
+                      colSpan={9}
                       style={{
                         padding: "36px",
                         textAlign: "center",
@@ -827,11 +798,6 @@ export default function LeagueTablePage() {
                           }}
                         >
                           {row.queries}
-                        </td>
-
-                        {/* 10. Trend */}
-                        <td style={{ padding: "11px 14px", textAlign: "center" }}>
-                          <TrendIcon trend={row.trend} />
                         </td>
                       </tr>
                     );
