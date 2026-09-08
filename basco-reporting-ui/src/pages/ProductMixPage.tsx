@@ -51,21 +51,21 @@ interface ProductMixResponse {
   };
 }
 
-// Standardized 3-color data visualization palette: Sapphire (#1E429F), Cyan/Teal (#0EA5E9), and Slate (#64748B)
+// Distinct, harmonious color palette ensuring every product family has a unique, distinguishable color
 const FAMILY_COLORS: Record<string, string> = {
-  'Intel Core Ultra': '#1E429F',       // 1. Primary Hero (Sapphire Blue)
-  'Gaming Core Ultra': '#1E429F',      // 1. Primary Hero (Sapphire Blue)
-  'Intel Core Processors': '#0EA5E9',  // 2. Secondary Mainstream (Teal/Cyan)
-  'Intel Processors': '#0EA5E9',       // 2. Secondary Mainstream (Teal/Cyan)
-  'Intel Evo Edition': '#0EA5E9',      // 2. Secondary Mainstream (Teal/Cyan)
-  'Intel Evo': '#0EA5E9',              // 2. Secondary Mainstream (Teal/Cyan)
-  'Gaming': '#64748B',                 // 3. Muted Slate Neutral
-  'Intel Arc Graphics': '#64748B',     // 3. Muted Slate Neutral
-  'Intel Iris Graphics': '#64748B',    // 3. Muted Slate Neutral
-  'Other': '#CBD5E1',                  // 3. Muted Slate Neutral (Light)
+  'Intel Core Ultra': '#1E429F',       // 1. Deep Sapphire Blue (Flagship Hero)
+  'Gaming Core Ultra': '#7C3AED',      // 2. Vibrant Purple / Violet
+  'Intel Core Processors': '#0284C7',  // 3. Electric Ocean Blue
+  'Intel Processors': '#0D9488',       // 4. Rich Teal / Sea Green
+  'Intel Evo Edition': '#D97706',      // 5. Warm Amber / Gold
+  'Intel Evo': '#EA580C',              // 6. Tangerine Orange
+  'Gaming': '#4338CA',                 // 7. Midnight Indigo
+  'Intel Arc Graphics': '#DB2777',     // 8. Arc Magenta / Rose
+  'Intel Iris Graphics': '#06B6D4',    // 9. Bright Cyan
+  'Other': '#94A3B8',                  // 10. Cool Slate Grey
 };
 
-const DEFAULT_FAMILY_COLOR = '#64748B';
+const DEFAULT_FAMILY_COLOR = '#94A3B8';
 
 function getCodenameSubtitle(series: string): string {
   const s = series.toLowerCase();
@@ -89,6 +89,13 @@ export default function ProductMixPage() {
   const [countryFilter, setCountryFilter] = useState<string>('All Countries');
   const [familyFilter, setFamilyFilter] = useState<string>('Intel Core Ultra');
   const [targetSeriesFilter, setTargetSeriesFilter] = useState<string>('Core Ultra Series 3');
+  const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
+
+  const toggleFamilySelection = (fam: string) => {
+    setSelectedFamilies((prev) =>
+      prev.includes(fam) ? prev.filter((f) => f !== fam) : [...prev, fam]
+    );
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -142,7 +149,15 @@ export default function ProductMixPage() {
   const families = data?.all_families || [];
   const retailerMix = data?.retailer_product_mix || [];
   const regionData = data?.series3_by_region || [];
-  const genData = data?.gen_series_breakdown || [];
+  const genData = (data?.gen_series_breakdown || []).map((item) => ({
+    ...item,
+    label:
+      item.label === 'Unspecified Series' ||
+      item.label === 'Unspecified Generation' ||
+      item.label === 'Unspecified'
+        ? 'Series/Gen not specified'
+        : item.label,
+  }));
   const seriesOptions = data?.series_options || [
     'Core Ultra Series 3',
     'Core Ultra Series 2',
@@ -163,15 +178,12 @@ export default function ProductMixPage() {
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
               Product{" "}
               <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
-                Promotion & Priorities
+                Momentum
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20 shadow-2xs">
-              Pre Launch
-            </span>
           </div>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
-            Regional Generation adoption, retailer-wise product family proportion, and generation breakdown.
+            See which Intel products are gaining visibility across retailers and markets – and where priority products have room to grow.
           </p>
         </div>
 
@@ -339,7 +351,7 @@ export default function ProductMixPage() {
           {/* Regional Adoption Summary Cards below Chart */}
           <div className="mt-3 pt-3 border-t border-[#E5E7EB] flex flex-col gap-2">
             <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
-              Regional Breakdown:
+              Regional Adoption:
             </span>
             <div className="grid grid-cols-1 gap-1.5">
               {regionData.map((r) => (
@@ -368,11 +380,23 @@ export default function ProductMixPage() {
         {/* ══════════════════════════════════════════════════════════ */}
         <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between min-h-[620px] h-full">
           <div>
-            <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-              Product Promotion by Retailer
-            </h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                Product Visibility Across Retailers
+              </h3>
+              {selectedFamilies.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedFamilies([])}
+                  className="text-[11px] font-bold text-[#1E429F] hover:text-[#162E6E] bg-[#1E429F]/10 hover:bg-[#1E429F]/20 px-2 py-0.5 rounded-md transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <span>Reset selection ({selectedFamilies.length})</span>
+                  <span>✕</span>
+                </button>
+              )}
+            </div>
             <p className="text-xs text-[#6B7280] mt-0.5">
-              Stack breakdown of product families promoted by each retailer partner.
+              See which Intel product families are showing up across retailer marketing.
             </p>
           </div>
 
@@ -411,32 +435,77 @@ export default function ProductMixPage() {
                       boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                     }}
                   />
-                  {families.map((fam) => (
-                    <Bar
-                      key={fam}
-                      dataKey={fam}
-                      name={fam}
-                      stackId="retailerStack"
-                      fill={FAMILY_COLORS[fam] || DEFAULT_FAMILY_COLOR}
-                      barSize={16}
-                    />
-                  ))}
+                  {families.map((fam) => {
+                    const isSelected = selectedFamilies.includes(fam);
+                    const isAnySelected = selectedFamilies.length > 0;
+                    const baseColor = FAMILY_COLORS[fam] || DEFAULT_FAMILY_COLOR;
+
+                    return (
+                      <Bar
+                        key={fam}
+                        dataKey={fam}
+                        name={fam}
+                        stackId="retailerStack"
+                        fill={isAnySelected && !isSelected ? '#CBD5E1' : baseColor}
+                        opacity={isAnySelected && !isSelected ? 0.22 : 1}
+                        barSize={16}
+                      />
+                    );
+                  })}
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
 
-          {/* Legend Below Chart */}
-          <div className="mt-3 pt-3 border-t border-[#E5E7EB] flex flex-wrap gap-x-3 gap-y-1.5 justify-center text-[10px]">
-            {families.map((fam) => (
-              <div key={fam} className="flex items-center gap-1">
-                <span
-                  className="w-2.5 h-2.5 rounded-xs shrink-0"
-                  style={{ backgroundColor: FAMILY_COLORS[fam] || DEFAULT_FAMILY_COLOR }}
-                />
-                <span className="text-[#6B7280] font-medium">{fam}</span>
-              </div>
-            ))}
+          {/* Interactive Multi-Select Legend Below Chart */}
+          <div className="mt-3 pt-3 border-t border-[#E5E7EB]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
+                {selectedFamilies.length > 0
+                  ? `Highlighting (${selectedFamilies.length} selected):`
+                  : 'Click product families to multi-select & highlight:'}
+              </span>
+              {selectedFamilies.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedFamilies([])}
+                  className="text-[10px] text-[#1E429F] font-bold hover:underline cursor-pointer"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5 justify-center">
+              {families.map((fam) => {
+                const isSelected = selectedFamilies.includes(fam);
+                const isDimmed = selectedFamilies.length > 0 && !isSelected;
+                const color = FAMILY_COLORS[fam] || DEFAULT_FAMILY_COLOR;
+
+                return (
+                  <button
+                    key={fam}
+                    type="button"
+                    onClick={() => toggleFamilySelection(fam)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                      isSelected
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-[#1E429F]/40'
+                        : isDimmed
+                        ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 hover:opacity-100'
+                        : 'bg-[#F8FAFC] text-[#111827] border-[#E5E7EB] hover:bg-slate-100 hover:border-slate-300'
+                    }`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-xs shrink-0"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="truncate max-w-[150px]">{fam}</span>
+                    {isSelected && (
+                      <span className="text-[10px] ml-0.5 font-bold text-emerald-400">✓</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -472,7 +541,7 @@ export default function ProductMixPage() {
                 Product Generation Adoption
               </h4>
               <p className="text-[11px] text-[#6B7280] mt-0.5">
-                Breakdown for {familyFilter}
+                Generation mix across reviewed creatives.
               </p>
             </div>
           </div>
@@ -490,17 +559,20 @@ export default function ProductMixPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={genData}
-                  margin={{ top: 25, right: 15, left: 10, bottom: 25 }}
+                  margin={{ top: 25, right: 15, left: 15, bottom: 45 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 11, fill: '#111827', fontWeight: 600 }}
+                    tick={{ fontSize: 10.5, fill: '#111827', fontWeight: 600 }}
                     interval={0}
-                    angle={-15}
+                    angle={-18}
                     textAnchor="end"
+                    height={55}
+                    dx={-2}
                   />
                   <YAxis
+                    width={35}
                     tick={{ fontSize: 11, fill: '#6B7280' }}
                     allowDecimals={false}
                   />

@@ -61,13 +61,13 @@ def classify_token(token):
     else:
         # Meaningful labels for umbrella / brand-level creatives without sub-tier suffix
         if 'Ultra' in family:
-            gen_label = 'Unspecified Series'
+            gen_label = 'Series/Gen not specified'
         elif 'Processor' in family or 'Gaming' in family:
-            gen_label = 'Unspecified Generation'
+            gen_label = 'Series/Gen not specified'
         elif 'Evo' in family or 'Graphics' in family:
             gen_label = 'Standard'
         else:
-            gen_label = 'Unspecified'
+            gen_label = 'Series/Gen not specified'
 
     return family, gen_label
 
@@ -133,7 +133,7 @@ class ProductMixView(APIView):
 
             for token in tokens:
                 family, gen_label = classify_token(token)
-                if gen_label and not gen_label.startswith('Unspecified') and gen_label != 'Standard':
+                if gen_label and not gen_label.startswith('Unspecified') and gen_label not in ('Standard', 'Series/Gen not specified'):
                     all_series_set.add(gen_label)
                 expanded.append({
                     'thread_id':    row['Email_Thread_ID'],
@@ -257,7 +257,7 @@ class ProductMixView(APIView):
         ]
         for s in sorted(all_series_set):
             formatted = format_series_option(s)
-            if formatted not in series_options and not s.startswith('Unspecified') and s != 'Standard':
+            if formatted not in series_options and not s.startswith('Unspecified') and s not in ('Standard', 'Series/Gen not specified'):
                 series_options.append(formatted)
 
         if not series_options:

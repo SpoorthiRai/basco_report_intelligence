@@ -320,12 +320,9 @@ export default function CTACampaignPage() {
                 Effectiveness
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/20 shadow-2xs">
-              Strategic Alignment
-            </span>
           </div>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
-            Analysis of Call-to-Action distribution, strategic alignment with campaign objectives, and misaligned evidence.
+            See whether campaign calls to action support the intended marketing objective – and where execution needs attention.
           </p>
         </div>
 
@@ -402,7 +399,7 @@ export default function CTACampaignPage() {
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
-              Strategically Aligned
+              Aligned to Objective
             </span>
             <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
           </div>
@@ -411,12 +408,9 @@ export default function CTACampaignPage() {
               <span className="text-2xl font-black tracking-tight text-[#1E429F]">
                 {alignedPct}%
               </span>
-              <span className="text-[10px] text-[#6B7280] font-semibold">
-                ({data?.aligned_count?.toLocaleString() || 0})
-              </span>
             </div>
             <span className="text-[10px] text-[#6B7280] font-medium block mt-0.5 truncate">
-              Matched Intent
+              {data?.aligned_count?.toLocaleString() || 0} creatives
             </span>
           </div>
         </div>
@@ -425,7 +419,7 @@ export default function CTACampaignPage() {
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
-              Misaligned Intent
+              Needs Alignment
             </span>
             <span className="w-2 h-2 rounded-full bg-[#64748B]" />
           </div>
@@ -434,12 +428,9 @@ export default function CTACampaignPage() {
               <span className="text-2xl font-black tracking-tight text-[#64748B]">
                 {misalignedPct}%
               </span>
-              <span className="text-[10px] text-[#6B7280] font-semibold">
-                ({data?.misaligned_count?.toLocaleString() || 0})
-              </span>
             </div>
             <span className="text-[10px] text-[#6B7280] font-medium block mt-0.5 truncate">
-              Requires Attention
+              {data?.misaligned_count?.toLocaleString() || 0} creatives
             </span>
           </div>
         </div>
@@ -490,10 +481,10 @@ export default function CTACampaignPage() {
             <div>
               <div className="pb-3 border-b border-[#E5E7EB]">
                 <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                  CTA Usage by Retailer
+                  How Retailers Drive Action
                 </h3>
                 <p className="text-xs text-[#6B7280] mt-0.5">
-                  Distribution of call-to-action types across monitored retailers.
+                  Compare CTA usage and mix across retailer creative.
                 </p>
               </div>
 
@@ -565,10 +556,10 @@ export default function CTACampaignPage() {
               <div className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-[#E5E7EB]">
                 <div>
                   <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                    Top CTA Phrases Used (Volume)
+                    Most-Used Calls to Action
                   </h3>
                   <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                    Volume distribution by key call-to-action phrase
+                    See which CTA phrases appear most frequently across retailer creative.
                   </p>
                 </div>
 
@@ -657,10 +648,10 @@ export default function CTACampaignPage() {
           <div className="pb-3 border-b border-[#E5E7EB] flex items-center justify-between flex-wrap gap-2 shrink-0">
             <div>
               <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                Campaigns Requiring CTA Attention
+                Campaigns to Review
               </h3>
               <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                Creatives where CTA does not match campaign intent
+                Creatives where the CTA is missing or does not support the campaign objective.
               </p>
             </div>
             <span className="text-[11px] font-bold text-[#64748B] bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg shrink-0">
@@ -682,9 +673,9 @@ export default function CTACampaignPage() {
                 <thead className="bg-[#F8FAFC] border-b border-[#E5E7EB] text-[#6B7280] font-bold sticky top-0 z-10">
                   <tr>
                     <th className="py-2.5 px-3">Creative</th>
-                    <th className="py-2.5 px-3">Objective</th>
-                    <th className="py-2.5 px-3">CTA Text</th>
-                    <th className="py-2.5 px-3">CTA Bucket</th>
+                    <th className="py-2.5 px-3">Campaign Objective</th>
+                    <th className="py-2.5 px-3">CTA</th>
+                    <th className="py-2.5 px-3">CTA Type</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">

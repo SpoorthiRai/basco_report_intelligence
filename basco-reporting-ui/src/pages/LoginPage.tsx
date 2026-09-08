@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -295,14 +296,27 @@ export default function LoginPage() {
                   <span>Your experience is tailored to your assigned accounts and markets.</span>
                 </div>
 
-                <div className="pt-2">
-                  <a
-                    href="mailto:support@intel-basco.internal"
-                    className="text-xs font-semibold text-[#1E429F] hover:underline inline-flex items-center gap-1"
-                  >
-                    <span>Need help signing in?</span>
-                    <span>→</span>
-                  </a>
+                <div className="pt-2 flex items-center justify-center min-h-[24px]">
+                  {!showEmail ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowEmail(true)}
+                      className="text-xs font-semibold text-[#1E429F] hover:underline inline-flex items-center gap-1 cursor-pointer transition-all"
+                    >
+                      <span>Need help signing in?</span>
+                      <span>→</span>
+                    </button>
+                  ) : (
+                    <div className="text-xs font-medium text-[#6B7280] flex items-center gap-1.5 animate-in fade-in duration-300">
+                      <span>Reach out to:</span>
+                      <a
+                        href="mailto:amit@redbaron.in"
+                        className="text-[#1E429F] font-bold hover:underline"
+                      >
+                        amit@redbaron.in
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -166,17 +166,14 @@ export default function OfferCTAPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
-              Promotional Offer{" "}
+              Promotional{" "}
               <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
                 Effectiveness
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 shadow-2xs">
-              Promotional Health
-            </span>
           </div>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
-            Analysis of promotional offer types, call-to-action inclusion rates, and product distribution.
+            See how retailers are using promotional offers – and whether those offers give shoppers a clear path to action
           </p>
         </div>
 
@@ -256,10 +253,10 @@ export default function OfferCTAPage() {
           <div>
             <div className="pb-3 border-b border-[#E5E7EB]">
               <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                CTA Presence Across Offer Types
+                How Effectively Offers Drive Action
               </h3>
               <p className="text-xs text-[#6B7280] mt-0.5">
-                Breakdown of promotional creatives with and without CTA
+                Compare CTA presence across different promotional offer types.
               </p>
             </div>
 
@@ -349,7 +346,7 @@ export default function OfferCTAPage() {
             {/* Offer Type Breakdown Grid */}
             <div className="mt-2 pt-2.5 border-t border-[#E5E7EB]">
               <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block mb-1.5">
-                Offer Type CTA Inclusion Breakdown:
+                CTA Readiness by Offer Type:
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {offerBars.map((b) => (
@@ -390,7 +387,7 @@ export default function OfferCTAPage() {
                   {kpis.conversion_ready.toLocaleString()}
                 </span>
                 <span className="text-[11px] font-bold text-[#10B981] mt-0.5 block">
-                  Conversion-ready Creatives
+                  Offers with a Clear CTA
                 </span>
               </div>
               <span
@@ -407,7 +404,7 @@ export default function OfferCTAPage() {
                   {kpis.offer_missing_cta.toLocaleString()}
                 </span>
                 <span className="text-[11px] font-bold text-[#F59E0B] mt-0.5 block">
-                  Offer-led Missing CTA
+                  Offers Missing a CTA
                 </span>
               </div>
               <span
@@ -429,10 +426,10 @@ export default function OfferCTAPage() {
           <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB] flex-wrap shrink-0">
             <div>
               <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                Promo Creatives with Missing CTA
+                Offers Needing Attention
               </h3>
               <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                Promotional creatives featuring offers but lacking a CTA
+                Promotional creatives with an offer but no clear next step.
               </p>
             </div>
             <span className="text-[11px] font-bold text-[#EF4444] bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg shrink-0">
@@ -520,10 +517,10 @@ export default function OfferCTAPage() {
             <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-[#E5E7EB]">
               <div>
                 <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                  How Offers Are Displayed Across Products (Creatives %)
+                  Offer Strategy Across Products
                 </h3>
                 <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                  Percentage intensity distribution of offer types per product family
+                  See which promotional mechanics are being used across Intel product families.
                 </p>
               </div>
             </div>
@@ -613,10 +610,10 @@ export default function OfferCTAPage() {
           <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB] flex-wrap shrink-0">
             <div>
               <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                Different Offer Types Including No Offer
+                Explore Promotional Creatives
               </h3>
               <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                All creatives across all offer types.
+                Review creatives by product and offer type.
               </p>
             </div>
             <div className="flex items-center gap-2">

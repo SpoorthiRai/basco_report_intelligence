@@ -12,6 +12,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   LabelList,
+  Cell,
+  ReferenceLine,
 } from 'recharts';
 import api from '../api/client';
 
@@ -141,17 +143,13 @@ export default function VisualAdoptionPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
-              Intel{" "}
               <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
-                Adoption Intelligence
+                Brand &amp; Visual Adoption
               </span>
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20 shadow-2xs">
-              Pre Launch
-            </span>
           </div>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
-            Track Intel Master Visual adoption and usage distribution across retail partners.
+            See how Intel-approved campaign visuals are being activated across retailers – and where adoption can grow.
           </p>
         </div>
 
@@ -206,10 +204,10 @@ export default function VisualAdoptionPage() {
 
       {/* ── KPI Cards: 3 Metric Tiles ────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Card 1: Total Creatives */}
+        {/* Card 1: Creatives Reviewed */}
         <div className="bg-white rounded-2xl p-4.5 shadow-sm border border-[#E5E7EB] flex flex-col justify-between min-h-[104px]">
           <span className="text-[10px] font-bold tracking-wider uppercase text-[#6B7280]">
-            Total Creatives
+            Creatives Reviewed
           </span>
           {loading && !data ? (
             <div className="h-8 bg-slate-100 rounded animate-pulse w-1/2 mt-2" />
@@ -220,10 +218,10 @@ export default function VisualAdoptionPage() {
           )}
         </div>
 
-        {/* Card 2: Intel Visuals Used */}
+        {/* Card 2: Intel Visuals in Use */}
         <div className="bg-gradient-to-br from-[#0B1325] to-[#1C3668] rounded-2xl p-4.5 shadow-md border border-[#1C3668]/30 flex flex-col justify-between min-h-[104px] text-white">
           <span className="text-[10px] font-bold tracking-wider uppercase text-slate-200">
-            Intel Visuals Used
+            Intel Visuals in Use
           </span>
           {loading && !data ? (
             <div className="h-8 bg-slate-700/60 rounded animate-pulse w-1/2 mt-2" />
@@ -239,10 +237,10 @@ export default function VisualAdoptionPage() {
           )}
         </div>
 
-        {/* Card 3: Master Intel Visual Adoption % */}
+        {/* Card 3: Intel Visual Adoption */}
         <div className="bg-gradient-to-br from-[#1C3668] to-[#0EA5E9] rounded-2xl p-4.5 shadow-md border border-[#0EA5E9]/40 flex flex-col justify-between min-h-[104px] text-white">
           <span className="text-[10px] font-bold tracking-wider uppercase text-white/90">
-            Master Intel Visual Adoption %
+            Intel Visual Adoption
           </span>
           {loading && !data ? (
             <div className="h-8 bg-blue-800/60 rounded animate-pulse w-1/2 mt-2" />
@@ -265,13 +263,13 @@ export default function VisualAdoptionPage() {
         {/* LEFT COLUMN: 60% Width (lg:col-span-7)                     */}
         {/* ══════════════════════════════════════════════════════════ */}
         <div className="lg:col-span-7 flex flex-col">
-          {/* Left Chart Card: Intel Visual Adoption by Retailer */}
+          {/* Left Chart Card: Visual Adoption Across Retailers */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between h-full">
             <div>
               {/* Header + Visual Style Filter */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-[#E5E7EB]">
                 <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                  Intel Visual Adoption by Retailer
+                  Visual Adoption Across Retailers
                 </h3>
 
                 {/* Visual Style Filter Dropdown */}
@@ -292,8 +290,24 @@ export default function VisualAdoptionPage() {
               </div>
 
               <p className="text-xs text-[#6B7280] mb-2">
-                Percentage of total retailer creatives utilizing approved Intel Master Visual branding.
+                Share of retailer creatives using approved Intel campaign visuals.
               </p>
+              
+              <div className="flex flex-wrap items-center gap-3 text-[10px] mb-2 font-bold">
+                <span className="text-[#6B7280] uppercase tracking-wider">Adoption Tiers:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#1E429F]"></span>
+                  <span className="text-[#1E429F]">On Track (≥90%)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#0EA5E9]"></span>
+                  <span className="text-[#0EA5E9]">Watch (80-89%)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#94A3B8]"></span>
+                  <span className="text-[#64748B]">Action Required (&lt;80%)</span>
+                </div>
+              </div>
             </div>
 
             {/* Horizontal Bar Chart — Stretches cleanly to fill available height */}
@@ -344,12 +358,18 @@ export default function VisualAdoptionPage() {
                       itemStyle={{ color: '#0EA5E9', fontWeight: 600 }}
                       labelStyle={{ color: '#ffffff', fontWeight: 700, marginBottom: '4px' }}
                     />
+                    <ReferenceLine x={90} stroke="#64748B" strokeDasharray="3 3" strokeWidth={1} />
                     <Bar
                       dataKey="adoption_pct"
-                      fill="#1E429F"
                       radius={[0, 5, 5, 0]}
                       barSize={18}
                     >
+                      {topRetailersAdoption.map((entry, index) => {
+                        let color = '#1E429F'; // >= 90%
+                        if (entry.adoption_pct < 80) color = '#94A3B8';
+                        else if (entry.adoption_pct < 90) color = '#0EA5E9';
+                        return <Cell key={`cell-${index}`} fill={color} />;
+                      })}
                       <LabelList
                         dataKey="adoption_pct"
                         position="right"
@@ -363,6 +383,30 @@ export default function VisualAdoptionPage() {
                 </ResponsiveContainer>
               )}
             </div>
+
+            {/* Dynamic Observation */}
+            {(() => {
+              const actionRequiredCount = (data?.retailer_adoption || []).filter(r => r.adoption_pct < 80).length;
+              if (actionRequiredCount > 0) {
+                return (
+                  <div className="mt-3 pt-3 border-t border-[#E5E7EB] flex items-center justify-between">
+                    <span className="text-[11px] text-[#6B7280] font-medium">
+                      <strong className="text-[#111827]">{actionRequiredCount} retailer{actionRequiredCount !== 1 ? 's' : ''}</strong> {actionRequiredCount === 1 ? 'has' : 'have'} visual adoption below 80%, representing an immediate opportunity for alignment.
+                    </span>
+                  </div>
+                );
+              }
+              if (data && data.retailer_adoption && data.retailer_adoption.length > 0) {
+                return (
+                  <div className="mt-3 pt-3 border-t border-[#E5E7EB] flex items-center justify-between">
+                    <span className="text-[11px] text-[#1E429F] font-bold">
+                      All monitored retailers have visual adoption of 80% or higher. Great alignment!
+                    </span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
 
@@ -377,7 +421,7 @@ export default function VisualAdoptionPage() {
                 htmlFor="visual-select"
                 className="text-xs font-bold uppercase tracking-wider text-[#111827] block mb-1.5"
               >
-                Explore Intel Visuals
+                Explore Intel Campaign Visuals
               </label>
               <select
                 id="visual-select"
@@ -428,7 +472,7 @@ export default function VisualAdoptionPage() {
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 flex flex-col justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
-                    Creatives Count
+                    Creatives Using This Visual
                   </span>
                   <span className="text-xl font-black text-[#111827] mt-1">
                     {data.selected_visual_stats.creative_count.toLocaleString()}
@@ -436,7 +480,7 @@ export default function VisualAdoptionPage() {
                 </div>
                 <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 flex flex-col justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
-                    Overall Intel Visual Adoption
+                    Share of Reviewed Creatives
                   </span>
                   <span className="text-xl font-black text-[#1E429F] mt-1">
                     {data.selected_visual_stats.adoption_pct}%
@@ -446,11 +490,16 @@ export default function VisualAdoptionPage() {
             )}
           </div>
 
-          {/* Right Chart Card: Intel Visual Usage by Retailer */}
+          {/* Right Chart Card: Retailer Usage of Selected Visual */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between flex-1">
-            <h3 className="text-sm font-bold text-[#111827] tracking-tight mb-4 pb-3 border-b border-[#E5E7EB]">
-              Intel Visual Usage by Retailer
-            </h3>
+            <div className="mb-4 pb-3 border-b border-[#E5E7EB]">
+              <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                Retailer Usage of Selected Visual
+              </h3>
+              <p className="text-[11px] text-[#6B7280] mt-0.5">
+                Distribution of the selected Intel visual across retail partners.
+              </p>
+            </div>
 
             {/* Horizontal Bar Chart */}
             <div className="w-full flex-1 min-h-[220px]">

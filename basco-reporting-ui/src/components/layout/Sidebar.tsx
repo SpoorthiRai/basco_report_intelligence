@@ -112,8 +112,8 @@ const navItems: NavItemDef[] = [
   { label: 'Overview',               to: '/dashboard',       Icon: DashboardIcon },
   { label: 'Retailer Performance',   to: '/league-table',    Icon: LeagueTableIcon },
   { label: 'Market Priorities',      to: '/market-maturity', Icon: MarketMaturityIcon },
-  { label: 'Intel Visual Adoption',  to: '/visual-adoption', Icon: VisualAdoptionIcon },
-  { label: 'Product Priorities',     to: '/product-mix',     Icon: ProductMixIcon },
+  { label: 'Brand & Visual Adoption', to: '/visual-adoption', Icon: VisualAdoptionIcon },
+  { label: 'Product Momentum',       to: '/product-mix',     Icon: ProductMixIcon },
   { label: 'Campaign Effectiveness', to: '/cta-campaign',    Icon: CTACampaignIcon },
   { label: 'Promotional Effectiveness', to: '/offer-cta',     Icon: OfferCTAIcon },
 ]
