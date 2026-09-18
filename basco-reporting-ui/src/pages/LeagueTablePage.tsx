@@ -590,7 +590,11 @@ export default function LeagueTablePage() {
                     style={thStyle("right")}
                     onClick={() => handleSort("fmv")}
                     onMouseEnter={(e) =>
-                      setTooltip({ x: e.clientX, y: e.clientY, text: FMV_TOOLTIP })
+                      setTooltip({
+                        x: e.clientX,
+                        y: e.clientY,
+                        text: "Fair Market Value ($) of Intel-supported creatives in this market",
+                      })
                     }
                     onMouseLeave={() => setTooltip(null)}
                   >

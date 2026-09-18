@@ -13,18 +13,6 @@ import {
 import { useMarketMaturity } from "../hooks/useMarketMaturity";
 import { useLeagueTable } from "../hooks/useLeagueTable";
 
-interface FmvDataRow {
-  country: string;
-  region: string;
-  basco_score: number;
-  fmv: number;
-  attr_loss: number;
-  total_jobs?: number;
-  parent_accounts?: string[];
-  helpdesk_queries?: number;
-  attribution_loss_threshold?: number;
-}
-
 export interface ParentAccountRow {
   parent_account: string;
   country: string;
@@ -393,7 +381,7 @@ export default function MarketMaturityPage() {
 
   // ── Parent accounts from backend ──────────────────────────────────────────
   const parentAccountList: ParentAccountRow[] = useMemo(() => {
-    const raw = (leagueResponse?.parent_accounts || []) as ParentAccountRow[];
+    const raw = (leagueResponse?.parent_accounts || []) as unknown as ParentAccountRow[];
     const benchmark = medianLoss(raw.map((a) => Number(a.attr_loss || 0)));
     return raw.map((a) => ({
       ...a,

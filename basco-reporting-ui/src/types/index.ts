@@ -26,10 +26,16 @@ export interface LoginResponse {
 }
 
 export interface LeagueTableRow {
-  retailer_name: string
-  basco_score: number
-  fmv_at_risk: number
-  helpdesk_queries: number
+  retailer_name?: string
+  retailer?: string
+  parent_account?: string
+  country?: string
+  region?: string
+  quarter?: string
+  basco_score?: number
+  basco?: number
+  fmv_at_risk?: number
+  helpdesk_queries?: number
 }
 
 export interface MarketMaturityRow {

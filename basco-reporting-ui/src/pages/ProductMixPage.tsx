@@ -78,6 +78,8 @@ const FAMILY_COLORS: Record<string, string> = {
   'Intel Iris Graphics': '#06B6D4',
 };
 
+const DEFAULT_FAMILY_COLOR = '#64748B';
+
 const GUIDANCE_COLORS: Record<string, string> = {
   'Missing Text Mention': '#1E429F',
   'Badge Size': '#0284C7',
