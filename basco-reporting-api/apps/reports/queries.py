@@ -59,22 +59,71 @@ GROUP BY Country, Region, Quarter, Year
 ORDER BY Quarter DESC, avg_basco_score ASC
 """
 
-# Returns Intel visual type usage per sender/retailer from BASCO_AIHD_Metadata
-VISUAL_ADOPTION_QUERY = """
-    SELECT
-        PARENT_ACCOUNT AS retailer_name,
-        ISNULL(VISUAL_CONTENT_NAME, 'Unknown') AS visual_type,
-        COUNT(*) AS usage_count
-    FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
-    WHERE INTEL_VISUAL_FLAG = 'Yes'
-      AND VISUAL_CONTENT_NAME IS NOT NULL
-      AND VISUAL_CONTENT_NAME NOT IN ('None', '', 'NA')
-    GROUP BY
-        PARENT_ACCOUNT,
-        VISUAL_CONTENT_NAME
-    ORDER BY
-        PARENT_ACCOUNT ASC,
-        usage_count DESC
+# Returns POP parent accounts by country/quarter for Helpdesk joins
+POP_PARENT_COUNTRY_QUERY = """
+SELECT DISTINCT
+    Country AS country,
+    Region AS region,
+    CONCAT(Quarter, ' ', Year) AS quarter_label,
+    COALESCE(PARENT_ACCOUNT_V2, Account) AS parent_account
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
+WHERE Year = 2026
+  AND Account NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
+  AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
+"""
+
+# Returns Helpdesk query/artwork counts by country from BASCO_AIHD_Metadata
+HELPDESK_COUNTRY_USAGE_QUERY = """
+SELECT
+    LTRIM(RTRIM(COUNTRY)) AS country,
+    LTRIM(RTRIM(REGION)) AS region,
+    REPLACE(QUARTER, '-', ' ') AS quarter_label,
+    COUNT(*) AS helpdesk_artworks,
+    COUNT(DISTINCT THREAD_ID) AS helpdesk_queries
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
+WHERE COUNTRY IS NOT NULL
+  AND LTRIM(RTRIM(COUNTRY)) NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA')
+GROUP BY
+    LTRIM(RTRIM(COUNTRY)),
+    LTRIM(RTRIM(REGION)),
+    QUARTER
+"""
+HELPDESK_PARENT_USAGE_QUERY = """
+SELECT
+    PARENT_ACCOUNT AS parent_account,
+    REPLACE(QUARTER, '-', ' ') AS quarter_label,
+    COUNTRY AS country,
+    REGION AS region,
+    COUNT(*) AS helpdesk_artworks,
+    COUNT(DISTINCT THREAD_ID) AS helpdesk_queries
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
+WHERE PARENT_ACCOUNT IS NOT NULL
+  AND PARENT_ACCOUNT NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
+GROUP BY
+    PARENT_ACCOUNT,
+    QUARTER,
+    COUNTRY,
+    REGION
+"""
+
+# Returns Helpdesk query/artwork counts from BASCO_HELPDESK_MASTER_MERGE for Market Maturity bubbles
+HELPDESK_MASTER_MERGE_PARENT_USAGE_QUERY = """
+SELECT
+    LTRIM(RTRIM(PARENT_ACCOUNT)) AS parent_account,
+    REPLACE(LTRIM(RTRIM(QUARTER)), '-', ' ') AS quarter_label,
+    LTRIM(RTRIM(COUNTRY)) AS country,
+    LTRIM(RTRIM(REGION)) AS region,
+    SUM(ISNULL(NO_OF_ARTWORKS, 0)) AS helpdesk_artworks,
+    COUNT(DISTINCT THREAD_ID) AS helpdesk_queries
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_HELPDESK_MASTER_MERGE] WITH (NOLOCK)
+WHERE YEAR = 2026
+  AND PARENT_ACCOUNT IS NOT NULL
+  AND LTRIM(RTRIM(PARENT_ACCOUNT)) NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
+GROUP BY
+    LTRIM(RTRIM(PARENT_ACCOUNT)),
+    LTRIM(RTRIM(QUARTER)),
+    LTRIM(RTRIM(COUNTRY)),
+    LTRIM(RTRIM(REGION))
 """
 
 # Returns campaign type and CTA objective breakdown across all completed creatives

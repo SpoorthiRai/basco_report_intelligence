@@ -16,10 +16,12 @@ import {
   ReferenceLine,
 } from 'recharts';
 import api from '../api/client';
+import ImageModal from '../components/common/ImageModal';
 
 interface PMSVisual {
   PMSVisual_ID: number | string;
   PMSVisual_Name: string;
+  PMSVisual_Label?: string;
   PMSVisual_URL: string;
   Content?: string;
 }
@@ -43,22 +45,45 @@ interface RetailerVisualBreakdown {
   count: number;
 }
 
+interface UsageTableRow {
+  master_visual_url: string;
+  master_visual_name: string;
+  actual_creative_url: string;
+  retailer: string;
+  campaign: string;
+  products: string;
+  offer: string;
+  cta: string;
+  usage: string;
+  quarter_label?: string;
+  Region?: string;
+  Country?: string;
+}
+
 interface VisualAdoptionResponse {
   kpis: {
     total_creatives: number;
     used_intel_visuals: number;
     master_visual_adoption_pct: number;
   };
+  source?: string;
   retailer_adoption: RetailerAdoption[];
   pms_visuals: PMSVisual[];
   default_visual?: string;
   selected_visual_stats: SelectedVisualStats | null;
   retailer_visual_breakdown: RetailerVisualBreakdown[];
+  usage_table?: UsageTableRow[];
   filter_options: {
     quarters: string[];
+    regions?: string[];
     countries: string[];
+    retailers?: string[];
     visual_styles: string[];
   };
+}
+
+function visualLabel(pv: PMSVisual): string {
+  return pv.PMSVisual_Label || pv.PMSVisual_Name;
 }
 
 export default function VisualAdoptionPage() {
@@ -67,9 +92,18 @@ export default function VisualAdoptionPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [quarterFilter, setQuarterFilter] = useState<string>('All');
+  const [regionFilter, setRegionFilter] = useState<string>('All');
   const [countryFilter, setCountryFilter] = useState<string>('All');
   const [visualStyleFilter, setVisualStyleFilter] = useState<string>('All');
   const [selectedVisual, setSelectedVisual] = useState<string>('');
+  const [sourceFilter, setSourceFilter] = useState<'pop' | 'helpdesk'>('helpdesk');
+  const [tableRetailerFilter, setTableRetailerFilter] = useState<string>('All');
+  const [usageFilter, setUsageFilter] = useState<string>('All');
+  const [selectedPreview, setSelectedPreview] = useState<{
+    url: string;
+    title: string;
+    subtitle?: string;
+  } | null>(null);
 
   const [imgError, setImgError] = useState<boolean>(false);
 
@@ -81,14 +115,20 @@ export default function VisualAdoptionPage() {
     setImgError(false);
 
     const params = new URLSearchParams();
-    if (quarterFilter && quarterFilter !== 'All') {
+    if (quarterFilter && quarterFilter !== 'All' && quarterFilter !== 'All Quarters') {
       params.append('quarter', quarterFilter);
     }
-    if (countryFilter && countryFilter !== 'All') {
+    if (regionFilter && regionFilter !== 'All' && regionFilter !== 'All Regions') {
+      params.append('region', regionFilter);
+    }
+    if (countryFilter && countryFilter !== 'All' && countryFilter !== 'All Countries') {
       params.append('country', countryFilter);
     }
     if (visualStyleFilter && visualStyleFilter !== 'All') {
       params.append('visual_style', visualStyleFilter);
+    }
+    if (sourceFilter) {
+      params.append('source', sourceFilter);
     }
     if (selectedVisual) {
       params.append('visual_name', selectedVisual);
@@ -97,7 +137,7 @@ export default function VisualAdoptionPage() {
     const queryString = params.toString() ? `?${params.toString()}` : '';
 
     api
-      .get<VisualAdoptionResponse>(`/api/reports/visual-adoption-v2/${queryString}`)
+      .get<VisualAdoptionResponse>(`/api/reports/visual-adoption/${queryString}`)
       .then((res) => {
         if (!isMounted) return;
         if (res.data) {
@@ -123,7 +163,7 @@ export default function VisualAdoptionPage() {
     return () => {
       isMounted = false;
     };
-  }, [quarterFilter, countryFilter, visualStyleFilter, selectedVisual]);
+  }, [quarterFilter, regionFilter, countryFilter, visualStyleFilter, selectedVisual, sourceFilter]);
 
   // Top 15 retailers for left chart
   const topRetailersAdoption = (data?.retailer_adoption || []).slice(0, 15);
@@ -135,6 +175,24 @@ export default function VisualAdoptionPage() {
   const activePmsVisual = data?.pms_visuals?.find((p) => p.PMSVisual_Name === selectedVisual);
   const currentThumbnail =
     data?.selected_visual_stats?.thumbnail_url || activePmsVisual?.PMSVisual_URL || '';
+  const selectedVisualLabel =
+    (activePmsVisual && visualLabel(activePmsVisual)) || selectedVisual;
+
+  const usageRows = (data?.usage_table || []).filter((row) => {
+    const retailerOk =
+      tableRetailerFilter === 'All' ||
+      tableRetailerFilter === 'All Retailers' ||
+      row.retailer === tableRetailerFilter;
+    const usageOk =
+      usageFilter === 'All' ||
+      usageFilter === 'All Usage' ||
+      row.usage === usageFilter;
+    return retailerOk && usageOk;
+  });
+
+  const tableRetailerOptions = data?.filter_options?.retailers?.length
+    ? data.filter_options.retailers
+    : ['All'];
 
   return (
     <div className="space-y-6 pb-12">
@@ -153,8 +211,33 @@ export default function VisualAdoptionPage() {
           </p>
         </div>
 
-        {/* Quarter & Country Dropdowns */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        {/* Source + Quarter, Region, Country */}
+        <div className="flex items-center gap-2.5 flex-wrap justify-end">
+          <div className="inline-flex rounded-xl border border-[#E5E7EB] overflow-hidden bg-white shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setSourceFilter('pop')}
+              className={`px-3 py-2 text-[11px] font-bold transition-colors ${
+                sourceFilter === 'pop'
+                  ? 'bg-[#1E429F] text-white'
+                  : 'bg-white text-[#6B7280] hover:bg-[#F8FAFC]'
+              }`}
+            >
+              POP creatives
+            </button>
+            <button
+              type="button"
+              onClick={() => setSourceFilter('helpdesk')}
+              className={`px-3 py-2 text-[11px] font-bold transition-colors border-l border-[#E5E7EB] ${
+                sourceFilter === 'helpdesk'
+                  ? 'bg-[#0D9488] text-white'
+                  : 'bg-white text-[#6B7280] hover:bg-[#F8FAFC]'
+              }`}
+            >
+              Helpdesk creatives
+            </button>
+          </div>
+
           {/* Quarter dropdown */}
           <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
             <span className="text-[#6B7280] font-medium">Quarter:</span>
@@ -166,6 +249,25 @@ export default function VisualAdoptionPage() {
               {(data?.filter_options?.quarters || ['All']).map((q) => (
                 <option key={q} value={q} className="bg-white text-[#111827]">
                   {q}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Region dropdown */}
+          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
+            <span className="text-[#6B7280] font-medium">Region:</span>
+            <select
+              value={regionFilter}
+              onChange={(e) => {
+                setRegionFilter(e.target.value);
+                setCountryFilter('All');
+              }}
+              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
+            >
+              {(data?.filter_options?.regions || ['All']).map((r) => (
+                <option key={r} value={r} className="bg-white text-[#111827]">
+                  {r}
                 </option>
               ))}
             </select>
@@ -434,7 +536,7 @@ export default function VisualAdoptionPage() {
               >
                 {(data?.pms_visuals || []).map((pv) => (
                   <option key={pv.PMSVisual_ID} value={pv.PMSVisual_Name}>
-                    {pv.PMSVisual_Name}
+                    {visualLabel(pv)}
                   </option>
                 ))}
               </select>
@@ -445,7 +547,7 @@ export default function VisualAdoptionPage() {
               {currentThumbnail && !imgError ? (
                 <img
                   src={currentThumbnail}
-                  alt={selectedVisual || 'Master Visual'}
+                  alt={selectedVisualLabel || 'Master Visual'}
                   onError={() => setImgError(true)}
                   className="w-full h-full object-cover"
                 />
@@ -453,7 +555,7 @@ export default function VisualAdoptionPage() {
                 <div className="p-4 text-center">
                   <span className="text-2xl block mb-1">🖼️</span>
                   <span className="text-xs font-bold text-slate-300">
-                    {selectedVisual || 'No Visual Selected'}
+                    {selectedVisualLabel || 'No Visual Selected'}
                   </span>
                   <span className="text-[10px] text-[#6B7280] block mt-0.5">
                     {imgError ? 'Image not reachable' : 'Preview placeholder'}
@@ -462,32 +564,10 @@ export default function VisualAdoptionPage() {
               )}
               {selectedVisual && (
                 <span className="absolute bottom-2 left-2 bg-black/75 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
-                  {selectedVisual}
+                  {selectedVisualLabel}
                 </span>
               )}
             </div>
-
-            {/* Selected Visual Performance Stats Card */}
-            {data?.selected_visual_stats && (
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
-                    Creatives Using This Visual
-                  </span>
-                  <span className="text-xl font-black text-[#111827] mt-1">
-                    {data.selected_visual_stats.creative_count.toLocaleString()}
-                  </span>
-                </div>
-                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
-                    Share of Reviewed Creatives
-                  </span>
-                  <span className="text-xl font-black text-[#1E429F] mt-1">
-                    {data.selected_visual_stats.adoption_pct}%
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Chart Card: Retailer Usage of Selected Visual */}
@@ -566,6 +646,198 @@ export default function VisualAdoptionPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Visual usage table (replaces share / count cards) ── */}
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 pb-3 border-b border-[#E5E7EB]">
+          <div>
+            <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+              Campaign Visual Usage
+            </h3>
+            <p className="text-xs text-[#6B7280] font-medium mt-0.5">
+              Master visual vs live retailer creatives for {selectedVisualLabel || 'the selected visual'}.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
+              <span className="text-[11px] font-medium text-[#6B7280]">Quarter:</span>
+              <select
+                value={quarterFilter}
+                onChange={(e) => setQuarterFilter(e.target.value)}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
+              >
+                {(data?.filter_options?.quarters || ['All']).map((q) => (
+                  <option key={`t-q-${q}`} value={q}>{q}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
+              <span className="text-[11px] font-medium text-[#6B7280]">Region:</span>
+              <select
+                value={regionFilter}
+                onChange={(e) => {
+                  setRegionFilter(e.target.value);
+                  setCountryFilter('All');
+                }}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
+              >
+                {(data?.filter_options?.regions || ['All']).map((r) => (
+                  <option key={`t-r-${r}`} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
+              <span className="text-[11px] font-medium text-[#6B7280]">Country:</span>
+              <select
+                value={countryFilter}
+                onChange={(e) => setCountryFilter(e.target.value)}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
+              >
+                {(data?.filter_options?.countries || ['All']).map((c) => (
+                  <option key={`t-c-${c}`} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
+              <span className="text-[11px] font-medium text-[#6B7280]">Retailer:</span>
+              <select
+                value={tableRetailerFilter}
+                onChange={(e) => setTableRetailerFilter(e.target.value)}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer max-w-[140px]"
+              >
+                {tableRetailerOptions.map((r) => (
+                  <option key={`t-ret-${r}`} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
+              <span className="text-[11px] font-medium text-[#6B7280]">Usage:</span>
+              <select
+                value={usageFilter}
+                onChange={(e) => setUsageFilter(e.target.value)}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
+              >
+                <option value="All">All</option>
+                <option value="Partial">Partial</option>
+                <option value="Completely">Completely</option>
+              </select>
+            </div>
+            <span className="text-[11px] font-bold text-[#64748B] bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg">
+              {usageRows.length} Creatives
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-3 overflow-x-auto border border-[#E5E7EB] rounded-xl max-h-[460px] overflow-y-auto">
+          {loading && !data ? (
+            <div className="p-8 text-center text-xs font-semibold text-[#6B7280] animate-pulse">
+              Loading visual usage...
+            </div>
+          ) : usageRows.length === 0 ? (
+            <div className="p-8 text-center text-xs font-medium text-[#6B7280]">
+              No creatives found for this visual and filter set.
+            </div>
+          ) : (
+            <table className="w-full text-left text-xs border-collapse min-w-[860px]">
+              <thead className="bg-[#F8FAFC] border-b border-[#E5E7EB] text-[#6B7280] font-bold sticky top-0 z-10">
+                <tr>
+                  <th className="py-2.5 px-3">Master Visual</th>
+                  <th className="py-2.5 px-3">Actual Creative</th>
+                  <th className="py-2.5 px-3">Retailer</th>
+                  <th className="py-2.5 px-3">Campaign</th>
+                  <th className="py-2.5 px-3">Products</th>
+                  <th className="py-2.5 px-3">Offer (Y/N)</th>
+                  <th className="py-2.5 px-3">CTA (Y/N)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E5E7EB]">
+                {usageRows.map((row, idx) => (
+                  <tr
+                    key={`${row.actual_creative_url}-${idx}`}
+                    className={idx % 2 === 0 ? 'bg-white hover:bg-[#F8FAFC]' : 'bg-[#F8FAFC]/50 hover:bg-[#F8FAFC]'}
+                  >
+                    <td className="py-2 px-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedPreview({
+                            url: row.master_visual_url,
+                            title: row.master_visual_name,
+                            subtitle: 'Master visual',
+                          })
+                        }
+                        className="group relative w-20 h-14 bg-slate-900 rounded-md overflow-hidden border border-[#E5E7EB]"
+                        title="View master visual"
+                      >
+                        {row.master_visual_url ? (
+                          <img
+                            src={row.master_visual_url}
+                            alt={row.master_visual_name}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-slate-400">{row.master_visual_name}</span>
+                        )}
+                      </button>
+                    </td>
+                    <td className="py-2 px-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedPreview({
+                            url: row.actual_creative_url,
+                            title: row.retailer,
+                            subtitle: row.campaign,
+                          })
+                        }
+                        className="group relative w-20 h-14 bg-slate-900 rounded-md overflow-hidden border border-[#E5E7EB]"
+                        title="View actual creative"
+                      >
+                        <img
+                          src={row.actual_creative_url}
+                          alt={`${row.retailer} creative`}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    </td>
+                    <td className="py-2 px-3 align-middle font-semibold text-[#111827]">{row.retailer}</td>
+                    <td className="py-2 px-3 align-middle text-[#6B7280] font-medium">{row.campaign}</td>
+                    <td className="py-2 px-3 align-middle text-[#6B7280] font-mono text-[10px]">{row.products}</td>
+                    <td className="py-2 px-3 align-middle">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          row.offer === 'Y' ? 'bg-[#10B981]/10 text-[#10B981]' : 'bg-[#EF4444]/10 text-[#EF4444]'
+                        }`}
+                      >
+                        {row.offer}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 align-middle">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          row.cta === 'Y' ? 'bg-[#10B981]/10 text-[#10B981]' : 'bg-[#EF4444]/10 text-[#EF4444]'
+                        }`}
+                      >
+                        {row.cta}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      <ImageModal
+        isOpen={!!selectedPreview}
+        onClose={() => setSelectedPreview(null)}
+        imageUrl={selectedPreview?.url || ''}
+        title={selectedPreview?.title || 'Creative'}
+        subtitle={selectedPreview?.subtitle}
+      />
     </div>
   );
 }

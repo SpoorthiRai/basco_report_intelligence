@@ -18,9 +18,12 @@ FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
 OFFER_EVIDENCE_QUERY = """
 SELECT
     ASSET_URL AS Asset_URL,
+    ISNULL(OFFER_FLAG, 'No') AS Offer_Flag,
     ISNULL(OFFER_TYPE, 'No Offer') AS Offer_Type,
     ISNULL(CTA_FLAG, 'No') AS CTA_Flag,
     ISNULL(CONTENT, 'Unknown') AS Content,
+    ISNULL(CAMPAIGN_TYPE, 'Unknown') AS Campaign_Type,
+    ISNULL(NARRATIVE_STYLE, 'Unknown') AS Messaging_Style,
     PARENT_ACCOUNT AS Retailer,
     REGION AS Region,
     COUNTRY AS Country,

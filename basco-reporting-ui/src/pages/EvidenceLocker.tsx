@@ -19,13 +19,17 @@ interface CreativeItem {
   Campaign_Name?: string;
   Layout?: string;
   Content?: string;
+  Product?: string;
   OEM_Flag?: string;
   OEM_Values?: string;
   Intel_Visual_Flag?: string;
   Visual_Content_Name?: string;
+  Intel_Visual_Usage?: string;
+  General_Visual_Flag?: string;
   AI_Messaging?: string;
   Inside_Messaging?: string;
   Offer_Flag?: string;
+  Offer_Type?: string;
   CTA_Flag?: string;
   Objective?: string;
   quarter_label?: string;
@@ -44,6 +48,7 @@ interface EvidenceLockerResponse {
     quarters: string[];
     products: string[];
     generations?: string[];
+    regions?: string[];
     countries: string[];
   };
   creatives: CreativeItem[];
@@ -65,7 +70,59 @@ function normalizeAssetUrl(url?: string | null): string {
 function isMandatePass(value?: string | null): boolean {
   if (!value) return false;
   const v = value.trim().toLowerCase();
-  return v === 'yes' || v === '1' || v === 'true' || (v !== 'no' && v !== 'none' && v !== '0' && v !== 'false');
+  return v === 'yes' || v === '1' || v === 'true' || (v !== 'no' && v !== 'none' && v !== '0' && v !== 'false' && v !== 'unknown');
+}
+
+function isPresent(value?: string | null): boolean {
+  const v = String(value || '').trim();
+  return Boolean(v) && !['none', 'unknown', 'no', 'n/a', 'na', ''].includes(v.toLowerCase());
+}
+
+function logoPass(item: CreativeItem): boolean {
+  return isMandatePass(item.Intel_Visual_Flag);
+}
+
+function badgePass(item: CreativeItem): boolean {
+  return isMandatePass(item.Inside_Messaging);
+}
+
+function textPass(item: CreativeItem): boolean {
+  return isMandatePass(item.AI_Messaging);
+}
+
+function visualPass(item: CreativeItem): boolean {
+  if (isMandatePass(item.General_Visual_Flag)) return true;
+  const usage = String(item.Intel_Visual_Usage || '').toLowerCase();
+  if (usage.includes('used') && !usage.includes('not used')) return true;
+  return isPresent(item.Visual_Content_Name);
+}
+
+function complianceScore(item: CreativeItem): number {
+  const flags = [logoPass(item), badgePass(item), textPass(item), visualPass(item)];
+  return Math.round((flags.filter(Boolean).length / flags.length) * 100);
+}
+
+function complianceFeedback(item: CreativeItem): string {
+  const missing: string[] = [];
+  if (!logoPass(item)) missing.push('Logo');
+  if (!badgePass(item)) missing.push('Badge');
+  if (!textPass(item)) missing.push('Text');
+  if (!visualPass(item)) missing.push('Visual');
+  if (missing.length) return `Missing ${missing.join(', ')}`;
+  if (isPresent(item.Objective)) return String(item.Objective);
+  return 'Meets brand requirements';
+}
+
+function displayOrDash(value?: string | null): string {
+  return isPresent(value) ? String(value).trim() : '—';
+}
+
+function FlagMark({ pass }: { pass: boolean }) {
+  return (
+    <span className={`font-bold ${pass ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+      {pass ? 'Yes' : 'No'}
+    </span>
+  );
 }
 
 // ── Dynamic Creative Visual Banner Mockup ──────────────────────────────────────
@@ -285,24 +342,15 @@ const DEFAULT_PRODUCTS = [
   'Other / General',
 ];
 
-const DEFAULT_GENERATIONS = [
-  'All Generations / Series',
-  'Series 3',
-  'Series 2',
-  'Series 1',
-  '14th Gen',
-  '13th Gen',
-  '12th Gen',
-  '11th Gen',
-  '10th Gen',
-];
-
 const DEFAULT_QUARTERS = [
   'All Quarters',
   'Q3 2026',
   'Q2 2026',
   'Q1 2026',
 ];
+
+const DEFAULT_REGIONS = ['All Regions'];
+const DEFAULT_COUNTRIES = ['All Countries'];
 
 // ── Creative Detail Modal ──────────────────────────────────────────────────────
 function CreativeModal({
@@ -467,16 +515,18 @@ export default function EvidenceLocker() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'Compliant' | 'Non-Compliant'>('Compliant');
+  const [activeTab, setActiveTab] = useState<'compliance' | 'execution'>('compliance');
   // Default to 2026 All Quarters
   const [quarterFilter, setQuarterFilter] = useState<string>('All Quarters');
   const [productFilter, setProductFilter] = useState<string>('All Products');
-  const [generationFilter, setGenerationFilter] = useState<string>('All Generations / Series');
+  const [regionFilter, setRegionFilter] = useState<string>('All Regions');
+  const [countryFilter, setCountryFilter] = useState<string>('All Countries');
 
   // Persistent option lists that NEVER shrink when filters change
   const [availableProducts, setAvailableProducts] = useState<string[]>(DEFAULT_PRODUCTS);
-  const [availableGenerations, setAvailableGenerations] = useState<string[]>(DEFAULT_GENERATIONS);
   const [availableQuarters, setAvailableQuarters] = useState<string[]>(DEFAULT_QUARTERS);
+  const [availableRegions, setAvailableRegions] = useState<string[]>(DEFAULT_REGIONS);
+  const [availableCountries, setAvailableCountries] = useState<string[]>(DEFAULT_COUNTRIES);
 
   // Track image load and error states
   const [imageLoaded, setImageLoaded] = useState<Record<string, boolean>>({});
@@ -512,12 +562,34 @@ export default function EvidenceLocker() {
             setAvailableProducts(res.data.filter_options.products);
           }
 
-          if (Array.isArray(res.data.filter_options?.generations) && res.data.filter_options.generations.length > 1) {
-            setAvailableGenerations(res.data.filter_options.generations);
+          if (Array.isArray(res.data.filter_options?.quarters) && res.data.filter_options.quarters.length > 1) {
+            setAvailableQuarters((prev) => {
+              const merged = Array.from(new Set([...prev, ...res.data.filter_options.quarters]));
+              const rest = merged.filter((q) => q !== 'All Quarters' && q !== 'All');
+              rest.sort((a, b) => {
+                const pa = a.match(/Q(\d)\s+(\d{4})/i);
+                const pb = b.match(/Q(\d)\s+(\d{4})/i);
+                if (!pa || !pb) return b.localeCompare(a);
+                const yearDiff = Number(pb[2]) - Number(pa[2]);
+                if (yearDiff !== 0) return yearDiff;
+                return Number(pb[1]) - Number(pa[1]);
+              });
+              return ['All Quarters', ...rest];
+            });
           }
 
-          if (Array.isArray(res.data.filter_options?.quarters) && res.data.filter_options.quarters.length > 1) {
-            setAvailableQuarters(res.data.filter_options.quarters);
+          if (Array.isArray(res.data.filter_options?.regions) && res.data.filter_options.regions.length > 1) {
+            setAvailableRegions(res.data.filter_options.regions);
+          }
+
+          if (Array.isArray(res.data.filter_options?.countries) && res.data.filter_options.countries.length > 1) {
+            const countries = res.data.filter_options.countries.map((c) =>
+              c === 'All' ? 'All Countries' : c
+            );
+            if (!countries.includes('All Countries')) {
+              countries.unshift('All Countries');
+            }
+            setAvailableCountries(countries);
           }
         }
       })
@@ -538,8 +610,8 @@ export default function EvidenceLocker() {
           filter_options: {
             quarters: DEFAULT_QUARTERS,
             products: DEFAULT_PRODUCTS,
-            generations: DEFAULT_GENERATIONS,
-            countries: ['All', 'Australia', 'Brazil', 'Colombia', 'France', 'India', 'UK'],
+            regions: DEFAULT_REGIONS,
+            countries: ['All Countries', 'Australia', 'Brazil', 'Colombia', 'France', 'India', 'UK'],
           },
           creatives: fallback,
         });
@@ -570,31 +642,46 @@ export default function EvidenceLocker() {
     [productFilter]
   );
 
-  // Generation / Series match
-  const matchesGeneration = useCallback(
+  const matchesRegion = useCallback(
     (item: CreativeItem): boolean => {
-      if (!generationFilter || generationFilter === 'All' || generationFilter === 'All Generations / Series') return true;
-      if (item.generations && item.generations.includes(generationFilter)) return true;
-      const needle = generationFilter.toLowerCase().trim();
-      const content = (item.Content || '').toLowerCase();
-      return content.includes(needle);
+      if (!regionFilter || regionFilter === 'All' || regionFilter === 'All Regions') return true;
+      return String(item.Region || '').trim().toUpperCase() === regionFilter.trim().toUpperCase();
     },
-    [generationFilter]
+    [regionFilter]
   );
 
-  const { liveCompliant, liveNonCompliant } = useMemo(() => {
-    if (!data?.creatives) return { liveCompliant: 0, liveNonCompliant: 0 };
-    const compliant    = data.creatives.filter((c) => c.compliance_status === 'Compliant'    && matchesProduct(c) && matchesGeneration(c));
-    const nonCompliant = data.creatives.filter((c) => c.compliance_status === 'Non-Compliant' && matchesProduct(c) && matchesGeneration(c));
-    return { liveCompliant: compliant.length, liveNonCompliant: nonCompliant.length };
-  }, [data, matchesProduct, matchesGeneration]);
+  const matchesCountry = useCallback(
+    (item: CreativeItem): boolean => {
+      if (!countryFilter || countryFilter === 'All' || countryFilter === 'All Countries') return true;
+      return String(item.Country || '').trim() === countryFilter;
+    },
+    [countryFilter]
+  );
+
+  const countryOptions = useMemo(() => {
+    const fromData = Array.from(
+      new Set(
+        (data?.creatives || [])
+          .filter((c) => matchesRegion(c))
+          .map((c) => String(c.Country || '').trim())
+          .filter((c) => c && c !== 'None' && c !== 'Unknown')
+      )
+    ).sort((a, b) => a.localeCompare(b));
+    if (fromData.length > 0) return ['All Countries', ...fromData];
+    return availableCountries;
+  }, [data, matchesRegion, availableCountries]);
+
+  useEffect(() => {
+    if (countryFilter === 'All Countries') return;
+    if (!countryOptions.includes(countryFilter)) {
+      setCountryFilter('All Countries');
+    }
+  }, [countryOptions, countryFilter]);
 
   const filteredCreatives = useMemo(() => {
     if (!data?.creatives) return [];
-    return data.creatives.filter(
-      (c) => c.compliance_status === activeTab && matchesProduct(c) && matchesGeneration(c)
-    );
-  }, [data, activeTab, matchesProduct, matchesGeneration]);
+    return data.creatives.filter((c) => matchesProduct(c) && matchesRegion(c) && matchesCountry(c));
+  }, [data, matchesProduct, matchesRegion, matchesCountry]);
 
   const handleImageLoad = (id: string | number) => {
     setImageLoaded((prev) => ({ ...prev, [String(id)]: true }));
@@ -605,10 +692,13 @@ export default function EvidenceLocker() {
   };
 
   return (
-    <section className="mt-8 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden flex flex-col">
+    <section
+      id="retailer-creative-performance"
+      className="mt-8 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden flex flex-col scroll-mt-20"
+    >
       {/* ── Dark Header Bar ─────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-[#0B1325] via-[#122449] to-[#1C3668] px-6 py-5 text-white flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
+      <div className="bg-gradient-to-r from-[#0B1325] via-[#122449] to-[#1C3668] px-6 py-5 text-white flex flex-row items-center justify-between gap-4">
+        <div className="min-w-0 shrink">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#0D9488]"></span>
             <h2 className="text-base md:text-lg font-bold tracking-tight text-white">
@@ -620,10 +710,8 @@ export default function EvidenceLocker() {
           </p>
         </div>
 
-        {/* Filter Dropdowns: Quarter, Product Family & Generation */}
-        <div className="flex items-center gap-3 self-start lg:self-auto flex-wrap">
-          {/* Quarter Filter (2026 only) */}
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2 xl:gap-3 flex-nowrap shrink-0 ml-auto">
+          <div className="flex items-center gap-1.5 shrink-0">
             <label htmlFor="quarter-filter" className="text-xs font-semibold text-slate-300 whitespace-nowrap">
               Quarter:
             </label>
@@ -631,7 +719,7 @@ export default function EvidenceLocker() {
               id="quarter-filter"
               value={quarterFilter}
               onChange={(e) => setQuarterFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors"
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors"
             >
               {availableQuarters.map((q) => (
                 <option key={q} value={q} className="bg-slate-900 text-white">
@@ -641,8 +729,7 @@ export default function EvidenceLocker() {
             </select>
           </div>
 
-          {/* Product Category Filter (Less granular product families) */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <label htmlFor="product-filter" className="text-xs font-semibold text-slate-300 whitespace-nowrap">
               Product:
             </label>
@@ -650,7 +737,7 @@ export default function EvidenceLocker() {
               id="product-filter"
               value={productFilter}
               onChange={(e) => setProductFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[150px]"
             >
               {availableProducts.map((p) => (
                 <option key={p} value={p} className="bg-slate-900 text-white">
@@ -660,20 +747,37 @@ export default function EvidenceLocker() {
             </select>
           </div>
 
-          {/* Generation / Series Filter */}
-          <div className="flex items-center gap-1.5">
-            <label htmlFor="generation-filter" className="text-xs font-semibold text-slate-300 whitespace-nowrap">
-              Generation:
+          <div className="flex items-center gap-1.5 shrink-0">
+            <label htmlFor="region-filter" className="text-xs font-semibold text-slate-300 whitespace-nowrap">
+              Region:
             </label>
             <select
-              id="generation-filter"
-              value={generationFilter}
-              onChange={(e) => setGenerationFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[180px]"
+              id="region-filter"
+              value={availableRegions.includes(regionFilter) ? regionFilter : 'All Regions'}
+              onChange={(e) => setRegionFilter(e.target.value)}
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[130px]"
             >
-              {availableGenerations.map((g) => (
-                <option key={g} value={g} className="bg-slate-900 text-white">
-                  {g}
+              {availableRegions.map((r) => (
+                <option key={r} value={r} className="bg-slate-900 text-white">
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <label htmlFor="country-filter" className="text-xs font-semibold text-slate-300 whitespace-nowrap">
+              Country:
+            </label>
+            <select
+              id="country-filter"
+              value={countryOptions.includes(countryFilter) ? countryFilter : 'All Countries'}
+              onChange={(e) => setCountryFilter(e.target.value)}
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[150px]"
+            >
+              {countryOptions.map((c) => (
+                <option key={c} value={c} className="bg-slate-900 text-white">
+                  {c}
                 </option>
               ))}
             </select>
@@ -682,245 +786,144 @@ export default function EvidenceLocker() {
       </div>
 
       {/* ── Summary Bar & Action Tabs ───────────────────────────────────── */}
-      <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {/* Quarter & Live Counts Badges */}
-        <div className="flex items-center gap-2 flex-wrap text-xs">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20">
-            <span>🗓</span>
-            <span>{quarterFilter}</span>
-          </span>
-          {productFilter !== 'All' && productFilter !== 'All Products' && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20">
-              <span>🏷</span>
-              <span>{productFilter}</span>
-              <button
-                type="button"
-                onClick={() => setProductFilter('All Products')}
-                className="ml-0.5 text-[#F59E0B] hover:text-[#F59E0B]/80 font-extrabold leading-none cursor-pointer"
-                title="Clear product filter"
-              >✕</button>
-            </span>
-          )}
-          {generationFilter !== 'All' && generationFilter !== 'All Generations / Series' && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold bg-[#0D9488]/10 text-[#0D9488] border border-[#0D9488]/20">
-              <span>⚡</span>
-              <span>{generationFilter}</span>
-              <button
-                type="button"
-                onClick={() => setGenerationFilter('All Generations / Series')}
-                className="ml-0.5 text-[#0D9488] hover:text-[#0D9488]/80 font-extrabold leading-none cursor-pointer"
-                title="Clear generation filter"
-              >✕</button>
-            </span>
-          )}
-          <span className="text-[#CBD5E1]">|</span>
-          <span className="font-semibold text-[#10B981]">
-            ✅ Compliant: <strong>{liveCompliant}</strong>
-          </span>
-          <span className="text-[#CBD5E1]">|</span>
-          <span className="font-semibold text-[#EF4444]">
-            🔴 Non-Compliant: <strong>{liveNonCompliant}</strong>
-          </span>
-        </div>
-
-        {/* Compliant / Non-Compliant Tabs — counts reflect current product & generation filters */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('Compliant')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'Compliant'
-                ? 'bg-[#10B981] text-white shadow-xs underline underline-offset-4 decoration-2'
-                : 'text-[#6B7280] hover:text-[#111827] hover:bg-slate-200/70'
-            }`}
-          >
-            ✅ Compliant ({liveCompliant})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('Non-Compliant')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'Non-Compliant'
-                ? 'bg-[#EF4444] text-white shadow-xs underline underline-offset-4 decoration-2'
-                : 'text-[#6B7280] hover:text-[#111827] hover:bg-slate-200/70'
-            }`}
-          >
-            🔴 Non-Compliant ({liveNonCompliant})
-          </button>
-        </div>
+      <div className="bg-[#F8FAFC] border-b border-[#E5E7EB] px-6 py-3.5 flex items-center justify-start gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('compliance')}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'compliance'
+              ? 'bg-[#1E429F] text-white shadow-xs'
+              : 'text-[#6B7280] hover:text-[#111827] hover:bg-slate-200/70'
+          }`}
+        >
+          Compliance Gap
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('execution')}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'execution'
+              ? 'bg-[#0D9488] text-white shadow-xs'
+              : 'text-[#6B7280] hover:text-[#111827] hover:bg-slate-200/70'
+          }`}
+        >
+          Execution Gap
+        </button>
       </div>
 
-      {/* ── Main Body: Scrollable Grid + Status Legend ──────────────────── */}
+      {/* ── Main Body: Table + Status Legend ──────────────────────────── */}
       <div className="p-6 flex flex-col lg:flex-row gap-6">
-        
-        {/* Left / Center: Scrollable Creative Cards Grid */}
-        <div className="flex-1 max-h-[640px] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="flex-1 max-h-[640px] overflow-auto pr-1 custom-scrollbar">
           {loading ? (
-            /* Skeleton Loading State — matches horizontal card layout */
-            <div className="grid grid-cols-1 gap-4">
-              {[1, 2, 3, 4].map((n) => (
-                <div
-                  key={n}
-                  className="bg-[#F8FAFC] rounded-xl border border-[#E5E7EB] flex flex-row overflow-hidden animate-pulse min-h-[140px]"
-                >
-                  <div className="w-52 shrink-0 bg-slate-200" />
-                  <div className="flex-1 p-4 flex flex-col gap-3 justify-center">
-                    <div className="h-4 bg-slate-200 rounded w-1/2" />
-                    <div className="h-3 bg-slate-200 rounded w-3/4" />
-                    <div className="h-3 bg-slate-200 rounded w-2/3" />
-                    <div className="grid grid-cols-4 gap-2">
-                      {[1,2,3,4].map(i => <div key={i} className="h-8 bg-slate-200 rounded" />)}
-                    </div>
-                  </div>
-                </div>
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div key={n} className="h-16 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg animate-pulse" />
               ))}
             </div>
           ) : error ? (
-            /* Error State */
             <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
               <span className="font-bold">Error loading evidence locker:</span> {error}
             </div>
           ) : filteredCreatives.length === 0 ? (
-            /* Empty State */
             <div className="py-16 text-center text-[#6B7280] text-xs font-semibold bg-[#F8FAFC] rounded-xl border border-dashed border-[#E5E7EB]">
-              No creatives found for the selected filter ({activeTab} • Quarter: {quarterFilter} • Product: {productFilter}).
+              No creatives found for the selected filters (Quarter: {quarterFilter} • Product: {productFilter}).
             </div>
           ) : (
-            /* Cards — always 1 per row, horizontal layout, clickable */
-            <div className="grid grid-cols-1 gap-4 pb-2">
-              {filteredCreatives.map((item, idx) => {
-                const cardId    = item.Analysis_ID ?? idx;
-                const isLoaded  = imageLoaded[String(cardId)];
-                const hasImgError = imageErrors[String(cardId)];
-                const isCompliant = item.compliance_status === 'Compliant';
-                const normUrl   = normalizeAssetUrl(item.Asset_URL);
+            <table className="w-full min-w-[720px] text-left text-xs border-separate border-spacing-0">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-wider text-[#6B7280]">
+                  <th className="px-3 py-2.5 border-b border-[#E5E7EB] rounded-tl-lg">Image</th>
+                  {activeTab === 'compliance' ? (
+                    <>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Score</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Logo</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Badge</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Text</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Visual</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB] rounded-tr-lg">Feedback</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Campaign</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Offer Type</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Product</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB] rounded-tr-lg">CTA (Y/N)</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCreatives.map((item, idx) => {
+                  const cardId = item.Analysis_ID ?? idx;
+                  const isLoaded = imageLoaded[String(cardId)];
+                  const hasImgError = imageErrors[String(cardId)];
+                  const isCompliant = item.compliance_status === 'Compliant';
+                  const normUrl = normalizeAssetUrl(item.Asset_URL);
+                  const score = complianceScore(item);
 
-                const logoPass  = isMandatePass(item.Intel_Visual_Flag);
-                const badgePass = isMandatePass(item.Inside_Messaging);
-                const ctaPass   = isMandatePass(item.CTA_Flag);
-
-                return (
-                  <div
-                    key={cardId}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setSelectedCreative(item)}
-                    onKeyDown={(e) => e.key === 'Enter' && setSelectedCreative(item)}
-                    className="bg-white rounded-xl border border-[#E5E7EB] shadow-2xs hover:shadow-md hover:border-[#1E429F]/40 transition-all overflow-hidden flex flex-row cursor-pointer min-h-[148px] group"
-                  >
-                    {/* ── Left: image / banner (fixed width, fills card height) ── */}
-                    <div className="relative w-52 shrink-0 bg-[#F8FAFC] overflow-hidden flex items-center justify-center self-stretch">
-
-                      {/* Placeholder while image loads */}
-                      {!hasImgError && normUrl && !isLoaded && (
-                        <div className="absolute inset-0 bg-slate-200 flex items-center justify-center animate-pulse z-0">
-                          <span className="text-[10px] text-[#6B7280] font-semibold">Loading…</span>
+                  return (
+                    <tr
+                      key={cardId}
+                      onClick={() => setSelectedCreative(item)}
+                      className="bg-white hover:bg-[#F8FAFC] cursor-pointer border-b border-[#E5E7EB]"
+                    >
+                      <td className="px-3 py-2 align-middle">
+                        <div className="relative w-20 h-12 rounded-md overflow-hidden bg-[#F8FAFC] border border-[#E5E7EB]">
+                          {!hasImgError && normUrl && !isLoaded && (
+                            <div className="absolute inset-0 bg-slate-200 animate-pulse" />
+                          )}
+                          {!hasImgError && normUrl ? (
+                            <img
+                              src={normUrl}
+                              alt=""
+                              loading="lazy"
+                              onLoad={() => handleImageLoad(cardId)}
+                              onError={() => handleImageError(cardId)}
+                              className={`w-full h-full object-cover ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            />
+                          ) : (
+                            <CreativeBannerVisual item={item} isCompliant={isCompliant} />
+                          )}
                         </div>
-                      )}
-
-                      {!hasImgError && normUrl ? (
-                        <img
-                          src={normUrl}
-                          alt={item.Subject || item.Campaign_Name || 'Creative Asset'}
-                          loading="lazy"
-                          onLoad={() => handleImageLoad(cardId)}
-                          onError={() => handleImageError(cardId)}
-                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
-                            isLoaded ? 'opacity-100' : 'opacity-0'
-                          }`}
-                        />
+                      </td>
+                      {activeTab === 'compliance' ? (
+                        <>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <span className={`font-black ${score >= 90 ? 'text-[#10B981]' : score >= 75 ? 'text-[#F59E0B]' : 'text-[#EF4444]'}`}>
+                              {score}%
+                            </span>
+                          </td>
+                          <td className="px-3 py-2"><FlagMark pass={logoPass(item)} /></td>
+                          <td className="px-3 py-2"><FlagMark pass={badgePass(item)} /></td>
+                          <td className="px-3 py-2"><FlagMark pass={textPass(item)} /></td>
+                          <td className="px-3 py-2"><FlagMark pass={visualPass(item)} /></td>
+                          <td className="px-3 py-2 text-[#111827] max-w-[280px]">
+                            <span className="line-clamp-2" title={complianceFeedback(item)}>
+                              {complianceFeedback(item)}
+                            </span>
+                          </td>
+                        </>
                       ) : (
-                        <CreativeBannerVisual item={item} isCompliant={isCompliant} />
+                        <>
+                          <td className="px-3 py-2 text-[#111827] font-semibold max-w-[220px]">
+                            <span className="line-clamp-2">
+                              {displayOrDash(item.Campaign_Type !== 'Unknown' ? item.Campaign_Type : item.Campaign_Name)}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap">{displayOrDash(item.Offer_Type)}</td>
+                          <td className="px-3 py-2 max-w-[240px]">
+                            <span className="line-clamp-2">{displayOrDash(item.Product !== 'Unknown' ? item.Product : item.Content)}</span>
+                          </td>
+                          <td className="px-3 py-2 font-bold">
+                            {isMandatePass(item.CTA_Flag) ? 'Y' : 'N'}
+                          </td>
+                        </>
                       )}
-
-                      {/* Compliance Pill Badge */}
-                      <span
-                        className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide shadow uppercase z-10 ${
-                          isCompliant
-                            ? 'bg-[#10B981]/90 text-white border border-[#10B981]'
-                            : 'bg-[#EF4444]/90 text-white border border-[#EF4444]'
-                        }`}
-                      >
-                        {isCompliant ? '✅ Compliant' : '🔴 Non-Compliant'}
-                      </span>
-
-                      {/* Expand hint on hover */}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-colors z-10">
-                        <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-bold bg-black/50 px-3 py-1.5 rounded-lg transition-opacity">
-                          🔍 View Full
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* ── Right: metadata (takes remaining width) ── */}
-                    <div className="flex-1 p-4 flex flex-col gap-2 justify-between bg-white">
-
-                      {/* Top row: OEM tag + Country chip */}
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        {item.OEM_Flag === 'Yes' || (item.OEM_Values && item.OEM_Values !== 'None') ? (
-                          <span className="inline-block bg-[#F8FAFC] text-[#111827] text-[10px] font-bold px-2 py-0.5 rounded border border-[#E5E7EB]">
-                            OEM: {item.OEM_Values || 'Present'}
-                          </span>
-                        ) : (
-                          <span className="inline-block bg-[#F8FAFC] text-[#6B7280] text-[10px] font-semibold px-2 py-0.5 rounded border border-[#E5E7EB]">
-                            OEM NOT PRESENT
-                          </span>
-                        )}
-                        {item.Country && (
-                          <span className="bg-[#F8FAFC] text-[#6B7280] text-[10px] font-medium px-2 py-0.5 rounded">
-                            {item.Country}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Subject / Campaign name */}
-                      <p className="text-xs font-semibold text-[#111827] line-clamp-1">
-                        {item.Subject || item.Campaign_Name || '—'}
-                      </p>
-
-                      {/* Campaign Type & Content Pills */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {item.Campaign_Type && (
-                          <span className="bg-[#F8FAFC] text-[#111827] text-[10px] font-semibold px-2 py-0.5 rounded">
-                            {item.Campaign_Type}
-                          </span>
-                        )}
-                        {item.Content && (
-                          <span className="bg-[#1E429F]/10 text-[#1E429F] text-[10px] font-semibold px-2 py-0.5 rounded border border-[#1E429F]/20">
-                            {item.Content}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Mandates scoreboard (3 core pillars) */}
-                      <div className="grid grid-cols-3 gap-1 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2 py-1 text-center text-[10px] font-bold">
-                        <div title="Intel Logo">
-                          <span className="text-[#6B7280] block text-[9px]">Logo</span>
-                          <span>{logoPass ? '✅' : '❌'}</span>
-                        </div>
-                        <div title="Badge / Inside Messaging">
-                          <span className="text-[#6B7280] block text-[9px]">Badge</span>
-                          <span>{badgePass ? '✅' : '❌'}</span>
-                        </div>
-                        <div title="Call To Action">
-                          <span className="text-[#6B7280] block text-[9px]">CTA</span>
-                          <span>{ctaPass ? '✅' : '❌'}</span>
-                        </div>
-                      </div>
-
-
-
-                      {/* Objective (2-line truncated) */}
-                      {item.Objective && item.Objective !== 'None' && item.Objective !== 'Unknown' && (
-                        <p className="text-[11px] text-[#6B7280] italic line-clamp-2">
-                          "{item.Objective}"
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
 
@@ -932,11 +935,21 @@ export default function EvidenceLocker() {
 
           <div className="space-y-3 text-xs leading-relaxed">
             <div className="flex items-start gap-2">
+              <span className="text-base shrink-0 leading-none">✅</span>
+              <div>
+                <strong className="text-[#10B981] block font-bold">Compliant</strong>
+                <p className="text-[#6B7280] text-[11px] mt-0.5">
+                  Score is 90% or higher and required brand standards are met.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2">
               <span className="text-base shrink-0 leading-none">🔴</span>
               <div>
-                <strong className="text-[#EF4444] block font-bold">Non-Compliance</strong>
+                <strong className="text-[#EF4444] block font-bold">Non-Compliant</strong>
                 <p className="text-[#6B7280] text-[11px] mt-0.5">
-                  Mandatory Intel brand requirements are not met and correction is required.
+                  Score is below 90% and the creative has usage-related issues.
                 </p>
               </div>
             </div>
@@ -946,17 +959,7 @@ export default function EvidenceLocker() {
               <div>
                 <strong className="text-[#F59E0B] block font-bold">At Risk</strong>
                 <p className="text-[#6B7280] text-[11px] mt-0.5">
-                  Key brand elements require attention to maintain compliance.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <span className="text-base shrink-0 leading-none">✅</span>
-              <div>
-                <strong className="text-[#10B981] block font-bold">Compliant</strong>
-                <p className="text-[#6B7280] text-[11px] mt-0.5">
-                  Required Intel brand and messaging standards are met.
+                  Score is below 90% and the creative has missing or outdated brand elements.
                 </p>
               </div>
             </div>

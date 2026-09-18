@@ -1,189 +1,231 @@
 // src/pages/DashboardPage.tsx
-// Executive Dashboard: Cross-domain intelligence summary combining all portal tabs into unified KPI cards and interactive module hubs.
+// Overview UI only. KPI math is computed by GET /api/reports/overview/.
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useLeagueTable } from '../hooks/useLeagueTable';
 import api from '../api/client';
+import { useOverviewFilters } from '../store/overviewFiltersStore';
 
-interface ModuleSummaryData {
-  visualAdoption?: {
-    total_creatives: number;
-    used_intel: number;
-    adoption_pct: number;
-  };
-  ctaCampaign?: {
-    aligned_count: number;
-    misaligned_count: number;
-    total_count: number;
-    alignment_pct: number;
-    no_cta_pct: number;
-    buy_cta_pct: number;
-  };
-  offerCta?: {
-    conversion_ready: number;
-    offer_missing_cta: number;
-    total_offers: number;
-    readiness_pct: number;
-  };
-  marketMaturity?: {
-    markets_count: number;
-    avg_score: number;
-    total_violations: number;
-    markets_at_risk?: number;
-    regions_at_risk?: number;
-  };
-  productMix?: {
-    regions_count: number;
-    active_regions: string[];
-    current_focus: string;
-    gen_count: number;
-  };
+function fmtCompactUsd(value: number): string {
+  if (!Number.isFinite(value) || value === 0) return '$0';
+  const abs = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  if (abs >= 1_000_000) {
+    const millions = abs / 1_000_000;
+    const formatted = millions >= 10 ? String(Math.round(millions)) : millions.toFixed(1).replace(/\.0$/, '');
+    return `${sign}$${formatted}M`;
+  }
+  if (abs >= 1000) {
+    return `${sign}$${Math.round(abs / 1000)}K`;
+  }
+  return `${sign}$${Math.round(abs)}`;
 }
 
-export default function DashboardPage() {
-  const { data: leagueData } = useLeagueTable('Q3 2026');
+const EMPTY_CARDS = {
+  basco_score: { value: 0, delta_pts: null as number | null },
+  creatives_at_risk: { count: 0, total: 0 },
+  retailers_below_target: { count: 0, top_accounts: 0 },
+  top_compliance_issue: { label: '—', creatives: 0, rate: 0, retailer_count: 0 },
+  fmv_loss: { value: 0, retailer_count: 0 },
+  fmv_protected: { value: 0, retailer_count: 0 },
+};
 
-  const [summaryData, setSummaryData] = useState<ModuleSummaryData>({});
+const EMPTY_HEALTH = {
+  healthy: 0,
+  strong: 0,
+  watch: 0,
+  critical: 0,
+  need_attention: 0,
+  healthy_pct: 0,
+  strong_pct: 0,
+  watch_pct: 0,
+  critical_pct: 0,
+  need_attention_pct: 0,
+};
+
+const EMPTY_MODULES = {
+  market_maturity: { markets_count: 0, markets_at_risk: 0, markets_on_track: 0, avg_score: 0 },
+  market_coverage: {
+    retailers_monitored: 0,
+    basco_score: 0,
+    creatives_evaluated: 0,
+    fmv_loss: 0,
+    retailer_health: { ...EMPTY_HEALTH },
+  },
+  retailer: {
+    total_retailers: 0,
+    avg_basco: 0,
+    fmv_loss: 0,
+    retailer_health: { ...EMPTY_HEALTH },
+  },
+  execution_gaps: {
+    creatives_at_risk_pct: 0,
+    missing_brand_elements: 0,
+    promo_without_cta: 0,
+    largest_gap: {
+      size_pct: 0,
+      placement_pct: 0,
+      missing_pct: 0,
+      dominant: 'Missing',
+      insight: 'Most execution gaps come from missing required elements',
+    },
+  },
+  visual_adoption: {
+    total_creatives: 0,
+    used_intel: 0,
+    adoption_pct: 0,
+    creatives_at_risk: 0,
+    cobranded_pct: 0,
+    retail_custom: 0,
+    retail_custom_total: 0,
+    pms_mix: { partial: 0, partial_pct: 0, complete: 0, complete_pct: 0 },
+    insight: 'PMS asset adoption during POP-submission is 0% lower than Helpdesk submitted creatives',
+  },
+  helpdesk: {
+    queries_received: 0,
+    final_approval_pct: 0,
+    intel_specific_creatives: 0,
+    campaign_mix: { igd: 0, igd_pct: 0, intel_days: 0, intel_days_pct: 0, other: 0, other_pct: 0 },
+    retailers_outside_loop: 0,
+    insight: 'Helpdesk adoption is growing, but 0 retailers are still outside the support loop',
+  },
+  creative_effectiveness: {
+    low_intel_voice_pct: 0,
+    objective_aligned_pct: 0,
+    missing_cta: 0,
+    missing_cta_total: 0,
+    product_mix: {
+      gaming: 0,
+      gaming_pct: 0,
+      core_ultra: 0,
+      core_ultra_pct: 0,
+      core_processor: 0,
+      core_processor_pct: 0,
+    },
+    misaligned_gaming: 0,
+    insight: 'Intel voice of attribute is critical, and 0 gaming creatives are misaligned',
+  },
+  promotion_led: {
+    promo_without_cta_pct: 0,
+    price_discount: 0,
+    price_discount_total: 0,
+    without_offer: 0,
+    without_offer_total: 0,
+    cta_mix: {
+      buy_shop: 0,
+      buy_shop_pct: 0,
+      urgency: 0,
+      urgency_pct: 0,
+      no_cta: 0,
+      no_cta_pct: 0,
+      learn: 0,
+      learn_pct: 0,
+    },
+    weak_promo_count: 0,
+    weak_retailer_count: 0,
+    insight: '0 of promotion-led creatives of 0 retailers are not fully equipped to convert shopper interest into action',
+  },
+};
+
+export default function DashboardPage() {
+  const [cards, setCards] = useState(EMPTY_CARDS);
+  const [modules, setModules] = useState(EMPTY_MODULES);
+  const quarter = useOverviewFilters((s) => s.quarter);
+  const region = useOverviewFilters((s) => s.region);
+  const setOptions = useOverviewFilters((s) => s.setOptions);
 
   useEffect(() => {
     let isMounted = true;
-    Promise.allSettled([
-      api.get('/api/reports/visual-adoption-v2/'),
-      api.get('/api/reports/cta-campaign/'),
-      api.get('/api/reports/offer-cta/'),
-      api.get('/api/reports/market-maturity/'),
-      api.get('/api/reports/product-mix/'),
-    ]).then(([visRes, ctaRes, offRes, mmRes, pmRes]) => {
+    const params = new URLSearchParams();
+    if (quarter) params.set('quarter', quarter);
+    if (region) params.set('region', region);
+    const qs = params.toString();
+
+    api.get(`/api/reports/overview/${qs ? `?${qs}` : ''}`).then((res) => {
       if (!isMounted) return;
-
-      const newSummary: ModuleSummaryData = {};
-
-      if (visRes.status === 'fulfilled' && visRes.value.data?.kpis) {
-        const k = visRes.value.data.kpis;
-        newSummary.visualAdoption = {
-          total_creatives: k.total_creatives || 838,
-          used_intel: k.used_intel_visuals ?? k.intel_layouts_count ?? 61,
-          adoption_pct: k.master_visual_adoption_pct ?? k.intel_visual_adoption_pct ?? 29.8,
-        };
+      if (res.data?.filter_options) {
+        setOptions({
+          quarters: res.data.filter_options.quarters,
+          regions: res.data.filter_options.regions,
+          defaultQuarter: res.data.filter_options.default_quarter,
+        });
       }
-
-      if (ctaRes.status === 'fulfilled' && ctaRes.value.data) {
-        const d = ctaRes.value.data;
-        const noCta = d.kpi_tiles?.find((t: any) => t.label === 'No CTA')?.pct || 57.1;
-        const buyCta = d.kpi_tiles?.find((t: any) => t.label === 'Buy/Shop CTA')?.pct || 19.3;
-        const aligned = d.aligned_count ?? 408;
-        const misaligned = d.misaligned_count ?? 384;
-        const total = aligned + misaligned;
-        const alignmentPct = total > 0 ? Math.round((aligned / total) * 100) : 52;
-
-        newSummary.ctaCampaign = {
-          aligned_count: aligned,
-          misaligned_count: misaligned,
-          total_count: total,
-          alignment_pct: alignmentPct,
-          no_cta_pct: noCta,
-          buy_cta_pct: buyCta,
-        };
+      if (res.data?.cards) setCards({ ...EMPTY_CARDS, ...res.data.cards });
+      if (res.data?.modules) {
+        setModules({
+          market_maturity: { ...EMPTY_MODULES.market_maturity, ...res.data.modules.market_maturity },
+          market_coverage: {
+            ...EMPTY_MODULES.market_coverage,
+            ...res.data.modules.market_coverage,
+            retailer_health: {
+              ...EMPTY_HEALTH,
+              ...res.data.modules.market_coverage?.retailer_health,
+            },
+          },
+          retailer: {
+            ...EMPTY_MODULES.retailer,
+            ...res.data.modules.retailer,
+            retailer_health: {
+              ...EMPTY_HEALTH,
+              ...res.data.modules.retailer?.retailer_health,
+            },
+          },
+          execution_gaps: {
+            ...EMPTY_MODULES.execution_gaps,
+            ...res.data.modules.execution_gaps,
+            largest_gap: {
+              ...EMPTY_MODULES.execution_gaps.largest_gap,
+              ...res.data.modules.execution_gaps?.largest_gap,
+            },
+          },
+          visual_adoption: {
+            ...EMPTY_MODULES.visual_adoption,
+            ...res.data.modules.visual_adoption,
+            pms_mix: {
+              ...EMPTY_MODULES.visual_adoption.pms_mix,
+              ...res.data.modules.visual_adoption?.pms_mix,
+            },
+          },
+          helpdesk: {
+            ...EMPTY_MODULES.helpdesk,
+            ...res.data.modules.helpdesk,
+            campaign_mix: {
+              ...EMPTY_MODULES.helpdesk.campaign_mix,
+              ...res.data.modules.helpdesk?.campaign_mix,
+            },
+          },
+          creative_effectiveness: {
+            ...EMPTY_MODULES.creative_effectiveness,
+            ...res.data.modules.creative_effectiveness,
+            product_mix: {
+              ...EMPTY_MODULES.creative_effectiveness.product_mix,
+              ...res.data.modules.creative_effectiveness?.product_mix,
+            },
+          },
+          promotion_led: {
+            ...EMPTY_MODULES.promotion_led,
+            ...res.data.modules.promotion_led,
+            cta_mix: {
+              ...EMPTY_MODULES.promotion_led.cta_mix,
+              ...res.data.modules.promotion_led?.cta_mix,
+            },
+          },
+        });
       }
-
-      if (offRes.status === 'fulfilled' && offRes.value.data?.kpis) {
-        const k = offRes.value.data.kpis;
-        const ready = k.conversion_ready ?? 223;
-        const missing = k.offer_missing_cta ?? 238;
-        const totalOffers = k.total_offer_creatives ?? (ready + missing);
-        const readinessPct = totalOffers > 0 ? Math.round((ready / totalOffers) * 100) : 48;
-
-        newSummary.offerCta = {
-          conversion_ready: ready,
-          offer_missing_cta: missing,
-          total_offers: totalOffers,
-          readiness_pct: readinessPct,
-        };
-      }
-
-      if (mmRes.status === 'fulfilled' && mmRes.value.data?.data) {
-        const rows = mmRes.value.data.data;
-        const totalJobs = rows.reduce((acc: number, r: any) => acc + (r.total_jobs || 1), 0);
-        const avg = totalJobs > 0
-          ? Number((rows.reduce((acc: number, r: any) => acc + ((r.avg_basco_score || 0) * (r.total_jobs || 1)), 0) / totalJobs).toFixed(1))
-          : 86.7;
-        const totalV = rows.reduce((acc: number, r: any) => acc + (r.total_violations || 0), 0);
-        const marketsAtRisk = rows.filter((r: any) => (r.avg_basco_score || 0) < 80).length;
-        const regionsAtRisk = new Set(rows.filter((r: any) => (r.avg_basco_score || 0) < 80).map((r: any) => r.region).filter(Boolean)).size;
-
-        newSummary.marketMaturity = {
-          markets_count: rows.length || 23,
-          avg_score: avg,
-          total_violations: totalV,
-          markets_at_risk: marketsAtRisk || 5,
-          regions_at_risk: regionsAtRisk,
-        };
-      }
-
-      if (pmRes.status === 'fulfilled' && pmRes.value.data) {
-        const pm = pmRes.value.data;
-        const regionList = Array.isArray(pm.series3_by_region)
-          ? pm.series3_by_region.map((r: any) => r.region).filter(Boolean)
-          : ['APJ', 'EMEA', 'LATAM'];
-        newSummary.productMix = {
-          regions_count: regionList.length || 3,
-          active_regions: regionList,
-          current_focus: pm.target_series || 'Series 3',
-          gen_count: Array.isArray(pm.gen_series_breakdown) ? pm.gen_series_breakdown.length : 8,
-        };
-      }
-
-      setSummaryData((prev) => ({ ...prev, ...newSummary }));
-    });
+    }).catch(() => undefined);
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [quarter, region, setOptions]);
 
-  // Derived League Table metrics
-  const leagueRows = Array.isArray(leagueData)
-    ? leagueData
-    : (leagueData as any)?.data && Array.isArray((leagueData as any).data)
-    ? (leagueData as any).data
-    : [];
-
-  const totalRetailers = leagueRows.length > 0 ? leagueRows.length : 9;
-  const totalQueries = leagueRows.reduce((s: number, r: any) => s + (r.queries || 1), 0);
-  const weightedLeagueScore = leagueRows.reduce((s: number, r: any) => s + ((r.basco ?? r.basco_score ?? 0) * (r.queries || 1)), 0);
-  const avgBasco = totalQueries > 0
-    ? (weightedLeagueScore / totalQueries).toFixed(1)
-    : summaryData.marketMaturity?.avg_score
-    ? summaryData.marketMaturity.avg_score.toFixed(1)
-    : '86.7';
-
-  const totalAttrLoss = leagueRows.length > 0
-    ? leagueRows.reduce((s: number, r: any) => s + (r.attr_loss ?? 0), 0)
-    : 173692;
-
-  // Market Opportunities derived metrics
-  const marketsTotal = summaryData.marketMaturity?.markets_count ?? 23;
-  const marketsNeedAttention = summaryData.marketMaturity?.markets_at_risk ?? 5;
-  const marketsOnTrack = Math.max(0, marketsTotal - marketsNeedAttention);
-  const avgBrandHealth = summaryData.marketMaturity?.avg_score
-    ? summaryData.marketMaturity.avg_score.toFixed(1)
-    : '86.7';
-
-  // Retailer Health Tier breakdown
-  const strongRetailersCount = leagueRows.length > 0
-    ? leagueRows.filter((r: any) => (r.basco ?? r.basco_score ?? 0) >= 85).length
-    : 6;
-  const watchRetailersCount = leagueRows.length > 0
-    ? leagueRows.filter((r: any) => (r.basco ?? r.basco_score ?? 0) >= 80 && (r.basco ?? r.basco_score ?? 0) < 85).length
-    : 2;
-  const needAttentionRetailersCount = leagueRows.length > 0
-    ? leagueRows.filter((r: any) => (r.basco ?? r.basco_score ?? 0) < 80).length
-    : 1;
-  const totalTierRetailers = (strongRetailersCount + watchRetailersCount + needAttentionRetailersCount) || totalRetailers || 1;
-  const strongRetailersPct = Math.round((strongRetailersCount / totalTierRetailers) * 100);
-  const watchRetailersPct = Math.round((watchRetailersCount / totalTierRetailers) * 100);
-  const needAttentionRetailersPct = Math.max(0, 100 - strongRetailersPct - watchRetailersPct);
+  const coverage = modules.market_coverage;
+  const coverageHealth = coverage.retailer_health;
+  const gaps = modules.execution_gaps;
+  const helpdesk = modules.helpdesk;
+  const creative = modules.creative_effectiveness;
+  const promo = modules.promotion_led;
+  const intelVisual = modules.visual_adoption;
 
   return (
     <div className="space-y-8 pb-12">
@@ -193,11 +235,13 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2.5 mb-2">
               <span className="bg-white/15 text-[#0D9488] border border-[#0D9488]/40 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                Q3 2026 | RETAIL MARKETING INTELLIGENCE
+                {quarter === 'All Quarters' ? 'ALL QUARTERS' : quarter}
+                {region && region !== 'All' ? ` · ${region}` : ''}
+                {' | RETAIL MARKETING INTELLIGENCE'}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Your Retail Marketing Snapshot
+              BASCO Performance Overview
             </h1>
             <p className="text-xs sm:text-sm text-slate-100/90 mt-1.5 leading-relaxed">
               See where retail execution is performing, where brand value may be at risk, and which opportunities need attention.
@@ -210,15 +254,15 @@ export default function DashboardPage() {
       <div>
         <div className="flex items-center justify-between mb-3.5">
           <h2 className="text-sm font-bold text-[#111827] uppercase tracking-wider">
-            Your Retail Marketing Snapshot
+            BASCO Performance Overview
           </h2>
           <span className="text-xs text-[#6B7280] font-medium">Real-time DB synchronization</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {/* Card 1: Markets Needing Attention */}
+          {/* Card 1: BASCO Score */}
           <Link
-            to="/market-maturity"
+            to="/league-table"
             className="group bg-white hover:bg-slate-50 rounded-2xl border border-[#E5E7EB] shadow-xs p-4.5 transition-all hover:shadow-md hover:border-[#64748B]/40 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
@@ -237,20 +281,22 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#111827] tracking-tight block">
-                {summaryData.marketMaturity?.markets_at_risk ?? 5} of {summaryData.marketMaturity?.markets_count ?? 23}
+                {cards.basco_score.value}%
               </span>
               <span className="text-xs font-bold text-[#111827] block mt-0.5">
-                Markets Needing Attention
+                BASCO Score
               </span>
               <span className="text-[11px] text-[#6B7280] font-medium block mt-1">
-                Markets below target
+                {cards.basco_score.delta_pts == null
+                  ? 'vs prior quarter'
+                  : `${cards.basco_score.delta_pts >= 0 ? '↑' : '↓'} ${Math.abs(cards.basco_score.delta_pts).toFixed(1)} pts`}
               </span>
             </div>
           </Link>
 
-          {/* Card 2: Brand Value at Risk */}
+          {/* Card 2: Creatives at Risk */}
           <Link
-            to="/league-table"
+            to="/visual-adoption"
             className="group bg-white hover:bg-blue-50/50 rounded-2xl border border-[#E5E7EB] shadow-xs p-4.5 transition-all hover:shadow-md hover:border-[#1E429F]/40 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
@@ -269,20 +315,20 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#111827] tracking-tight block">
-                ${totalAttrLoss > 0 ? Math.round(totalAttrLoss / 1000) : 174}K
+                {cards.creatives_at_risk.count.toLocaleString()}
               </span>
               <span className="text-xs font-bold text-[#111827] block mt-0.5">
-                Brand Value at Risk
+                Creatives at Risk
               </span>
               <span className="text-[11px] text-[#6B7280] font-medium block mt-1">
-                Across {totalRetailers} monitored retailers
+                Out of {cards.creatives_at_risk.total.toLocaleString()}
               </span>
             </div>
           </Link>
 
-          {/* Card 3: Intel Visual Adoption */}
+          {/* Card 3: Retailers Below Target */}
           <Link
-            to="/visual-adoption"
+            to="/market-maturity"
             className="group bg-white hover:bg-sky-50/50 rounded-2xl border border-[#E5E7EB] shadow-xs p-4.5 transition-all hover:shadow-md hover:border-[#0EA5E9]/50 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
@@ -301,20 +347,20 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#111827] tracking-tight block">
-                {summaryData.visualAdoption?.adoption_pct ?? 29.8}%
+                {cards.retailers_below_target.count}
               </span>
               <span className="text-xs font-bold text-[#111827] block mt-0.5">
-                Intel Visual Adoption
+                Retailers Below Target
               </span>
               <span className="text-[11px] text-[#6B7280] font-medium block mt-1">
-                Across {summaryData.visualAdoption?.total_creatives ?? 838} reviewed creatives
+                {cards.retailers_below_target.top_accounts} Top Accounts
               </span>
             </div>
           </Link>
 
-          {/* Card 4: Campaign Alignment */}
+          {/* Card 4: Top Compliance Issue */}
           <Link
-            to="/cta-campaign"
+            to="/league-table"
             className="group bg-white hover:bg-blue-50/50 rounded-2xl border border-[#E5E7EB] shadow-xs p-4.5 transition-all hover:shadow-md hover:border-[#1E429F]/40 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
@@ -329,21 +375,21 @@ export default function DashboardPage() {
               </span>
             </div>
             <div className="mt-3">
-              <span className="text-2xl font-black text-[#1E429F] tracking-tight block">
-                {summaryData.ctaCampaign?.alignment_pct ?? 52}%
+              <span className="text-2xl font-black text-[#1E429F] tracking-tight block leading-tight">
+                {cards.top_compliance_issue.label}
               </span>
               <span className="text-xs font-bold text-[#111827] block mt-0.5">
-                Campaign Alignment
+                Top Compliance Issue
               </span>
               <span className="text-[11px] text-[#6B7280] font-medium block mt-1">
-                {summaryData.ctaCampaign?.aligned_count ?? 408} aligned / {summaryData.ctaCampaign?.misaligned_count ?? 384} need attention
+                {cards.top_compliance_issue.creatives.toLocaleString()} creatives · {cards.top_compliance_issue.retailer_count} retailers
               </span>
             </div>
           </Link>
 
-          {/* Card 5: Promotion Readiness */}
+          {/* Card 5: FMV Loss Identified */}
           <Link
-            to="/offer-cta"
+            to="/league-table"
             className="group bg-white hover:bg-sky-50/50 rounded-2xl border border-[#E5E7EB] shadow-xs p-4.5 transition-all hover:shadow-md hover:border-[#0EA5E9]/40 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
@@ -359,20 +405,20 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#0EA5E9] tracking-tight block">
-                {summaryData.offerCta?.readiness_pct ?? 48}%
+                {fmtCompactUsd(cards.fmv_loss.value)}
               </span>
               <span className="text-xs font-bold text-[#111827] block mt-0.5">
-                Promotion Readiness
+                FMV Loss Identified
               </span>
               <span className="text-[11px] text-[#6B7280] font-medium block mt-1">
-                {summaryData.offerCta?.conversion_ready ?? 223} ready / {summaryData.offerCta?.offer_missing_cta ?? 238} missing CTA
+                {cards.fmv_loss.retailer_count} retailers
               </span>
             </div>
           </Link>
 
-          {/* Card 6: Series 3 Momentum */}
+          {/* Card 6: FMV Value Protected */}
           <Link
-            to="/product-mix"
+            to="/league-table"
             className="group bg-white hover:bg-slate-50 rounded-2xl border border-[#E5E7EB] shadow-xs p-4.5 transition-all hover:shadow-md hover:border-[#64748B]/40 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
@@ -395,14 +441,14 @@ export default function DashboardPage() {
               </span>
             </div>
             <div className="mt-3">
-              <span className="text-2xl font-black text-[#64748B] tracking-tight block truncate">
-                Pre-Launch
+              <span className="text-2xl font-black text-[#64748B] tracking-tight block">
+                {fmtCompactUsd(cards.fmv_protected.value)}
               </span>
               <span className="text-xs font-bold text-[#111827] block mt-0.5 truncate">
-                Series 3 Momentum
+                FMV Value Protected
               </span>
               <span className="text-[11px] text-[#6B7280] font-medium block mt-1 truncate">
-                Active across {summaryData.productMix?.regions_count ?? 3} regions
+                {cards.fmv_protected.retailer_count} retailers
               </span>
             </div>
           </Link>
@@ -419,7 +465,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Module 1: Market Opportunities */}
+          {/* Module 1: Market Coverage & Performance */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
@@ -434,72 +480,68 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#111827]">Market Opportunities</h3>
+                    <h3 className="text-sm font-bold text-[#111827]">Market Coverage & Performance</h3>
                     <p className="text-[11px] text-[#6B7280] font-medium">
-                      See which markets are performing strongly and where focused action is needed.
+                      How much of the retail ecosystem are we covering, and how well is it performing?
                     </p>
                   </div>
                 </div>
-                <span className="bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/30 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                  {marketsTotal} Markets
-                </span>
               </div>
 
-              {/* Compact Metric Strip: 23 Markets monitored | 5 Need attention | 18 On track */}
               <div className="grid grid-cols-3 gap-2 my-3">
                 <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Markets Monitored</span>
+                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Retailers Monitored</span>
                   <span className="text-base font-black text-[#111827] block mt-0.5">
-                    {marketsTotal}
+                    {coverage.retailers_monitored}
                   </span>
                 </div>
-                <div className="bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#EF4444] font-semibold block uppercase tracking-wider">Need Attention</span>
-                  <span className="text-base font-black text-[#EF4444] block mt-0.5">
-                    {marketsNeedAttention}
+                <div className="bg-[#1E429F]/10 border border-[#1E429F]/20 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">BASCO Score</span>
+                  <span className="text-base font-black text-[#1E429F] block mt-0.5">
+                    {coverage.basco_score}%
                   </span>
                 </div>
-                <div className="bg-[#10B981]/10 border border-[#10B981]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#10B981] font-semibold block uppercase tracking-wider">On Track</span>
-                  <span className="text-base font-black text-[#10B981] block mt-0.5">
-                    {marketsOnTrack}
+                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Creatives Evaluated</span>
+                  <span className="text-base font-black text-[#111827] block mt-0.5">
+                    {coverage.creatives_evaluated.toLocaleString()}
                   </span>
                 </div>
               </div>
 
-              {/* Graphical Visual: Average Brand Health */}
               <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-                    Average Brand Health
+                    <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
+                    Retailer Health
                   </span>
-                  <span className="text-[#10B981] font-black">{avgBrandHealth}%</span>
+                  <span className="text-[10px] text-[#6B7280] font-bold">
+                    <span className="text-[#10B981]">Healthy ({coverageHealth.healthy})</span> · <span className="text-[#F59E0B]">Watch ({coverageHealth.watch})</span> · <span className="text-[#EF4444]">Critical ({coverageHealth.critical})</span>
+                  </span>
                 </div>
-                <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex">
-                  <div
-                    className="bg-gradient-to-r from-[#F59E0B] via-[#10B981] to-[#0D9488] h-full rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, Math.max(0, Number(avgBrandHealth)))}%` }}
-                  />
+                <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
+                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${coverageHealth.healthy_pct}%` }} title={`Healthy (>=85%): ${coverageHealth.healthy} retailers`} />
+                  <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${coverageHealth.watch_pct}%` }} title={`Watch (80-84.9%): ${coverageHealth.watch} retailers`} />
+                  <div className="bg-[#EF4444] h-full rounded-r-full transition-all duration-500" style={{ width: `${coverageHealth.critical_pct}%` }} title={`Critical (<80%): ${coverageHealth.critical} retailers`} />
                 </div>
               </div>
             </div>
 
             <div className="mt-2 pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between">
               <span className="text-[10px] text-[#6B7280] font-medium">
-                {marketsNeedAttention} markets currently sit below target
+                {fmtCompactUsd(coverage.fmv_loss)} FMV risk is concentrated across critical accounts
               </span>
               <Link
                 to="/market-maturity"
                 className="bg-[#F59E0B] hover:bg-[#D97706] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
-                <span>Explore Markets</span>
+                <span>View Market Performance</span>
                 <span>→</span>
               </Link>
             </div>
           </div>
 
-          {/* Module 2: Retailer Performance */}
+          {/* Module 2: Retailer Execution Gaps */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
@@ -514,75 +556,68 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#111827]">Retailer Performance</h3>
+                    <h3 className="text-sm font-bold text-[#111827]">Retailer Execution Gaps</h3>
                     <p className="text-[11px] text-[#6B7280] font-medium">
-                      Understand retailer brand performance and where value may be at risk.
+                      What went wrong during POP evaluation, and where should we intervene first?
                     </p>
                   </div>
                 </div>
-                <span className="bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                  {totalRetailers} Monitored
-                </span>
               </div>
 
-              {/* Compact Metric Strip: 9 Retailers monitored | 86.7% Avg BASCO Score | $174K Brand value at risk */}
               <div className="grid grid-cols-3 gap-2 my-3">
                 <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Retailers Monitored</span>
+                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Creatives at Risk</span>
                   <span className="text-base font-black text-[#111827] block mt-0.5">
-                    {totalRetailers}
+                    {gaps.creatives_at_risk_pct}%
                   </span>
                 </div>
                 <div className="bg-[#1E429F]/10 border border-[#1E429F]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Average BASCO Score</span>
+                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Missing Brand Elements</span>
                   <span className="text-base font-black text-[#1E429F] block mt-0.5">
-                    {avgBasco}%
+                    {gaps.missing_brand_elements.toLocaleString()}
                   </span>
                 </div>
                 <div className="bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#EF4444] font-semibold block uppercase tracking-wider" title="Brand Value at Risk">
-                    Brand Value at Risk
-                  </span>
+                  <span className="text-[10px] text-[#EF4444] font-semibold block uppercase tracking-wider">Promo Creatives without CTA</span>
                   <span className="text-base font-black text-[#EF4444] block mt-0.5">
-                    ${totalAttrLoss > 0 ? Math.round(totalAttrLoss / 1000) : 174}K
+                    {gaps.promo_without_cta.toLocaleString()}
                   </span>
                 </div>
               </div>
 
-              {/* Graphical Visual: Retailer Health (Strong | Watch | Needs Attention) */}
               <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
-                    Retailer Health
+                    Largest Gap
                   </span>
                   <span className="text-[10px] text-[#6B7280] font-bold">
-                    <span className="text-[#10B981]">Strong ({strongRetailersCount})</span> · <span className="text-[#F59E0B]">Watch ({watchRetailersCount})</span> · <span className="text-[#EF4444]">Needs Attention ({needAttentionRetailersCount})</span>
+                    <span className="text-[#10B981]">Size ({gaps.largest_gap.size_pct}%)</span> · <span className="text-[#F59E0B]">Placement ({gaps.largest_gap.placement_pct}%)</span> · <span className="text-[#EF4444]">Missing ({gaps.largest_gap.missing_pct}%)</span>
                   </span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${strongRetailersPct}%` }} title={`Strong (>=85%): ${strongRetailersCount} accounts`} />
-                  <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${watchRetailersPct}%` }} title={`Watch (80-84.9%): ${watchRetailersCount} accounts`} />
-                  <div className="bg-[#EF4444] h-full rounded-r-full transition-all duration-500" style={{ width: `${needAttentionRetailersPct}%` }} title={`Needs Attention (<80%): ${needAttentionRetailersCount} accounts`} />
+                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${gaps.largest_gap.size_pct}%` }} title={`Size (Key Visuals): ${gaps.largest_gap.size_pct}%`} />
+                  <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${gaps.largest_gap.placement_pct}%` }} title={`Placement (Logo + Badge): ${gaps.largest_gap.placement_pct}%`} />
+                  <div className="bg-[#EF4444] h-full rounded-r-full transition-all duration-500" style={{ width: `${gaps.largest_gap.missing_pct}%` }} title={`Missing (Text Mention): ${gaps.largest_gap.missing_pct}%`} />
                 </div>
               </div>
             </div>
 
             <div className="mt-2 pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between">
               <span className="text-[10px] text-[#6B7280] font-medium">
-                ${totalAttrLoss > 0 ? Math.round(totalAttrLoss / 1000) : 174}K in potential brand value is concentrated across priority accounts
+                {gaps.largest_gap.insight}
               </span>
               <Link
-                to="/league-table"
+                to="/league-table#retailer-creative-performance"
                 className="bg-[#1E429F] hover:bg-[#162E6E] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
-                <span>View Retailers</span>
+                <span>Find Root Causes</span>
                 <span>→</span>
               </Link>
             </div>
           </div>
 
-          {/* Module 3: Brand & Visual Adoption */}
+          {/* Module 3: Helpdesk Usage & Responsiveness */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
@@ -597,76 +632,68 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#111827]">Brand & Visual Adoption</h3>
+                    <h3 className="text-sm font-bold text-[#111827]">Helpdesk Usage & Responsiveness</h3>
                     <p className="text-[11px] text-[#6B7280] font-medium">
-                      See how consistently Intel-approved visual assets are showing up across retailer creative.
+                      Are retailers using Helpdesk before creatives are going live?
                     </p>
                   </div>
                 </div>
-                <span className="bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/25 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                  {summaryData.visualAdoption?.total_creatives ?? 838} Creatives
-                </span>
               </div>
 
-              {/* Compact Metric Strip: 838 Creatives reviewed | 61 Using Intel visuals | 777 Using other visuals */}
               <div className="grid grid-cols-3 gap-2 my-3">
                 <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Creatives Reviewed</span>
+                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Queries Received</span>
                   <span className="text-base font-black text-[#111827] block mt-0.5">
-                    {summaryData.visualAdoption?.total_creatives ?? 838}
+                    {helpdesk.queries_received.toLocaleString()}
                   </span>
                 </div>
                 <div className="bg-[#1E429F]/10 border border-[#1E429F]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Using Intel Visuals</span>
-                  <span className="text-base font-black text-[#111827] block mt-0.5">
-                    {summaryData.visualAdoption?.used_intel ?? 61}
+                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Final Approval Rate</span>
+                  <span className="text-base font-black text-[#1E429F] block mt-0.5">
+                    {helpdesk.final_approval_pct}%
                   </span>
                 </div>
-                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Using Other Visuals</span>
-                  <span className="text-base font-black text-[#6B7280] block mt-0.5">
-                    {Math.max(0, (summaryData.visualAdoption?.total_creatives ?? 838) - (summaryData.visualAdoption?.used_intel ?? 61))}
+                <div className="bg-[#0D9488]/10 border border-[#0D9488]/20 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#0F766E] font-semibold block uppercase tracking-wider">Intel-specific Campaign Creatives</span>
+                  <span className="text-base font-black text-[#0F766E] block mt-0.5">
+                    {helpdesk.intel_specific_creatives.toLocaleString()}
                   </span>
                 </div>
               </div>
 
-              {/* Graphical Visual: Intel Visual Adoption Progress Bar */}
               <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
-                    Intel Visual Adoption
+                    <span className="w-2 h-2 rounded-full bg-[#0D9488]" />
+                    Intel-specific campaigns ratio
                   </span>
-                  <span className="text-[#1E429F] font-black">{summaryData.visualAdoption?.adoption_pct ?? 29.8}%</span>
+                  <span className="text-[10px] text-[#6B7280] font-bold">
+                    <span className="text-[#10B981]">IGD ({helpdesk.campaign_mix.igd_pct}%)</span> · <span className="text-[#F59E0B]">Intel Days ({helpdesk.campaign_mix.intel_days_pct}%)</span> · <span className="text-[#6B7280]">Other ({helpdesk.campaign_mix.other_pct}%)</span>
+                  </span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                  <div
-                    className="bg-gradient-to-r from-[#1E429F] to-[#0D9488] h-full rounded-l-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, Math.max(0, summaryData.visualAdoption?.adoption_pct ?? 29.8))}%` }}
-                    title="Intel Visual Adoption"
-                  />
-                  <div
-                    className="bg-[#CBD5E1] h-full rounded-r-full transition-all duration-500"
-                    style={{ width: `${Math.max(0, 100 - (summaryData.visualAdoption?.adoption_pct ?? 29.8))}%` }}
-                    title="Other Visuals"
-                  />
+                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.igd_pct}%` }} title={`IGD: ${helpdesk.campaign_mix.igd}`} />
+                  <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.intel_days_pct}%` }} title={`Intel Days: ${helpdesk.campaign_mix.intel_days}`} />
+                  <div className="bg-[#64748B] h-full rounded-r-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.other_pct}%` }} title={`Other: ${helpdesk.campaign_mix.other}`} />
                 </div>
               </div>
             </div>
 
             <div className="mt-2 pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between">
-              <span className="text-[10px] text-[#6B7280] font-medium">Adoption varies significantly across retailers</span>
+              <span className="text-[10px] text-[#6B7280] font-medium">
+                {helpdesk.insight}
+              </span>
               <Link
-                to="/visual-adoption"
-                className="bg-[#1E429F] hover:bg-[#162E6E] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
+                to="/product-mix"
+                className="bg-[#0D9488] hover:bg-[#0F766E] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
-                <span>Explore Visual Adoption</span>
+                <span>Explore Helpdesk</span>
                 <span>→</span>
               </Link>
             </div>
           </div>
 
-          {/* Module 4: Campaign Effectiveness */}
+          {/* Module 4: Creative Effectiveness */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
@@ -678,82 +705,68 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#111827]">Campaign Effectiveness</h3>
+                    <h3 className="text-sm font-bold text-[#111827]">Creative Effectiveness</h3>
                     <p className="text-[11px] text-[#6B7280] font-medium">
-                      See whether retailer campaigns are giving customers the right next step.
+                      Are creatives submitted on Helpdesk actually aligned with the right objective?
                     </p>
                   </div>
                 </div>
-                <span className="bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/25 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                  {summaryData.ctaCampaign?.alignment_pct ?? 52}% Aligned
-                </span>
               </div>
 
-              {/* Compact Metric Strip: 52% Aligned | 48% Need alignment | 57.1% Missing a CTA */}
-              {(() => {
-                const alignedPct = summaryData.ctaCampaign?.alignment_pct ?? 52;
-                const needAlignPct = Math.max(0, 100 - alignedPct);
-                const noCtaPct = summaryData.ctaCampaign?.no_cta_pct ?? 57.1;
+              <div className="grid grid-cols-3 gap-2 my-3">
+                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Creatives with Low Intel Voice</span>
+                  <span className="text-base font-black text-[#111827] block mt-0.5">
+                    {creative.low_intel_voice_pct}%
+                  </span>
+                </div>
+                <div className="bg-[#1E429F]/10 border border-[#1E429F]/20 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Objective Aligned with CTA</span>
+                  <span className="text-base font-black text-[#1E429F] block mt-0.5">
+                    {creative.objective_aligned_pct}%
+                  </span>
+                </div>
+                <div className="bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#EF4444] font-semibold block uppercase tracking-wider">Missing CTA</span>
+                  <span className="text-base font-black text-[#EF4444] block mt-0.5">
+                    {creative.missing_cta}/{creative.missing_cta_total || 0}
+                  </span>
+                </div>
+              </div>
 
-                return (
-                  <div className="grid grid-cols-3 gap-2 my-3">
-                    <div className="bg-[#10B981]/10 border border-[#10B981]/20 rounded-lg py-2 px-2.5 text-center">
-                      <span className="text-[10px] text-[#10B981] font-semibold block uppercase tracking-wider">Aligned to Objective</span>
-                      <span className="text-base font-black text-[#111827] block mt-0.5">
-                        {alignedPct}%
-                      </span>
-                    </div>
-                    <div className="bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg py-2 px-2.5 text-center">
-                      <span className="text-[10px] text-[#EF4444] font-semibold block uppercase tracking-wider">Need Alignment</span>
-                      <span className="text-base font-black text-[#EF4444] block mt-0.5">
-                        {needAlignPct}%
-                      </span>
-                    </div>
-                    <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/20 rounded-lg py-2 px-2.5 text-center">
-                      <span className="text-[10px] text-[#F59E0B] font-semibold block uppercase tracking-wider">Missing a CTA</span>
-                      <span className="text-base font-black text-[#111827] block mt-0.5">
-                        {noCtaPct}%
-                      </span>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Graphical Visual: Campaign Alignment Bar */}
-              {(() => {
-                const alignedPct = summaryData.ctaCampaign?.alignment_pct ?? 52;
-                const misalignedPct = Math.max(0, 100 - alignedPct);
-                return (
-                  <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
-                        Campaign Alignment
-                      </span>
-                      <span className="text-[#6366F1] font-bold">{alignedPct}% Aligned</span>
-                    </div>
-                    <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                      <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${alignedPct}%` }} title="Aligned CTAs" />
-                      <div className="bg-[#EF4444] h-full rounded-r-full transition-all duration-500" style={{ width: `${misalignedPct}%` }} title="Need Alignment" />
-                    </div>
-                  </div>
-                );
-              })()}
+              <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
+                    Misaligned Creatives Proportion
+                  </span>
+                  <span className="text-[10px] text-[#6B7280] font-bold">
+                    <span className="text-[#10B981]">Gaming ({creative.product_mix.gaming_pct}%)</span> · <span className="text-[#F59E0B]">Core Ultra ({creative.product_mix.core_ultra_pct}%)</span> · <span className="text-[#6366F1]">Core Processor ({creative.product_mix.core_processor_pct}%)</span>
+                  </span>
+                </div>
+                <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
+                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${creative.product_mix.gaming_pct}%` }} title={`Gaming: ${creative.product_mix.gaming}`} />
+                  <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${creative.product_mix.core_ultra_pct}%` }} title={`Core Ultra: ${creative.product_mix.core_ultra}`} />
+                  <div className="bg-[#6366F1] h-full rounded-r-full transition-all duration-500" style={{ width: `${creative.product_mix.core_processor_pct}%` }} title={`Core Processor: ${creative.product_mix.core_processor}`} />
+                </div>
+              </div>
             </div>
 
             <div className="mt-2 pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between">
-              <span className="text-[10px] text-[#6B7280] font-medium">Nearly 1 in 2 campaigns needs stronger CTA alignment</span>
+              <span className="text-[10px] text-[#6B7280] font-medium">
+                {creative.insight}
+              </span>
               <Link
                 to="/cta-campaign"
                 className="bg-[#6366F1] hover:bg-[#4F46E5] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
-                <span>Review Campaigns</span>
+                <span>Measure Creative Impact</span>
                 <span>→</span>
               </Link>
             </div>
           </div>
 
-          {/* Module 5: Promotional Effectiveness */}
+          {/* Module 5: Promotion-led Creatives */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
@@ -765,77 +778,69 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#111827]">Promotional Effectiveness</h3>
+                    <h3 className="text-sm font-bold text-[#111827]">Promotion-led Creatives</h3>
                     <p className="text-[11px] text-[#6B7280] font-medium">
-                      See whether retailer offers provide customers with a clear path to action.
+                      Are promotions/offers proportionately present in Helpdesk-submitted creatives?
                     </p>
                   </div>
                 </div>
-                <span className="bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/25 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                  {summaryData.offerCta?.total_offers ?? 461} Offers
-                </span>
               </div>
 
-              {/* Compact Metric Strip: 461 Promotional creatives | 223 Action-ready | 238 Missing a CTA */}
               <div className="grid grid-cols-3 gap-2 my-3">
                 <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Promotional Creatives</span>
+                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Promo Creatives without CTA</span>
                   <span className="text-base font-black text-[#111827] block mt-0.5">
-                    {summaryData.offerCta?.total_offers ?? 461}
+                    {promo.promo_without_cta_pct}%
                   </span>
                 </div>
-                <div className="bg-[#10B981]/10 border border-[#10B981]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#10B981] font-semibold block uppercase tracking-wider">Action-Ready</span>
-                  <span className="text-base font-black text-[#111827] block mt-0.5">
-                    {summaryData.offerCta?.conversion_ready ?? 223}
+                <div className="bg-[#1E429F]/10 border border-[#1E429F]/20 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Price/Discount-led Creatives</span>
+                  <span className="text-base font-black text-[#1E429F] block mt-0.5">
+                    {promo.price_discount}/{promo.price_discount_total || 0}
                   </span>
                 </div>
                 <div className="bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#EF4444] font-semibold block uppercase tracking-wider">Missing a CTA</span>
+                  <span className="text-[10px] text-[#EF4444] font-semibold block uppercase tracking-wider">Creatives without Offers</span>
                   <span className="text-base font-black text-[#EF4444] block mt-0.5">
-                    {summaryData.offerCta?.offer_missing_cta ?? 238}
+                    {promo.without_offer}/{promo.without_offer_total || 0}
                   </span>
                 </div>
               </div>
 
-              {/* Graphical Visual: Promotion Readiness Bar */}
-              {(() => {
-                const ready = summaryData.offerCta?.conversion_ready || 223;
-                const missing = summaryData.offerCta?.offer_missing_cta || 238;
-                const total = summaryData.offerCta?.total_offers || (ready + missing) || 1;
-                const readyPct = summaryData.offerCta?.readiness_pct ?? Math.round((ready / total) * 100);
-                const missingPct = Math.max(0, 100 - readyPct);
-                return (
-                  <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-                        Promotion Readiness
-                      </span>
-                      <span className="text-[#10B981] font-bold">{readyPct}%</span>
-                    </div>
-                    <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                      <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${readyPct}%` }} title="Action-Ready" />
-                      <div className="bg-[#F59E0B] h-full rounded-r-full transition-all duration-500" style={{ width: `${missingPct}%` }} title="Missing CTA Promo" />
-                    </div>
-                  </div>
-                );
-              })()}
+              <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5 gap-2">
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                    Promotional Readiness
+                  </span>
+                  <span className="text-[10px] text-[#6B7280] font-bold text-right">
+                    <span className="text-[#10B981]">Buy/Shop ({promo.cta_mix.buy_shop_pct}%)</span> · <span className="text-[#F59E0B]">Urgency ({promo.cta_mix.urgency_pct}%)</span> · <span className="text-[#EF4444]">No CTA ({promo.cta_mix.no_cta_pct}%)</span> · <span className="text-[#6366F1]">Learn ({promo.cta_mix.learn_pct}%)</span>
+                  </span>
+                </div>
+                <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
+                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${promo.cta_mix.buy_shop_pct}%` }} title={`Buy/Shop: ${promo.cta_mix.buy_shop}`} />
+                  <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${promo.cta_mix.urgency_pct}%` }} title={`Urgency: ${promo.cta_mix.urgency}`} />
+                  <div className="bg-[#EF4444] h-full transition-all duration-500" style={{ width: `${promo.cta_mix.no_cta_pct}%` }} title={`No CTA: ${promo.cta_mix.no_cta}`} />
+                  <div className="bg-[#6366F1] h-full rounded-r-full transition-all duration-500" style={{ width: `${promo.cta_mix.learn_pct}%` }} title={`Learn: ${promo.cta_mix.learn}`} />
+                </div>
+              </div>
             </div>
 
             <div className="mt-2 pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between">
-              <span className="text-[10px] text-[#6B7280] font-medium">More than half of promotional creatives lack a clear CTA</span>
+              <span className="text-[10px] text-[#6B7280] font-medium">
+                {promo.insight}
+              </span>
               <Link
                 to="/offer-cta"
                 className="bg-[#10B981] hover:bg-[#059669] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
-                <span>Review Promotions</span>
+                <span>Review Promotion Gaps</span>
                 <span>→</span>
               </Link>
             </div>
           </div>
 
-          {/* Module 6: Product Momentum */}
+          {/* Module 6: Intel Visual Adoption */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs hover:shadow-md transition-all p-4.5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
@@ -855,65 +860,61 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#111827]">Product Momentum</h3>
+                    <h3 className="text-sm font-bold text-[#111827]">Intel Visual Adoption</h3>
                     <p className="text-[11px] text-[#6B7280] font-medium">
-                      Track how priority Intel products are showing up across retailers and markets.
+                      Are Intel visual assets actually being used across retail execution?
                     </p>
                   </div>
                 </div>
-                <span className="bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                  Series 3 Rollout
-                </span>
               </div>
 
-              {/* Compact Metric Strip: Series 3 Current focus | 3 Active regions | 8 Generations represented */}
               <div className="grid grid-cols-3 gap-2 my-3">
+                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Intel Visual Adoption</span>
+                  <span className="text-base font-black text-[#111827] block mt-0.5">
+                    {intelVisual.adoption_pct}%
+                  </span>
+                </div>
                 <div className="bg-[#1E429F]/10 border border-[#1E429F]/20 rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Current Focus</span>
-                  <span className="text-base font-black text-[#111827] block mt-0.5">
-                    {summaryData.productMix?.current_focus || 'Series 3'}
+                  <span className="text-[10px] text-[#1E429F] font-semibold block uppercase tracking-wider">Co-Branded Assets</span>
+                  <span className="text-base font-black text-[#1E429F] block mt-0.5">
+                    {intelVisual.cobranded_pct}%
                   </span>
                 </div>
-                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Active Regions</span>
-                  <span className="text-base font-black text-[#111827] block mt-0.5">
-                    {summaryData.productMix?.regions_count ?? 3}
-                  </span>
-                </div>
-                <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg py-2 px-2.5 text-center">
-                  <span className="text-[10px] text-[#6B7280] font-semibold block uppercase tracking-wider">Generations Represented</span>
-                  <span className="text-base font-black text-[#111827] block mt-0.5">
-                    {summaryData.productMix?.gen_count ?? 8}
+                <div className="bg-[#0D9488]/10 border border-[#0D9488]/20 rounded-lg py-2 px-2.5 text-center">
+                  <span className="text-[10px] text-[#0D9488] font-semibold block uppercase tracking-wider">Retail-custom Assets</span>
+                  <span className="text-base font-black text-[#0D9488] block mt-0.5">
+                    {intelVisual.retail_custom}/{intelVisual.retail_custom_total || 0}
                   </span>
                 </div>
               </div>
 
-              {/* Graphical Visual: Product Generation Mix */}
               <div className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-2.5 mb-2">
-                <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#0D9488]" />
-                    Product Generation Mix
+                <div className="flex items-center justify-between text-[11px] font-semibold text-[#111827] mb-1.5 gap-2">
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
+                    Intel Visual Usage
                   </span>
-                  <span className="text-[#1E429F] font-bold">Series 3 / 2 / 1 + Gen 14–10</span>
+                  <span className="text-[10px] text-[#6B7280] font-bold text-right">
+                    <span className="text-[#F59E0B]">Partially Used ({intelVisual.pms_mix.partial_pct}%)</span> · <span className="text-[#1E429F]">Completely Used ({intelVisual.pms_mix.complete_pct}%)</span>
+                  </span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                  <div className="bg-gradient-to-r from-[#0D9488] to-[#1E429F] h-full rounded-l-full" style={{ width: '45%' }} title="Core Ultra (Series 3/2/1)" />
-                  <div className="bg-[#4A6FA5] h-full" style={{ width: '35%' }} title="Core 14th / 13th Gen" />
-                  <div className="bg-[#CBD5E1] h-full rounded-r-full" style={{ width: '20%' }} title="Legacy 12th–10th Gen" />
+                  <div className="bg-[#F59E0B] h-full rounded-l-full transition-all duration-500" style={{ width: `${intelVisual.pms_mix.partial_pct}%` }} title={`Partially Used: ${intelVisual.pms_mix.partial}`} />
+                  <div className="bg-[#1E429F] h-full rounded-r-full transition-all duration-500" style={{ width: `${intelVisual.pms_mix.complete_pct}%` }} title={`Completely Used: ${intelVisual.pms_mix.complete}`} />
                 </div>
               </div>
             </div>
 
             <div className="mt-2 pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between">
               <span className="text-[10px] text-[#6B7280] font-medium">
-                {summaryData.productMix?.current_focus || 'Series 3'} rollout is active across {summaryData.productMix?.active_regions?.join(', ') || 'APJ, EMEA and LATAM'}
+                {intelVisual.insight}
               </span>
               <Link
-                to="/product-mix"
+                to="/visual-adoption"
                 className="bg-[#1E429F] hover:bg-[#162E6E] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1"
               >
-                <span>Explore Product Momentum</span>
+                <span>Explore Asset Adoption</span>
                 <span>→</span>
               </Link>
             </div>

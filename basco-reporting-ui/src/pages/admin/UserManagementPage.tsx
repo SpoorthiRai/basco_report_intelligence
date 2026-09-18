@@ -1,14 +1,11 @@
 // src/pages/admin/UserManagementPage.tsx
-// ADMIN-only page: full user CRUD — list, create, activate/deactivate.
+// ADMIN-only page: list portal users and create new accounts.
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthStore } from '../../store/authStore'
 import {
   getAdminUsers,
   createUser,
-  updateUser,
-  deactivateUser,
   type CreateUserPayload,
 } from '../../api/admin'
 import type { User } from '../../types'
@@ -29,11 +26,11 @@ const emptyForm = {
   role:         'RSM' as CreateUserPayload['role'],
   retailer_ids: '',   // raw comma-separated string
   country:      '',
+  region:       '',
 }
 
 export default function UserManagementPage() {
   const qc      = useQueryClient()
-  const me      = useAuthStore((s) => s.user)
 
   // ── Fetch user list ──────────────────────────────────────────────────────
   const { data: users = [], isLoading, isError } = useQuery({
@@ -48,16 +45,6 @@ export default function UserManagementPage() {
     mutationFn: createUser,
     onSuccess:  () => { invalidate(); setShowForm(false); setSuccess('User created successfully.'); setFormError(null) },
     onError:    (e: any) => setFormError(e?.response?.data?.detail ?? JSON.stringify(e?.response?.data) ?? 'Failed to create user.'),
-  })
-
-  const deactivateMutation = useMutation({
-    mutationFn: (id: number) => deactivateUser(id),
-    onSuccess:  invalidate,
-  })
-
-  const activateMutation = useMutation({
-    mutationFn: (id: number) => updateUser(id, { is_active: true }),
-    onSuccess:  invalidate,
   })
 
   // ── Inline form state ─────────────────────────────────────────────────────
@@ -83,6 +70,7 @@ export default function UserManagementPage() {
         ? form.retailer_ids.split(',').map((s) => s.trim()).filter(Boolean)
         : [],
       country: form.role === 'RMM' ? form.country.trim() : '',
+      region:  form.role === 'RMM' ? form.region.trim() : '',
     }
     createMutation.mutate(payload)
   }
@@ -246,16 +234,32 @@ export default function UserManagementPage() {
 
             {/* Conditional: Country (RMM only) */}
             {form.role === 'RMM' && (
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-[#111827] block mb-1">Assigned Country</label>
-                <input
-                  type="text"
-                  value={form.country}
-                  onChange={(e) => handleField('country', e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F] font-medium"
-                  placeholder="e.g. United States, Germany, India"
-                />
-              </div>
+              <>
+                <div>
+                  <label className="text-xs font-bold text-[#111827] block mb-1">Assigned Region</label>
+                  <select
+                    value={form.region}
+                    onChange={(e) => handleField('region', e.target.value)}
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F] font-bold text-[#111827]"
+                  >
+                    <option value="">None (country-scoped)</option>
+                    <option value="EMEA">EMEA</option>
+                    <option value="APJ">APJ</option>
+                    <option value="LATAM">LATAM</option>
+                    <option value="CANADA">CANADA</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#111827] block mb-1">Assigned Country</label>
+                  <input
+                    type="text"
+                    value={form.country}
+                    onChange={(e) => handleField('country', e.target.value)}
+                    className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#1E429F] font-medium"
+                    placeholder="Optional if a region is assigned"
+                  />
+                </div>
+              </>
             )}
 
             {/* Form error */}
@@ -298,7 +302,7 @@ export default function UserManagementPage() {
           <table className="w-full text-xs">
             <thead className="bg-[#F8FAFC] border-b border-[#E5E7EB]">
               <tr>
-                {['User Profile', 'Email', 'Role', 'Status', 'Scoped Retailers', 'Country', 'Actions'].map(
+                {['User Profile', 'Email', 'Role', 'Status', 'Scoped Retailers', 'Scope'].map(
                   (h) => (
                     <th
                       key={h}
@@ -313,7 +317,7 @@ export default function UserManagementPage() {
             <tbody className="divide-y divide-[#E5E7EB]">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-[#6B7280] text-xs font-medium">
+                  <td colSpan={6} className="px-4 py-12 text-center text-[#6B7280] text-xs font-medium">
                     No users registered in the database.
                   </td>
                 </tr>
@@ -364,29 +368,8 @@ export default function UserManagementPage() {
                     </td>
 
                     {/* Country */}
-                    <td className="px-4 py-3.5 text-[#6B7280] font-medium">{u.country || 'Global'}</td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-3.5">
-                      {u.is_active && u.id !== me?.id ? (
-                        <button
-                          onClick={() => deactivateMutation.mutate(u.id)}
-                          disabled={deactivateMutation.isPending}
-                          className="text-xs font-bold text-[#EF4444] hover:text-[#EF4444]/80 disabled:opacity-50 transition-colors cursor-pointer"
-                        >
-                          Deactivate
-                        </button>
-                      ) : !u.is_active ? (
-                        <button
-                          onClick={() => activateMutation.mutate(u.id)}
-                          disabled={activateMutation.isPending}
-                          className="text-xs font-bold text-[#10B981] hover:text-[#10B981]/80 disabled:opacity-50 transition-colors cursor-pointer"
-                        >
-                          Activate
-                        </button>
-                      ) : (
-                        <span className="text-xs text-slate-400 font-medium">Current User</span>
-                      )}
+                    <td className="px-4 py-3.5 text-[#6B7280] font-medium">
+                      {u.region || u.country || 'Global'}
                     </td>
                   </tr>
                 ))

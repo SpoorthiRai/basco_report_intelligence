@@ -40,6 +40,8 @@ export interface MarketMaturityRow {
   total_violations: number
   fmv?: number
   attr_loss?: number
+  helpdesk_queries?: number
+  helpdesk_artworks?: number
 }
 
 export interface MarketMaturityResponse {

@@ -201,23 +201,31 @@ class OfferCTAView(APIView):
                 product_heatmap.append(row_data)
 
         # --- Evidence tables (deduplicated) ---
-        # Table 1: Offer but missing CTA
+        # Table 1: Offer creatives (with or without CTA) for Offers Needing Attention
         seen1 = set()
         promo_missing_cta = []
         for r in ev_rows:
             url = r.get('Asset_URL', '')
+            ot = r.get('Offer_Type', 'No Offer')
+            if ot in ('None', '', 'NA'):
+                ot = 'No Offer'
             if (url and url not in seen1
-                    and r.get('Offer_Type') not in
-                    ('No Offer', 'None', '', 'NA')
-                    and r.get('CTA_Flag') == 'No'):
+                    and ot not in ('No Offer',)
+                    and r.get('Offer_Flag', 'Yes') != 'No'):
                 seen1.add(url)
                 families = classify_product_family(
                     r.get('Content', '')
                 )
                 promo_missing_cta.append({
                     **r,
+                    'Offer_Type': ot,
                     'product': ', '.join(families[:2]),
-                    'cta_status': 'No CTA'
+                    'cta_status': (
+                        'Has CTA' if r.get('CTA_Flag') == 'Yes'
+                        else 'No CTA'
+                    ),
+                    'Campaign_Type': r.get('Campaign_Type') or 'Unknown',
+                    'Messaging_Style': r.get('Messaging_Style') or 'Unknown',
                 })
 
         # Table 2: All offer types including no offer
@@ -239,21 +247,33 @@ class OfferCTAView(APIView):
                     )
                 })
 
+        ready = len(conv_ready)
+        missing = len(missing_cta)
+        total_offers = len(offer_rows)
+        readiness_pct = round(ready / total_offers * 100) if total_offers else 0
+
+        all_offer_types = sorted(set(
+            r.get('Offer_Type') for r in ev_rows
+            if r.get('Offer_Type') and r.get('Offer_Type') not in ('', 'None', 'NA')
+        ), key=lambda x: (OFFER_TYPE_ORDER.index(x) if x in OFFER_TYPE_ORDER else 99, x))
+
         return Response({
             'kpis': {
-                'total_offer_creatives': len(offer_rows),
-                'conversion_ready': len(conv_ready),
-                'offer_missing_cta': len(missing_cta),
+                'total_offer_creatives': total_offers,
+                'conversion_ready': ready,
+                'offer_missing_cta': missing,
                 'no_offer_creatives': len(no_offer_rows),
+                'readiness_pct': readiness_pct,
             },
             'offer_cta_bars': offer_cta_bars,
             'heatmap_offer_types': heatmap_offer_types,
             'product_heatmap': product_heatmap,
-            'promo_missing_cta': promo_missing_cta[:50],
-            'all_offer_evidence': all_offer_evidence[:50],
+            'promo_missing_cta': promo_missing_cta[:100],
+            'all_offer_evidence': all_offer_evidence[:100],
             'filter_options': {
                 'quarters': ['All Quarters'] + all_quarters,
                 'countries': ['All Countries'] + all_countries,
                 'retailers': ['All Retailers'] + all_retailers,
+                'offer_types': ['All Offer Types'] + all_offer_types,
             }
         })

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from core.db import get_warehouse_connection
 from .views import sort_quarters_desc, apply_user_scope
-from .evidence_queries import build_evidence_locker_query
+from .evidence_queries import build_evidence_locker_query, build_evidence_quarter_options_query
 
 
 PRODUCT_FAMILIES = [
@@ -96,6 +96,7 @@ class EvidenceLockerView(APIView):
         product_filter    = request.query_params.get('product', None)
         generation_filter = request.query_params.get('generation', None)
         country_filter    = request.query_params.get('country', None)
+        region_filter     = request.query_params.get('region', None)
         quarter_filter    = request.query_params.get('quarter', None)
 
         # Parse quarter into integers so we can push the filter into SQL
@@ -110,6 +111,9 @@ class EvidenceLockerView(APIView):
             cursor.execute(sql)
             columns  = [col[0] for col in cursor.description]
             raw_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+            cursor.execute(build_evidence_quarter_options_query(year=year))
+            quarter_option_rows = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
 
             conn.close()
 
@@ -128,15 +132,19 @@ class EvidenceLockerView(APIView):
             r['Country'] for r in raw_rows
             if r.get('Country') and r['Country'] not in ('None', '', None)
         ))
+        regions = sorted(set(
+            r['Region'] for r in raw_rows
+            if r.get('Region') and str(r.get('Region')).strip() not in ('None', '', 'Unknown')
+        ))
 
         quarters = sort_quarters_desc(set(
-            r['quarter_label'] for r in raw_rows
-            if r.get('quarter_label') and '2026' in r.get('quarter_label', '')
+            r.get('quarter_label') for r in quarter_option_rows
+            if r.get('quarter_label') and str(year) in str(r.get('quarter_label'))
         ))
 
         rows = raw_rows
 
-        # Remaining filters applied in Python (compliance, product family, generation, country)
+        # Remaining filters applied in Python (compliance, product family, region, country)
         if compliance_filter and compliance_filter in ('Compliant', 'Non-Compliant'):
             rows = [r for r in rows if r['compliance_status'] == compliance_filter]
 
@@ -146,7 +154,10 @@ class EvidenceLockerView(APIView):
         if generation_filter and generation_filter not in ('All', 'All Generations / Series'):
             rows = [r for r in rows if generation_filter in r.get('generations', [])]
 
-        if country_filter and country_filter != 'All':
+        if region_filter and region_filter not in ('All', 'All Regions'):
+            rows = [r for r in rows if str(r.get('Region') or '').strip().upper() == region_filter.strip().upper()]
+
+        if country_filter and country_filter not in ('All', 'All Countries'):
             rows = [r for r in rows if r.get('Country') == country_filter]
 
         total     = len(rows)
@@ -169,7 +180,8 @@ class EvidenceLockerView(APIView):
                 'quarters': ['All Quarters'] + quarters,
                 'products': PRODUCT_FAMILIES,
                 'generations': GENERATIONS,
-                'countries': ['All'] + countries,
+                'regions': ['All Regions'] + regions,
+                'countries': ['All Countries'] + countries,
             },
             'creatives': rows,
         })

@@ -12,6 +12,10 @@ import {
   Tooltip,
   ResponsiveContainer,
   LabelList,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from 'recharts';
 import api from '../api/client';
 
@@ -45,27 +49,41 @@ interface ProductMixResponse {
   family_options: string[];
   target_series: string;
   series_options: string[];
+  retailer_queries?: { retailer: string; queries: number }[];
+  compliance_guidance?: { label: string; weight: number; pct: number }[];
   filter_options: {
     quarters: string[];
+    regions?: string[];
     countries: string[];
+    retailers?: string[];
+    years?: string[];
+    top_accounts?: string[];
   };
 }
 
 // Distinct, harmonious color palette ensuring every product family has a unique, distinguishable color
 const FAMILY_COLORS: Record<string, string> = {
-  'Intel Core Ultra': '#1E429F',       // 1. Deep Sapphire Blue (Flagship Hero)
-  'Gaming Core Ultra': '#7C3AED',      // 2. Vibrant Purple / Violet
-  'Intel Core Processors': '#0284C7',  // 3. Electric Ocean Blue
-  'Intel Processors': '#0D9488',       // 4. Rich Teal / Sea Green
-  'Intel Evo Edition': '#D97706',      // 5. Warm Amber / Gold
-  'Intel Evo': '#EA580C',              // 6. Tangerine Orange
-  'Gaming': '#4338CA',                 // 7. Midnight Indigo
-  'Intel Arc Graphics': '#DB2777',     // 8. Arc Magenta / Rose
-  'Intel Iris Graphics': '#06B6D4',    // 9. Bright Cyan
-  'Other': '#94A3B8',                  // 10. Cool Slate Grey
+  'Core Processor': '#0284C7',
+  'Core Ultra': '#1E429F',
+  'Gaming': '#4338CA',
+  'Gaming Core Ultra': '#7C3AED',
+  'Evo Edition': '#D97706',
+  'Other': '#94A3B8',
+  'Intel Core Ultra': '#1E429F',
+  'Intel Core Processors': '#0284C7',
+  'Intel Processors': '#0D9488',
+  'Intel Evo Edition': '#D97706',
+  'Intel Evo': '#EA580C',
+  'Intel Arc Graphics': '#DB2777',
+  'Intel Iris Graphics': '#06B6D4',
 };
 
-const DEFAULT_FAMILY_COLOR = '#94A3B8';
+const GUIDANCE_COLORS: Record<string, string> = {
+  'Missing Text Mention': '#1E429F',
+  'Badge Size': '#0284C7',
+  'Missing Logo': '#4338CA',
+  'Missing Key Visuals': '#7C3AED',
+};
 
 function getCodenameSubtitle(series: string): string {
   const s = series.toLowerCase();
@@ -86,7 +104,11 @@ export default function ProductMixPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [quarterFilter, setQuarterFilter] = useState<string>('All Quarters');
+  const [regionFilter, setRegionFilter] = useState<string>('All Regions');
   const [countryFilter, setCountryFilter] = useState<string>('All Countries');
+  const [retailerFilter, setRetailerFilter] = useState<string>('All Retailers');
+  const [yearFilter, setYearFilter] = useState<string>('All Years');
+  const [topAccountFilter, setTopAccountFilter] = useState<string>('All');
   const [familyFilter, setFamilyFilter] = useState<string>('Intel Core Ultra');
   const [targetSeriesFilter, setTargetSeriesFilter] = useState<string>('Core Ultra Series 3');
   const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
@@ -106,8 +128,20 @@ export default function ProductMixPage() {
     if (quarterFilter && quarterFilter !== 'All' && quarterFilter !== 'All Quarters') {
       params.append('quarter', quarterFilter);
     }
+    if (regionFilter && regionFilter !== 'All' && regionFilter !== 'All Regions') {
+      params.append('region', regionFilter);
+    }
     if (countryFilter && countryFilter !== 'All' && countryFilter !== 'All Countries') {
       params.append('country', countryFilter);
+    }
+    if (retailerFilter && retailerFilter !== 'All' && retailerFilter !== 'All Retailers') {
+      params.append('retailer', retailerFilter);
+    }
+    if (yearFilter && yearFilter !== 'All' && yearFilter !== 'All Years') {
+      params.append('year', yearFilter);
+    }
+    if (topAccountFilter && topAccountFilter !== 'All') {
+      params.append('top_account', topAccountFilter);
     }
     if (familyFilter) {
       params.append('family', familyFilter);
@@ -144,7 +178,7 @@ export default function ProductMixPage() {
     return () => {
       isMounted = false;
     };
-  }, [quarterFilter, countryFilter, familyFilter, targetSeriesFilter]);
+  }, [quarterFilter, regionFilter, countryFilter, retailerFilter, yearFilter, topAccountFilter, familyFilter, targetSeriesFilter]);
 
   const families = data?.all_families || [];
   const retailerMix = data?.retailer_product_mix || [];
@@ -187,38 +221,103 @@ export default function ProductMixPage() {
           </p>
         </div>
 
-        {/* Quarter & Country Dropdowns */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Quarter dropdown */}
-          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
-            <span className="text-[#6B7280] font-medium">Quarter:</span>
-            <select
-              value={quarterFilter}
-              onChange={(e) => setQuarterFilter(e.target.value)}
-              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
-            >
-              {(data?.filter_options?.quarters || ['All']).map((q) => (
-                <option key={q} value={q} className="bg-white text-[#111827]">
-                  {q}
-                </option>
-              ))}
-            </select>
+        {/* Filters: row 1 geo/retailer, row 2 year/quarter/top account */}
+        <div className="w-full lg:w-[min(100%,540px)] flex flex-col gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
+              <span className="text-[#6B7280] font-medium shrink-0">Region:</span>
+              <select
+                value={regionFilter}
+                onChange={(e) => {
+                  setRegionFilter(e.target.value);
+                  setCountryFilter('All Countries');
+                }}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
+              >
+                {(data?.filter_options?.regions || ['All Regions']).map((r) => (
+                  <option key={r} value={r} className="bg-white text-[#111827]">
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
+              <span className="text-[#6B7280] font-medium shrink-0">Country:</span>
+              <select
+                value={countryFilter}
+                onChange={(e) => setCountryFilter(e.target.value)}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
+              >
+                {(data?.filter_options?.countries || ['All Countries']).map((c) => (
+                  <option key={c} value={c} className="bg-white text-[#111827]">
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
+              <span className="text-[#6B7280] font-medium shrink-0">Retailer:</span>
+              <select
+                value={retailerFilter}
+                onChange={(e) => setRetailerFilter(e.target.value)}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
+              >
+                {(data?.filter_options?.retailers || ['All Retailers']).map((r) => (
+                  <option key={r} value={r} className="bg-white text-[#111827]">
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Country dropdown */}
-          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
-            <span className="text-[#6B7280] font-medium">Country:</span>
-            <select
-              value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
-              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
-            >
-              {(data?.filter_options?.countries || ['All']).map((c) => (
-                <option key={c} value={c} className="bg-white text-[#111827]">
-                  {c}
-                </option>
-              ))}
-            </select>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
+              <span className="text-[#6B7280] font-medium shrink-0">Year:</span>
+              <select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
+              >
+                {(data?.filter_options?.years || ['All Years']).map((y) => (
+                  <option key={y} value={y} className="bg-white text-[#111827]">
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
+              <span className="text-[#6B7280] font-medium shrink-0">Quarter:</span>
+              <select
+                value={quarterFilter}
+                onChange={(e) => setQuarterFilter(e.target.value)}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
+              >
+                {(data?.filter_options?.quarters || ['All Quarters']).map((q) => (
+                  <option key={q} value={q} className="bg-white text-[#111827]">
+                    {q}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
+              <span className="text-[#6B7280] font-medium shrink-0">Top Account:</span>
+              <select
+                value={topAccountFilter}
+                onChange={(e) => setTopAccountFilter(e.target.value)}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
+              >
+                {(data?.filter_options?.top_accounts || ['All', 'Yes', 'No']).map((t) => (
+                  <option key={t} value={t} className="bg-white text-[#111827]">
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -236,6 +335,107 @@ export default function ProductMixPage() {
           </button>
         </div>
       )}
+
+      {/* Retailer queries + compliance guidance */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col min-h-[420px]">
+          <div className="pb-3 border-b border-[#E5E7EB]">
+            <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+              Retailer-wise Queries
+            </h3>
+            <p className="text-xs text-[#6B7280] mt-0.5">
+              Helpdesk query count by parent account (till date for the selected filters).
+            </p>
+          </div>
+          <div className="w-full flex-1 min-h-[320px] mt-3">
+            {loading && !data ? (
+              <div className="w-full h-full bg-[#F8FAFC] rounded-xl animate-pulse flex items-center justify-center">
+                <span className="text-xs font-semibold text-[#6B7280]">Loading query counts...</span>
+              </div>
+            ) : (data?.retailer_queries || []).length === 0 ? (
+              <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[#6B7280]">
+                No Helpdesk queries found for the selected filters.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  layout="vertical"
+                  data={data?.retailer_queries || []}
+                  margin={{ top: 8, right: 36, left: 10, bottom: 8 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: '#6B7280' }} />
+                  <YAxis
+                    dataKey="retailer"
+                    type="category"
+                    width={110}
+                    tick={{ fontSize: 10, fill: '#111827', fontWeight: 600 }}
+                  />
+                  <Tooltip
+                    formatter={(val: any) => [`${val} queries`, 'Helpdesk Queries']}
+                    contentStyle={{ borderRadius: '0.5rem', fontSize: '12px', borderColor: '#E5E7EB' }}
+                  />
+                  <Bar dataKey="queries" fill="#1E429F" radius={[0, 4, 4, 0]} barSize={14}>
+                    <LabelList dataKey="queries" position="right" fill="#111827" fontSize={11} fontWeight={700} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col min-h-[420px]">
+          <div className="pb-3 border-b border-[#E5E7EB]">
+            <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+              Creative Compliance Guidance
+            </h3>
+            <p className="text-xs text-[#6B7280] mt-0.5">
+              Share of missing brand guidance across Logo, Badge, Text Mention, and Key Visuals.
+            </p>
+          </div>
+          <div className="w-full flex-1 min-h-[280px] mt-3">
+            {loading && !data ? (
+              <div className="w-full h-full bg-[#F8FAFC] rounded-xl animate-pulse flex items-center justify-center">
+                <span className="text-xs font-semibold text-[#6B7280]">Loading compliance mix...</span>
+              </div>
+            ) : (data?.compliance_guidance || []).every((g) => !g.pct) ? (
+              <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[#6B7280]">
+                No compliance gap mix found for the selected filters.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={(data?.compliance_guidance || []).filter((g) => g.pct > 0)}
+                    dataKey="pct"
+                    nameKey="label"
+                    cx="50%"
+                    cy="46%"
+                    innerRadius={58}
+                    outerRadius={92}
+                    paddingAngle={2}
+                  >
+                    {(data?.compliance_guidance || []).filter((g) => g.pct > 0).map((g) => (
+                      <Cell key={g.label} fill={GUIDANCE_COLORS[g.label] || '#94A3B8'} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(val: any, name: any) => [`${val}%`, name]}
+                    contentStyle={{ borderRadius: '0.5rem', fontSize: '12px', borderColor: '#E5E7EB' }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    formatter={(value: string) => {
+                      const item = (data?.compliance_guidance || []).find((g) => g.label === value);
+                      return `${value} (${item?.pct ?? 0}%)`;
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* ── 3-Panel Grid Layout ──────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">

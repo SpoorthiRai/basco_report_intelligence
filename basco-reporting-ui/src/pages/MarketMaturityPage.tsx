@@ -21,6 +21,8 @@ interface FmvDataRow {
   attr_loss: number;
   total_jobs?: number;
   parent_accounts?: string[];
+  helpdesk_queries?: number;
+  attribution_loss_threshold?: number;
 }
 
 export interface ParentAccountRow {
@@ -33,49 +35,60 @@ export interface ParentAccountRow {
   attr_loss: number;
   quadrant: "Priority Action" | "High-Value Opportunity" | "Build Momentum" | "Strong Performance";
   topAccount?: boolean;
+  helpdesk_queries?: number;
+  helpdesk_artworks?: number;
+  helpdesk_usage?: "Yes" | "No" | string;
 }
 
 type ViewMode = "markets" | "accounts";
 type QuadrantFilter = "ALL" | "Priority Action" | "High-Value Opportunity" | "Build Momentum" | "Strong Performance";
+type MaturityQuadrant = Exclude<QuadrantFilter, "ALL">;
 
-const fallbackParentAccounts: ParentAccountRow[] = [
-  { parent_account: "JB Hi-Fi Group", country: "Australia", region: "APJ", basco_score: 74.2, total_jobs: 38, fmv: 850000, attr_loss: 190000, quadrant: "Priority Action", topAccount: true },
-  { parent_account: "Harvey Norman", country: "Australia", region: "APJ", basco_score: 79.1, total_jobs: 26, fmv: 623000, attr_loss: 110000, quadrant: "Priority Action", topAccount: true },
-  { parent_account: "Currys PLC", country: "UK", region: "EMEA", basco_score: 76.5, total_jobs: 32, fmv: 710000, attr_loss: 145000, quadrant: "Priority Action", topAccount: true },
-  { parent_account: "MediaMarktSaturn", country: "Germany", region: "EMEA", basco_score: 86.4, total_jobs: 45, fmv: 946900, attr_loss: 179009, quadrant: "High-Value Opportunity", topAccount: true },
-  { parent_account: "Elkjop Nordic", country: "Nordics", region: "EMEA", basco_score: 83.8, total_jobs: 34, fmv: 765000, attr_loss: 147150, quadrant: "High-Value Opportunity", topAccount: true },
-  { parent_account: "Magazine Luiza", country: "Brazil", region: "LATAM", basco_score: 84.7, total_jobs: 28, fmv: 680000, attr_loss: 105000, quadrant: "High-Value Opportunity" },
-  { parent_account: "Yodobashi Camera", country: "Japan", region: "APJ", basco_score: 88.2, total_jobs: 30, fmv: 590000, attr_loss: 115000, quadrant: "High-Value Opportunity", topAccount: true },
-  { parent_account: "Liverpool", country: "Mexico", region: "LATAM", basco_score: 75.7, total_jobs: 14, fmv: 255809, attr_loss: 53720, quadrant: "Build Momentum" },
-  { parent_account: "Sharaf DG", country: "UAE", region: "EMEA", basco_score: 72.4, total_jobs: 12, fmv: 180000, attr_loss: 42000, quadrant: "Build Momentum" },
-  { parent_account: "Fnac Darty", country: "France", region: "EMEA", basco_score: 78.0, total_jobs: 11, fmv: 97000, attr_loss: 9600, quadrant: "Build Momentum" },
-  { parent_account: "El Corte Ingles", country: "Spain", region: "EMEA", basco_score: 91.7, total_jobs: 9, fmv: 46770, attr_loss: 4290, quadrant: "Strong Performance" },
-  { parent_account: "B&H Photo Video", country: "US", region: "US", basco_score: 96.5, total_jobs: 54, fmv: 1200000, attr_loss: 12000, quadrant: "Strong Performance", topAccount: true },
-  { parent_account: "Best Buy", country: "US", region: "US", basco_score: 94.8, total_jobs: 62, fmv: 1450000, attr_loss: 18500, quadrant: "Strong Performance", topAccount: true },
-  { parent_account: "Coupang", country: "South Korea", region: "APJ", basco_score: 93.0, total_jobs: 22, fmv: 540000, attr_loss: 8200, quadrant: "Strong Performance" },
-  { parent_account: "Reliance Digital", country: "India", region: "APJ", basco_score: 92.4, total_jobs: 35, fmv: 480000, attr_loss: 14000, quadrant: "Strong Performance", topAccount: true },
-  { parent_account: "Croma", country: "India", region: "APJ", basco_score: 91.2, total_jobs: 29, fmv: 400000, attr_loss: 11500, quadrant: "Strong Performance" },
-  { parent_account: "Boulanger", country: "France", region: "EMEA", basco_score: 94.1, total_jobs: 16, fmv: 85000, attr_loss: 3200, quadrant: "Strong Performance" },
-  { parent_account: "Memory Express", country: "Canada", region: "CANADA", basco_score: 95.0, total_jobs: 18, fmv: 210000, attr_loss: 4500, quadrant: "Strong Performance" },
-];
+const QUADRANT_LABELS: Record<MaturityQuadrant, string> = {
+  "Priority Action": "Action Needed",
+  "High-Value Opportunity": "Watch",
+  "Build Momentum": "Lower Priority",
+  "Strong Performance": "Strong",
+};
 
-const initialFmvData: FmvDataRow[] = [
-  { country: "Australia",   region: "APJ",   basco_score: 75.8, fmv: 1473000, attr_loss: 276350, parent_accounts: ["JB Hi-Fi Group", "Harvey Norman"] },
-  { country: "Brazil",      region: "LATAM", basco_score: 84.7, fmv: 1158842, attr_loss: 121675, parent_accounts: ["Magazine Luiza", "Casas Bahia"] },
-  { country: "South Korea", region: "APJ",   basco_score: 93.0, fmv: 1124500, attr_loss: 39210,  parent_accounts: ["Coupang", "Himart"] },
-  { country: "Germany",     region: "EMEA",  basco_score: 86.4, fmv: 946900,  attr_loss: 179009, parent_accounts: ["MediaMarktSaturn", "Cyberport"] },
-  { country: "Nordics",     region: "EMEA",  basco_score: 83.8, fmv: 765000,  attr_loss: 147150, parent_accounts: ["Elkjop Nordic", "Power"] },
-  { country: "Mexico",      region: "LATAM", basco_score: 75.7, fmv: 255809,  attr_loss: 53720,  parent_accounts: ["Liverpool", "Palacio de Hierro"] },
-  { country: "Indonesia",   region: "APJ",   basco_score: 91.5, fmv: 145500,  attr_loss: 11640,  parent_accounts: ["Erajaya", "Hartono"] },
-  { country: "France",      region: "EMEA",  basco_score: 86.4, fmv: 182000,  attr_loss: 12800,  parent_accounts: ["Fnac Darty", "Boulanger"] },
-  { country: "Spain",       region: "EMEA",  basco_score: 91.7, fmv: 46770,   attr_loss: 4290,   parent_accounts: ["El Corte Ingles", "PC Componentes"] },
-  { country: "UK",          region: "EMEA",  basco_score: 76.5, fmv: 710000,  attr_loss: 145000, parent_accounts: ["Currys PLC", "Argos"] },
-  { country: "India",       region: "APJ",   basco_score: 91.8, fmv: 880000,  attr_loss: 25500,  parent_accounts: ["Reliance Digital", "Croma"] },
-  { country: "Japan",       region: "APJ",   basco_score: 88.2, fmv: 590000,  attr_loss: 115000, parent_accounts: ["Yodobashi Camera", "Bic Camera"] },
-  { country: "UAE",         region: "EMEA",  basco_score: 72.4, fmv: 180000,  attr_loss: 42000,  parent_accounts: ["Sharaf DG", "Virgin Megastore"] },
-];
+const QUADRANT_RULES: Record<MaturityQuadrant, string> = {
+  "Strong Performance": "Score ≥ 90% • Loss < Benchmark",
+  "High-Value Opportunity": "Score ≥ 85% • Loss ≥ Benchmark",
+  "Build Momentum": "Score > 76% • Loss < Benchmark",
+  "Priority Action": "Score < 76% • Loss ≥ Benchmark",
+};
 
-function getScoreColor(score: number): {
+function classifyMaturity(score: number, attrLoss: number, benchmark: number): MaturityQuadrant {
+  const highLoss = Number(attrLoss || 0) >= Number(benchmark || 0);
+  if (!highLoss) {
+    if (score >= 90) return "Strong Performance";
+    return "Build Momentum";
+  }
+  if (score >= 85) return "High-Value Opportunity";
+  return "Priority Action";
+}
+
+function medianLoss(values: number[]): number {
+  const sorted = values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+  if (!sorted.length) return 0;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function fmtCompactUsd(value: number): string {
+  if (!Number.isFinite(value) || value === 0) return "$0";
+  const abs = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+  if (abs >= 1_000_000) {
+    const millions = abs / 1_000_000;
+    const formatted = millions >= 10 ? String(Math.round(millions)) : millions.toFixed(1).replace(/\.0$/, "");
+    return `${sign}$${formatted}M`;
+  }
+  if (abs >= 1000) return `${sign}$${Math.round(abs / 1000)}K`;
+  return `${sign}$${Math.round(abs)}`;
+}
+
+function getQuadrantColor(quadrant: MaturityQuadrant): {
   fill: string;
   gradientId: string;
   border: string;
@@ -83,24 +96,34 @@ function getScoreColor(score: number): {
   badgeText: string;
   label: string;
 } {
-  if (score < 80) {
+  if (quadrant === "Priority Action") {
     return {
       fill: "#EF4444",
       gradientId: "redBubbleGrad",
       border: "#B91C1C",
       badgeBg: "bg-[#EF4444]/10",
       badgeText: "text-[#EF4444]",
-      label: "Needs Attention (< 80%)",
+      label: QUADRANT_LABELS[quadrant],
     };
   }
-  if (score <= 90) {
+  if (quadrant === "High-Value Opportunity") {
     return {
       fill: "#F59E0B",
       gradientId: "amberBubbleGrad",
       border: "#D97706",
       badgeBg: "bg-[#F59E0B]/10",
       badgeText: "text-[#F59E0B]",
-      label: "Watch (80% – 90%)",
+      label: QUADRANT_LABELS[quadrant],
+    };
+  }
+  if (quadrant === "Build Momentum") {
+    return {
+      fill: "#64748B",
+      gradientId: "slateBubbleGrad",
+      border: "#475569",
+      badgeBg: "bg-slate-200",
+      badgeText: "text-slate-700",
+      label: QUADRANT_LABELS[quadrant],
     };
   }
   return {
@@ -109,7 +132,7 @@ function getScoreColor(score: number): {
     border: "#059669",
     badgeBg: "bg-[#10B981]/10",
     badgeText: "text-[#10B981]",
-    label: "Healthy (> 90%)",
+    label: QUADRANT_LABELS[quadrant],
   };
 }
 
@@ -118,8 +141,10 @@ const CustomDot = (props: any) => {
   const { cx, cy, payload } = props;
   if (cx == null || cy == null || !payload) return null;
 
-  const { country, basco_score, radius } = payload;
-  const colorInfo = getScoreColor(basco_score);
+  const { country, basco_score, radius, attr_loss, attribution_loss_threshold } = payload;
+  const colorInfo = getQuadrantColor(
+    classifyMaturity(basco_score, attr_loss, attribution_loss_threshold ?? 0)
+  );
 
   // Vertical boundary check
   const isNearTop = cy - radius < 35;
@@ -217,7 +242,9 @@ const CustomDot = (props: any) => {
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const item = payload[0].payload;
-    const colorInfo = getScoreColor(item.basco_score);
+    const colorInfo = getQuadrantColor(
+      classifyMaturity(item.basco_score, item.attr_loss, item.attribution_loss_threshold ?? 0)
+    );
 
     return (
       <div className="pointer-events-none select-none bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl p-4 shadow-2xl border border-slate-700/80 text-xs space-y-2.5 min-w-[250px]">
@@ -240,6 +267,13 @@ const CustomTooltip = ({ active, payload }: any) => {
         {/* Metric Rows */}
         <div className="space-y-1.5 text-xs">
           <div className="flex justify-between items-center py-0.5">
+            <span className="text-slate-400">Status:</span>
+            <span className={`font-extrabold text-sm ${colorInfo.badgeText.replace("text-", "text-")}`} style={{ color: colorInfo.fill }}>
+              {colorInfo.label}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center py-0.5">
             <span className="text-slate-400">BASCO Score:</span>
             <span className="font-extrabold text-sm text-white">
               {Number(item.basco_score).toFixed(1)}%
@@ -257,6 +291,34 @@ const CustomTooltip = ({ active, payload }: any) => {
             <span className="text-slate-400">Total FMV:</span>
             <span className="font-semibold text-cyan-400">
               ${Number(item.fmv ?? 0).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center py-0.5">
+            <span className="text-slate-400">Attribution Loss Threshold:</span>
+            <span className="font-semibold text-slate-200">
+              {fmtCompactUsd(Number(item.attribution_loss_threshold ?? 0))}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center py-0.5">
+            <span className="text-slate-400">Loss vs Threshold %:</span>
+            <span className={`font-extrabold ${Number(item.loss_vs_threshold_pct ?? 0) > 100 ? "text-rose-400" : "text-emerald-400"}`}>
+              {item.loss_vs_threshold_pct == null ? "—" : `${Number(item.loss_vs_threshold_pct).toFixed(1)}%`}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center py-0.5">
+            <span className="text-slate-400">Helpdesk Queries:</span>
+            <span className="font-semibold text-white">
+              {Number(item.helpdesk_queries ?? 0).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center py-0.5">
+            <span className="text-slate-400">No. of Creatives:</span>
+            <span className="font-semibold text-white">
+              {Number(item.total_jobs ?? 0).toLocaleString()}
             </span>
           </div>
         </div>
@@ -287,17 +349,20 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export default function MarketMaturityPage() {
   const [selectedQuarter, setSelectedQuarter] = useState<string>("All Quarters");
+  const [selectedRegion, setSelectedRegion] = useState<string>("All");
   const [isQuarterOpen, setIsQuarterOpen] = useState(false);
+  const [isRegionOpen, setIsRegionOpen] = useState(false);
   const quarterRef = useRef<HTMLDivElement>(null);
+  const regionRef = useRef<HTMLDivElement>(null);
 
   // ── Account / Market View Mode Toggle & Quadrant Filter ───────────────────
   const [viewMode, setViewMode] = useState<ViewMode>("markets");
   const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [regionFilter, setRegionFilter] = useState<string>("All");
+  const [countryFilter, setCountryFilter] = useState<string>("All Countries");
 
-  const { data: apiResponse } = useMarketMaturity(selectedQuarter);
-  const { data: leagueResponse } = useLeagueTable(selectedQuarter);
+  const { data: apiResponse } = useMarketMaturity(selectedQuarter, selectedRegion);
+  const { data: leagueResponse } = useLeagueTable(selectedQuarter, selectedRegion);
 
   const availableQuarters = apiResponse?.filter_options?.quarters || [
     "All Quarters",
@@ -310,97 +375,30 @@ export default function MarketMaturityPage() {
     "Q1 2025",
   ];
 
+  const availableRegions = apiResponse?.filter_options?.regions || leagueResponse?.filter_options?.regions || ["All"];
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (quarterRef.current && !quarterRef.current.contains(e.target as Node)) {
         setIsQuarterOpen(false);
       }
+      if (regionRef.current && !regionRef.current.contains(e.target as Node)) {
+        setIsRegionOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ── Process League Table into Grouped Parent Accounts ─────────────────────
+  // ── Parent accounts from backend ──────────────────────────────────────────
   const parentAccountList: ParentAccountRow[] = useMemo(() => {
-    const rawRows = (leagueResponse as any[]) || [];
-    if (rawRows.length > 0) {
-      const grouped: Record<string, {
-        parent_account: string;
-        country: string;
-        region: string;
-        weighted_score: number;
-        total_jobs: number;
-        fmv: number;
-        attr_loss: number;
-        topAccount: boolean;
-      }> = {};
-
-      rawRows.forEach((r: any) => {
-        const parentName = (r.parent_account || r.retailer || "Unknown").trim();
-        if (!parentName || parentName === "Unknown" || parentName === "Unmapped") return;
-
-        const score = typeof r.basco === "number" ? r.basco : parseFloat(r.basco) || 0;
-        const jobs = r.queries || r.artwork || 1;
-        const fmv = typeof r.fmv === "number" ? r.fmv : parseInt(r.fmv, 10) || (jobs * 35000);
-        const loss = typeof r.attr_loss === "number" ? r.attr_loss : parseInt(r.attr_loss, 10) || 0;
-        const country = r.country || "Global";
-        const region = r.region || "EMEA";
-        const isTop = r.topAccount === "YES";
-
-        if (!grouped[parentName]) {
-          grouped[parentName] = {
-            parent_account: parentName,
-            country,
-            region,
-            weighted_score: score * jobs,
-            total_jobs: jobs,
-            fmv,
-            attr_loss: loss,
-            topAccount: isTop,
-          };
-        } else {
-          grouped[parentName].weighted_score += score * jobs;
-          grouped[parentName].total_jobs += jobs;
-          grouped[parentName].fmv += fmv;
-          grouped[parentName].attr_loss += loss;
-          if (isTop) grouped[parentName].topAccount = true;
-        }
-      });
-
-      return Object.values(grouped).map((item) => {
-        const avgScore = item.total_jobs > 0 ? Math.round((item.weighted_score / item.total_jobs) * 10) / 10 : 0;
-        const isHighScore = avgScore >= 90;
-        const isModerateScore = avgScore >= 80 && avgScore < 90;
-        const isLowScore = avgScore < 80;
-        const isHighLoss = item.attr_loss > 100000;
-
-        let quadrant: ParentAccountRow["quadrant"] = "Strong Performance";
-        if (isLowScore && isHighLoss) {
-          quadrant = "Priority Action";
-        } else if ((isModerateScore || isHighScore) && isHighLoss) {
-          quadrant = "High-Value Opportunity";
-        } else if (isLowScore && !isHighLoss) {
-          quadrant = "Build Momentum";
-        } else {
-          quadrant = "Strong Performance";
-        }
-
-        return {
-          parent_account: item.parent_account,
-          country: item.country,
-          region: item.region,
-          basco_score: avgScore,
-          total_jobs: item.total_jobs,
-          fmv: item.fmv,
-          attr_loss: item.attr_loss,
-          quadrant,
-          topAccount: item.topAccount,
-        };
-      });
-    }
-
-    return fallbackParentAccounts;
+    const raw = (leagueResponse?.parent_accounts || []) as ParentAccountRow[];
+    const benchmark = medianLoss(raw.map((a) => Number(a.attr_loss || 0)));
+    return raw.map((a) => ({
+      ...a,
+      quadrant: classifyMaturity(Number(a.basco_score || 0), Number(a.attr_loss || 0), benchmark),
+    }));
   }, [leagueResponse]);
 
   // ── Compute Country Aggregates based on live backend data ────────────────────
@@ -408,43 +406,61 @@ export default function MarketMaturityPage() {
     const rawData = apiResponse?.data;
     if (rawData && rawData.length > 0) {
       return rawData.map((r) => {
-        // Find parent accounts belonging to this country
-        const accountsInCountry = parentAccountList
-          .filter((a) => a.country.toLowerCase() === r.country.toLowerCase())
-          .map((a) => a.parent_account);
+        const countryKey = (r.country || "").toLowerCase();
+        const accountsInCountry = Array.from(
+          new Set(
+            (leagueResponse?.data || [])
+              .filter((row: { country?: string }) => (row.country || "").toLowerCase() === countryKey)
+              .map((row: { parent_account?: string; retailer?: string }) => row.parent_account || row.retailer)
+              .filter(Boolean) as string[]
+          )
+        );
 
         return {
           country: r.country,
           region: r.region,
           basco_score: r.avg_basco_score,
-          total_jobs: r.total_jobs || 1,
-          fmv: r.fmv ?? (r.total_jobs * 35000),
-          attr_loss: r.attr_loss ?? Math.round((r.fmv ?? (r.total_jobs * 35000)) * ((100 - r.avg_basco_score) / 100) * 0.22),
+          total_jobs: r.total_jobs || 0,
+          fmv: r.fmv ?? 0,
+          attr_loss: r.attr_loss ?? 0,
+          helpdesk_queries: Number(r.helpdesk_queries ?? 0),
+          helpdesk_artworks: Number(r.helpdesk_artworks ?? 0),
           parent_accounts: accountsInCountry.length > 0 ? accountsInCountry : undefined,
         };
       });
     }
 
-    return initialFmvData;
-  }, [apiResponse, parentAccountList]);
+    return [];
+  }, [apiResponse, leagueResponse]);
+
+  const attributionLossThreshold = useMemo(
+    () => medianLoss(currentFmvData.map((d) => d.attr_loss)),
+    [currentFmvData]
+  );
+
+  const attributionLossThresholdLabel = useMemo(
+    () => fmtCompactUsd(attributionLossThreshold),
+    [attributionLossThreshold]
+  );
 
   // ── Calculate dynamic bubbles and radii ───────────────────────────────────────
   const currentDataset = useMemo(() => {
     const maxVal = Math.max(...currentFmvData.map((d) => d.fmv), 1);
-    return currentFmvData.map((d) => ({
-      ...d,
-      x: d.basco_score,
-      y: d.attr_loss,
-      radius: Math.max(7, Math.min(26, Math.round((d.fmv / maxVal) * 26))),
-    }));
-  }, [currentFmvData]);
+    return currentFmvData.map((d) => {
+      const threshold = attributionLossThreshold;
+      const lossVsPct = threshold > 0 ? (d.attr_loss / threshold) * 100 : null;
+      return {
+        ...d,
+        x: d.basco_score,
+        y: d.attr_loss,
+        radius: Math.max(7, Math.min(26, Math.round((d.fmv / maxVal) * 26))),
+        attribution_loss_threshold: threshold,
+        loss_vs_threshold_pct: lossVsPct,
+      };
+    });
+  }, [currentFmvData, attributionLossThreshold]);
 
-  const avgCohortScore = useMemo(() => {
-    if (!currentDataset.length) return "0.0";
-    const totalJobs = currentDataset.reduce((acc, d) => acc + ((d as any).total_jobs || 1), 0);
-    const weightedSum = currentDataset.reduce((acc, d) => acc + (d.basco_score * ((d as any).total_jobs || 1)), 0);
-    return (weightedSum / Math.max(1, totalJobs)).toFixed(1);
-  }, [currentDataset]);
+  const avgCohortScore = apiResponse?.kpis?.avg_score ?? 0;
 
   // Dynamic Y-axis properties
   const yAxisConfig = useMemo(() => {
@@ -463,20 +479,11 @@ export default function MarketMaturityPage() {
     const healthyCountries: string[] = [];
 
     currentDataset.forEach((d) => {
-      const isHighScore = d.basco_score >= 90;
-      const isModerateScore = d.basco_score >= 80 && d.basco_score < 90;
-      const isLowScore = d.basco_score < 80;
-      const isHighLoss = d.attr_loss > 100000;
-
-      if (isLowScore && isHighLoss) {
-        criticalCountries.push(d.country);
-      } else if ((isModerateScore || isHighScore) && isHighLoss) {
-        highRiskCountries.push(d.country);
-      } else if (isLowScore && !isHighLoss) {
-        emergingCountries.push(d.country);
-      } else {
-        healthyCountries.push(d.country);
-      }
+      const quadrant = classifyMaturity(d.basco_score, d.attr_loss, attributionLossThreshold);
+      if (quadrant === "Priority Action") criticalCountries.push(d.country);
+      else if (quadrant === "High-Value Opportunity") highRiskCountries.push(d.country);
+      else if (quadrant === "Build Momentum") emergingCountries.push(d.country);
+      else healthyCountries.push(d.country);
     });
 
     const criticalAccounts = parentAccountList.filter((a) => a.quadrant === "Priority Action").map((a) => a.parent_account);
@@ -494,21 +501,28 @@ export default function MarketMaturityPage() {
       emergingAccounts,
       healthyAccounts,
     };
-  }, [currentDataset, parentAccountList]);
+  }, [currentDataset, parentAccountList, attributionLossThreshold]);
+
+  const availableCountries = useMemo(() => {
+    const countries = Array.from(
+      new Set(parentAccountList.map((a) => a.country).filter((c) => c && c !== "Unknown"))
+    ).sort();
+    return ["All Countries", ...countries];
+  }, [parentAccountList]);
 
   // ── Filtered Parent Accounts for the Drilldown Table ───────────────────────
   const filteredAccounts = useMemo(() => {
     return parentAccountList.filter((acc) => {
       const matchesQuadrant = selectedQuadrant === "ALL" || acc.quadrant === selectedQuadrant;
-      const matchesRegion = regionFilter === "All" || acc.region.toUpperCase() === regionFilter.toUpperCase();
+      const matchesCountry = countryFilter === "All Countries" || acc.country === countryFilter;
       const matchesSearch =
         !searchQuery.trim() ||
         acc.parent_account.toLowerCase().includes(searchQuery.toLowerCase()) ||
         acc.country.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchesQuadrant && matchesRegion && matchesSearch;
+      return matchesQuadrant && matchesCountry && matchesSearch;
     });
-  }, [parentAccountList, selectedQuadrant, regionFilter, searchQuery]);
+  }, [parentAccountList, selectedQuadrant, countryFilter, searchQuery]);
 
   const footNote = useMemo(() => {
     return `FMV data sourced from Intel POP records. ${currentDataset.length} countries and ${parentAccountList.length} parent accounts represented for ${selectedQuarter}.`;
@@ -530,11 +544,11 @@ export default function MarketMaturityPage() {
         {/* Top Summary Telemetry Chips & Quarter Filter Dropdown */}
         <div className="flex items-center gap-2.5 flex-wrap">
           <div className="bg-white/95 border border-[#E5E7EB] rounded-xl px-3.5 py-1.5 shadow-2xs">
-            <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Markets Monitored</span>
+            <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Country</span>
             <span className="text-base font-black text-[#111827]">{currentDataset.length}</span>
           </div>
           <div className="bg-white/95 border border-[#E5E7EB] rounded-xl px-3.5 py-1.5 shadow-2xs">
-            <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Parent Accounts</span>
+            <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Retailers</span>
             <span className="text-base font-black text-[#0D9488]">{parentAccountList.length}</span>
           </div>
           <div className="bg-white/95 border border-[#E5E7EB] rounded-xl px-3.5 py-1.5 shadow-2xs">
@@ -546,7 +560,10 @@ export default function MarketMaturityPage() {
           <div ref={quarterRef} className="relative flex items-center">
             <button
               type="button"
-              onClick={() => setIsQuarterOpen((v) => !v)}
+              onClick={() => {
+                setIsQuarterOpen((v) => !v);
+                setIsRegionOpen(false);
+              }}
               className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs border ${
                 selectedQuarter !== "All Quarters"
                   ? "bg-[#1E429F] text-white border-[#1E429F]"
@@ -589,6 +606,57 @@ export default function MarketMaturityPage() {
               </div>
             )}
           </div>
+
+          {/* Region Selector Dropdown */}
+          <div ref={regionRef} className="relative flex items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegionOpen((v) => !v);
+                setIsQuarterOpen(false);
+              }}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs border ${
+                selectedRegion !== "All"
+                  ? "bg-[#1E429F] text-white border-[#1E429F]"
+                  : "bg-white text-[#111827] border-[#E5E7EB] hover:border-[#CBD5E1] hover:bg-slate-50"
+              } cursor-pointer`}
+            >
+              <span className="text-[#6B7280] font-medium">Region:</span>
+              <span>{selectedRegion === "All" ? "All Regions" : selectedRegion}</span>
+              <span className="text-[10px] transform transition-transform" style={{ transform: isRegionOpen ? "rotate(180deg)" : "none" }}>
+                ▼
+              </span>
+            </button>
+
+            {isRegionOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-[#E5E7EB] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto">
+                <div className="px-3 py-1.5 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider border-b border-[#E5E7EB]">
+                  Select Region
+                </div>
+                {availableRegions.map((option) => {
+                  const isSelected = selectedRegion === option;
+                  return (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setSelectedRegion(option);
+                        setCountryFilter("All Countries");
+                        setIsRegionOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-colors ${
+                        isSelected
+                          ? "bg-[#1E429F]/10 text-[#1E429F]"
+                          : "text-[#111827] hover:bg-slate-100/80 cursor-pointer"
+                      }`}
+                    >
+                      <span>{option === "All" ? "All Regions" : option}</span>
+                      {isSelected && <span className="text-[#1E429F] font-bold">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -601,7 +669,7 @@ export default function MarketMaturityPage() {
               Market Performance &amp; Opportunity Map
             </span>
             <span className="text-[11px] text-[#6B7280] font-medium">
-              Bubble size represents market value (FMV)
+              Bubble size represents market value (FMV). Horizontal line is the median attribution loss benchmark.
             </span>
           </div>
 
@@ -631,22 +699,6 @@ export default function MarketMaturityPage() {
                 🏢 Parent Accounts ({parentAccountList.length})
               </button>
             </div>
-
-            {/* Score Legend Badges */}
-            <div className="flex items-center gap-1.5 flex-wrap text-xs">
-              <span className="inline-flex items-center gap-1 bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/25 font-bold px-2 py-0.5 rounded-lg text-[10px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
-                <span>&gt; 90% Healthy</span>
-              </span>
-              <span className="inline-flex items-center gap-1 bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/25 font-bold px-2 py-0.5 rounded-lg text-[10px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>
-                <span>80% – 90% Watch</span>
-              </span>
-              <span className="inline-flex items-center gap-1 bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/25 font-bold px-2 py-0.5 rounded-lg text-[10px]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]"></span>
-                <span>&lt; 80% Needs Attention</span>
-              </span>
-            </div>
           </div>
         </div>
 
@@ -655,7 +707,7 @@ export default function MarketMaturityPage() {
           {/* Recharts Scatter Chart - Foreground Layer (z-10) */}
           <div className="relative z-10 h-[420px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 15, right: 25, bottom: 25, left: 15 }}>
+              <ScatterChart margin={{ top: 28, right: 16, bottom: 25, left: 15 }}>
                 <defs>
                   <linearGradient id="redBubbleGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#F87171" />
@@ -668,6 +720,10 @@ export default function MarketMaturityPage() {
                   <linearGradient id="greenBubbleGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#34D399" />
                     <stop offset="100%" stopColor="#10B981" />
+                  </linearGradient>
+                  <linearGradient id="slateBubbleGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#94A3B8" />
+                    <stop offset="100%" stopColor="#64748B" />
                   </linearGradient>
                   <filter id="bubbleShadow" x="-20%" y="-20%" width="140%" height="140%">
                     <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.18" />
@@ -682,7 +738,7 @@ export default function MarketMaturityPage() {
                   dataKey="x"
                   name="BASCO Score"
                   domain={[40, 100]}
-                  ticks={[40, 50, 60, 70, 80, 90, 100]}
+                  ticks={[40, 50, 60, 70, 76, 85, 90, 100]}
                   stroke="#94A3B8"
                   tick={{ fill: "#6B7280", fontSize: 11, fontWeight: 600 }}
                 >
@@ -729,14 +785,14 @@ export default function MarketMaturityPage() {
                   cursor={{ strokeDasharray: "3 3", stroke: "#94A3B8", strokeWidth: 1 }}
                 />
 
-                {/* Target Line at 90% (Healthy Threshold) */}
+                {/* Target Line at 90% (Strong) */}
                 <ReferenceLine
                   x={90}
                   stroke="#1E429F"
                   strokeDasharray="4 4"
                   strokeWidth={2}
                   label={{
-                    value: "Target BASCO (90%)",
+                    value: "Strong (90%)",
                     position: "top",
                     fill: "#1E429F",
                     fontSize: 10,
@@ -744,16 +800,31 @@ export default function MarketMaturityPage() {
                   }}
                 />
 
-                {/* Watch Boundary Line at 80% */}
+                {/* Watch boundary at 85% */}
                 <ReferenceLine
-                  x={80}
+                  x={85}
                   stroke="#F59E0B"
                   strokeDasharray="4 4"
                   strokeWidth={1.5}
                   label={{
-                    value: "Watch (80%)",
+                    value: "Watch (85%)",
                     position: "top",
                     fill: "#D97706",
+                    fontSize: 10,
+                    fontWeight: 700,
+                  }}
+                />
+
+                {/* Action / Lower Priority boundary at 76% */}
+                <ReferenceLine
+                  x={76}
+                  stroke="#EF4444"
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: "Action (76%)",
+                    position: "top",
+                    fill: "#B91C1C",
                     fontSize: 10,
                     fontWeight: 700,
                   }}
@@ -765,6 +836,49 @@ export default function MarketMaturityPage() {
                   shape={<CustomDot />}
                   animationDuration={600}
                 />
+
+                {attributionLossThreshold > 0 && (
+                  <ReferenceLine
+                    y={attributionLossThreshold}
+                    stroke="#64748B"
+                    strokeDasharray="5 4"
+                    strokeWidth={1.75}
+                    ifOverflow="extendDomain"
+                    label={({ viewBox }) => {
+                      if (!viewBox || !("y" in viewBox) || !("x" in viewBox)) return null;
+                      const lineY = Number(viewBox.y);
+                      const lineX = Number(viewBox.x);
+                      const text = `Attribution Loss Threshold (${attributionLossThresholdLabel})`;
+                      const width = Math.min(280, 16 + text.length * 6.15);
+                      const placeBelow = lineY < 32;
+                      const labelY = placeBelow ? lineY + 6 : lineY - 20;
+                      return (
+                        <g pointerEvents="none">
+                          <rect
+                            x={lineX + 8}
+                            y={labelY}
+                            width={width}
+                            height={16}
+                            rx={4}
+                            fill="#FFFFFF"
+                            fillOpacity={0.96}
+                            stroke="#CBD5E1"
+                            strokeWidth={1}
+                          />
+                          <text
+                            x={lineX + 16}
+                            y={labelY + 12}
+                            fill="#334155"
+                            fontSize={10}
+                            fontWeight={700}
+                          >
+                            {text}
+                          </text>
+                        </g>
+                      );
+                    }}
+                  />
+                )}
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -784,14 +898,14 @@ export default function MarketMaturityPage() {
             <div>
               <div className="flex items-center justify-between gap-1">
                 <span className="text-[11px] font-extrabold text-[#EF4444] flex items-center gap-1.5">
-                  <span>🚨</span> Priority Action
+                  <span>🚨</span> {QUADRANT_LABELS["Priority Action"]}
                 </span>
                 <span className="text-xs font-black bg-[#EF4444]/15 text-[#EF4444] px-2 py-0.5 rounded-md">
                   {viewMode === "markets" ? quadrantStats.criticalCountries.length : quadrantStats.criticalAccounts.length}
                 </span>
               </div>
               <span className="text-[10px] text-[#6B7280] font-medium mt-1 block">
-                Score &lt; 80% &bull; Loss &gt; $100K
+                {QUADRANT_RULES["Priority Action"]}
               </span>
             </div>
 
@@ -822,14 +936,14 @@ export default function MarketMaturityPage() {
             <div>
               <div className="flex items-center justify-between gap-1">
                 <span className="text-[11px] font-extrabold text-[#D97706] flex items-center gap-1.5">
-                  <span>⚠️</span> High-Value Opportunity
+                  <span>⚠️</span> {QUADRANT_LABELS["High-Value Opportunity"]}
                 </span>
                 <span className="text-xs font-black bg-[#F59E0B]/15 text-[#D97706] px-2 py-0.5 rounded-md">
                   {viewMode === "markets" ? quadrantStats.highRiskCountries.length : quadrantStats.highRiskAccounts.length}
                 </span>
               </div>
               <span className="text-[10px] text-[#6B7280] font-medium mt-1 block">
-                Score &ge; 80% &bull; Loss &gt; $100K
+                {QUADRANT_RULES["High-Value Opportunity"]}
               </span>
             </div>
 
@@ -860,14 +974,14 @@ export default function MarketMaturityPage() {
             <div>
               <div className="flex items-center justify-between gap-1">
                 <span className="text-[11px] font-extrabold text-slate-700 flex items-center gap-1.5">
-                  <span>🌱</span> Build Momentum
+                  <span>🌱</span> {QUADRANT_LABELS["Build Momentum"]}
                 </span>
                 <span className="text-xs font-black bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">
                   {viewMode === "markets" ? quadrantStats.emergingCountries.length : quadrantStats.emergingAccounts.length}
                 </span>
               </div>
               <span className="text-[10px] text-[#6B7280] font-medium mt-1 block">
-                Score &lt; 80% &bull; Loss &le; $100K
+                {QUADRANT_RULES["Build Momentum"]}
               </span>
             </div>
 
@@ -898,14 +1012,14 @@ export default function MarketMaturityPage() {
             <div>
               <div className="flex items-center justify-between gap-1">
                 <span className="text-[11px] font-extrabold text-[#059669] flex items-center gap-1.5">
-                  <span>✨</span> Strong Performance
+                  <span>✨</span> {QUADRANT_LABELS["Strong Performance"]}
                 </span>
                 <span className="text-xs font-black bg-[#10B981]/15 text-[#059669] px-2 py-0.5 rounded-md">
                   {viewMode === "markets" ? quadrantStats.healthyCountries.length : quadrantStats.healthyAccounts.length}
                 </span>
               </div>
               <span className="text-[10px] text-[#6B7280] font-medium mt-1 block">
-                Score &ge; 90% &bull; Loss &le; $100K
+                {QUADRANT_RULES["Strong Performance"]}
               </span>
             </div>
 
@@ -945,7 +1059,7 @@ export default function MarketMaturityPage() {
         <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-400 gap-1.5">
           <span>{footNote}</span>
           <span className="font-semibold text-slate-500">
-            Target BASCO: &gt; 90% Healthy • 80%–90% Watch • &lt; 80% Needs Attention • Period: {selectedQuarter}
+            Target BASCO: Strong ≥ 90% & Loss &lt; Benchmark • Watch ≥ 85% & Loss ≥ Benchmark • Lower Priority &gt; 76% & Loss &lt; Benchmark • Action Needed &lt; 76% & Loss ≥ Benchmark • Period: {selectedQuarter}
           </span>
         </div>
       </div>
@@ -967,7 +1081,7 @@ export default function MarketMaturityPage() {
             </p>
           </div>
 
-          {/* Search and Region Filters */}
+          {/* Search and Country Filters */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* Search Input */}
             <div className="relative">
@@ -989,18 +1103,16 @@ export default function MarketMaturityPage() {
               )}
             </div>
 
-            {/* Region Filter */}
             <select
-              value={regionFilter}
-              onChange={(e) => setRegionFilter(e.target.value)}
+              value={countryFilter}
+              onChange={(e) => setCountryFilter(e.target.value)}
               className="bg-slate-50 border border-[#E5E7EB] text-xs font-semibold rounded-xl px-3 py-1.5 text-[#111827] outline-none cursor-pointer hover:bg-slate-100 transition-colors"
             >
-              <option value="All">All Regions</option>
-              <option value="APJ">APJ</option>
-              <option value="EMEA">EMEA</option>
-              <option value="LATAM">LATAM</option>
-              <option value="US">US</option>
-              <option value="CANADA">CANADA</option>
+              {availableCountries.map((country) => (
+                <option key={country} value={country}>
+                  {country}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -1022,7 +1134,7 @@ export default function MarketMaturityPage() {
                     : "bg-slate-50 text-slate-600 border-[#E5E7EB] hover:bg-slate-100"
                 }`}
               >
-                <span>{q === "ALL" ? "All Quadrants" : q}</span>
+                <span>{q === "ALL" ? "All Quadrants" : QUADRANT_LABELS[q]}</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                   isActive ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
                 }`}>
@@ -1045,40 +1157,43 @@ export default function MarketMaturityPage() {
                 <th className="py-2.5 px-3 text-right">Total FMV</th>
                 <th className="py-2.5 px-3 text-right">Attribution Loss</th>
                 <th className="py-2.5 px-3 text-right">Creatives</th>
+                <th className="py-2.5 px-3 text-right">Helpdesk Queries</th>
+                <th className="py-2.5 px-3 text-right">Helpdesk Artworks</th>
+                <th className="py-2.5 px-3 text-center">Helpdesk Usage</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {filteredAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
+                  <td colSpan={10} className="py-8 text-center text-slate-400 font-medium">
                     No parent accounts found matching the selected filters.
                   </td>
                 </tr>
               ) : (
                 filteredAccounts.map((acc, idx) => {
-                  const scoreColor = getScoreColor(acc.basco_score);
+                  const scoreColor = getQuadrantColor(acc.quadrant);
 
                   let quadrantBadge = (
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#10B981]/10 text-[#059669] border border-[#10B981]/25">
-                      <span>✨</span> Strong Performance
+                      <span>✨</span> {QUADRANT_LABELS["Strong Performance"]}
                     </span>
                   );
                   if (acc.quadrant === "Priority Action") {
                     quadrantBadge = (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/25">
-                        <span>🚨</span> Priority Action
+                        <span>🚨</span> {QUADRANT_LABELS["Priority Action"]}
                       </span>
                     );
                   } else if (acc.quadrant === "High-Value Opportunity") {
                     quadrantBadge = (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#F59E0B]/10 text-[#D97706] border border-[#F59E0B]/25">
-                        <span>⚠️</span> High-Value Opportunity
+                        <span>⚠️</span> {QUADRANT_LABELS["High-Value Opportunity"]}
                       </span>
                     );
                   } else if (acc.quadrant === "Build Momentum") {
                     quadrantBadge = (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-300">
-                        <span>🌱</span> Build Momentum
+                        <span>🌱</span> {QUADRANT_LABELS["Build Momentum"]}
                       </span>
                     );
                   }
@@ -1148,6 +1263,23 @@ export default function MarketMaturityPage() {
                       {/* Creatives */}
                       <td className="py-2.5 px-3 text-right text-slate-500 font-semibold">
                         {acc.total_jobs}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-slate-700 font-semibold">
+                        {acc.helpdesk_queries ?? 0}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-slate-700 font-semibold">
+                        {acc.helpdesk_artworks ?? 0}
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        {acc.helpdesk_usage === "Yes" ? (
+                          <span className="inline-flex text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-[#10B981]/10 text-[#059669] border border-[#10B981]/25">
+                            Yes
+                          </span>
+                        ) : (
+                          <span className="inline-flex text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200">
+                            No
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

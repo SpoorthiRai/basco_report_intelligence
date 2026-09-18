@@ -33,17 +33,8 @@ class MarketMaturityRowSerializer(serializers.Serializer):
     total_violations = serializers.IntegerField()
     fmv              = serializers.FloatField(required=False, default=0.0)
     attr_loss        = serializers.FloatField(required=False, default=0.0)
-
-
-
-class VisualAdoptionRowSerializer(serializers.Serializer):
-    """
-    One row of visual adoption data: per-retailer PMS visual usage breakdown.
-    """
-
-    retailer_name = serializers.CharField()
-    visual_type   = serializers.CharField()
-    usage_count   = serializers.IntegerField()
+    helpdesk_queries = serializers.IntegerField(required=False, default=0)
+    helpdesk_artworks = serializers.IntegerField(required=False, default=0)
 
 
 class CtaMixRowSerializer(serializers.Serializer):

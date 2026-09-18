@@ -27,17 +27,22 @@ from core.db import get_warehouse_connection
 from apps.accounts.models import User
 
 from .permissions import IsAnyReportingRole
+from .kpi import (
+    attach_country_helpdesk,
+    attach_helpdesk_usage,
+    compute_league_kpis,
+    compute_market_kpis,
+    group_parent_accounts,
+)
 from .queries import (
     CTA_MIX_QUERY,
+    HELPDESK_MASTER_MERGE_PARENT_USAGE_QUERY,
     LEAGUE_TABLE_QUERY,
     MARKET_MATURITY_QUERY,
-    VISUAL_ADOPTION_QUERY,
+    POP_PARENT_COUNTRY_QUERY,
 )
 from .serializers import (
     CtaMixRowSerializer,
-    LeagueTableRowSerializer,
-    MarketMaturityRowSerializer,
-    VisualAdoptionRowSerializer,
 )
 
 # ---------------------------------------------------------------------------
@@ -105,6 +110,57 @@ def _rows_to_dicts(cursor) -> list[dict]:
     return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 
+def normalize_quarter_label(value, year=None) -> str:
+    """Canonical 'Q3 2026' from warehouse variants like 'Q3-2026' or 'Q3 2026 2026'."""
+    text = str(value or "").strip().replace("-", " ").replace("_", " ")
+    text = re.sub(r"\s+", " ", text)
+    match = re.search(r"Q\s*([1-4])(?:\D+(\d{4}))?", text, re.I)
+    if not match:
+        return text
+    quarter_num = match.group(1)
+    year_part = match.group(2) or (str(year) if year else "")
+    if year_part:
+        return f"Q{quarter_num} {year_part}"
+    return f"Q{quarter_num}"
+
+
+def enrich_league_rows(rows: list[dict]) -> list[dict]:
+    """Attach integer money fields, prev_basco, and trend on retailer rows."""
+    for r in rows:
+        label = normalize_quarter_label(r.get("quarter") or r.get("period"), r.get("year"))
+        r["quarter"] = label
+        r["period"] = label
+
+    retailer_quarter_map = {}
+    for r in rows:
+        retailer_quarter_map[(r.get("retailer"), r.get("quarter"))] = r.get("basco")
+
+    for r in rows:
+        r["fmv"] = int(r.get("fmv") or 0)
+        r["attr_loss"] = int(r.get("attr_loss") or 0)
+        r["attr_gain"] = int(r.get("attr_gain") or 0)
+
+        q_str = r.get("quarter") or ""
+        if "Q3" in q_str:
+            prev_q = q_str.replace("Q3", "Q2")
+        elif "Q2" in q_str:
+            prev_q = q_str.replace("Q2", "Q1")
+        else:
+            prev_q = None
+
+        prev_score = retailer_quarter_map.get((r.get("retailer"), prev_q)) if prev_q else None
+        r["prev_basco"] = prev_score
+        if prev_score is None:
+            r["trend"] = "NEW"
+        elif r.get("basco") is not None and r["basco"] > prev_score:
+            r["trend"] = "UP"
+        elif r.get("basco") is not None and r["basco"] < prev_score:
+            r["trend"] = "DOWN"
+        else:
+            r["trend"] = "FLAT"
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # Views
 # ---------------------------------------------------------------------------
@@ -136,6 +192,15 @@ class LeagueTableView(APIView):
             cursor.execute(LEAGUE_TABLE_QUERY)
             rows = _rows_to_dicts(cursor)
 
+            cursor.execute(HELPDESK_MASTER_MERGE_PARENT_USAGE_QUERY)
+            helpdesk_rows = apply_user_scope(
+                _rows_to_dicts(cursor),
+                request.user,
+                country_key="country",
+                region_key="region",
+                retailer_key="parent_account",
+            )
+
             # Role-based & regional scoping
             rows = apply_user_scope(rows, request.user, country_key='country', region_key='region', retailer_key='retailer')
 
@@ -145,33 +210,7 @@ class LeagueTableView(APIView):
             all_regions = sorted(list(set(r['region'] for r in rows if r.get('region') and r['region'] not in ('', 'Unknown', 'None'))))
 
             # Compute prev_basco and trend across quarters for each retailer
-            retailer_quarter_map = {}
-            for r in rows:
-                retailer_quarter_map[(r['retailer'], r['quarter'])] = r['basco']
-
-            for r in rows:
-                r['fmv'] = int(r.get('fmv') or 0)
-                r['attr_loss'] = int(r.get('attr_loss') or 0)
-                r['attr_gain'] = int(r.get('attr_gain') or 0)
-
-                q_str = r.get('quarter', '')
-                if 'Q3' in q_str:
-                    prev_q = q_str.replace('Q3', 'Q2')
-                elif 'Q2' in q_str:
-                    prev_q = q_str.replace('Q2', 'Q1')
-                else:
-                    prev_q = None
-
-                prev_score = retailer_quarter_map.get((r['retailer'], prev_q)) if prev_q else None
-                r['prev_basco'] = prev_score
-                if prev_score is None:
-                    r['trend'] = 'NEW'
-                elif r['basco'] > prev_score:
-                    r['trend'] = 'UP'
-                elif r['basco'] < prev_score:
-                    r['trend'] = 'DOWN'
-                else:
-                    r['trend'] = 'FLAT'
+            rows = enrich_league_rows(rows)
 
             # Filter if query parameters provided
             filtered_rows = rows
@@ -182,8 +221,23 @@ class LeagueTableView(APIView):
             if region_filter and region_filter != 'All':
                 filtered_rows = [r for r in filtered_rows if r.get('region') == region_filter]
 
+            helpdesk_filtered = helpdesk_rows
+            if quarter_filter and quarter_filter not in ('All', 'All Quarters'):
+                wanted = normalize_quarter_label(quarter_filter).upper()
+                helpdesk_filtered = [
+                    r for r in helpdesk_filtered
+                    if normalize_quarter_label(r.get("quarter_label")).upper() == wanted
+                ]
+            # Parent-name join: do not require Helpdesk COUNTRY/REGION to match POP.
+            # BASCO_HELPDESK_MASTER_MERGE often tags a parent in a different market.
+
             return Response({
                 'data': filtered_rows,
+                'kpis': compute_league_kpis(filtered_rows),
+                'parent_accounts': attach_helpdesk_usage(
+                    group_parent_accounts(filtered_rows),
+                    helpdesk_filtered,
+                ),
                 'filter_options': {
                     'quarters': ['All Quarters'] + all_quarters,
                     'countries': ['All Countries'] + all_countries,
@@ -196,26 +250,6 @@ class LeagueTableView(APIView):
         finally:
             if conn:
                 conn.close()
-
-
-BASE_FMV_MAP = {
-    'Australia': 1473000,
-    'Brazil': 1158842,
-    'South Korea': 1124500,
-    'Germany': 946900,
-    'Nordics': 765000,
-    'Mexico': 255809,
-    'Indonesia': 145500,
-    'France': 97000,
-    'Spain': 46770,
-    'Taiwan': 520000,
-    'Thailand': 640000,
-    'New Zealand': 180000,
-    'Malaysia': 410000,
-    'India': 880000,
-    'Turkey': 310000,
-    'Portugal': 150000,
-}
 
 
 class MarketMaturityView(APIView):
@@ -249,17 +283,34 @@ class MarketMaturityView(APIView):
             cursor.execute(MARKET_MATURITY_QUERY)
             raw_rows = _rows_to_dicts(cursor)
 
+            cursor.execute(HELPDESK_MASTER_MERGE_PARENT_USAGE_QUERY)
+            helpdesk_rows = apply_user_scope(
+                _rows_to_dicts(cursor),
+                request.user,
+                country_key="country",
+                region_key="region",
+                retailer_key="parent_account",
+            )
+
+            cursor.execute(POP_PARENT_COUNTRY_QUERY)
+            pop_parent_rows = apply_user_scope(
+                _rows_to_dicts(cursor),
+                request.user,
+                country_key="country",
+                region_key="region",
+                retailer_key="parent_account",
+            )
+
             # Apply user role & regional scoping
             raw_rows = apply_user_scope(raw_rows, request.user, country_key='country', region_key='region')
 
             quarter_param = request.query_params.get("quarter", "").strip()
+            region_param = request.query_params.get("region", "").strip()
             all_quarters = sort_quarters_desc(list(set(r.get("quarter_label") for r in raw_rows if r.get("quarter_label"))))
-
-            # Compute all-time jobs per country for FMV scaling
-            country_all_time_jobs = {}
-            for r in raw_rows:
-                c = r.get("country")
-                country_all_time_jobs[c] = country_all_time_jobs.get(c, 0) + (r.get("total_jobs") or 0)
+            all_regions = sorted(list(set(
+                r.get("region") for r in raw_rows
+                if r.get("region") and r.get("region") not in ("", "Unknown", "None")
+            )))
 
             if quarter_param and quarter_param not in ("All", "All Quarters"):
                 # Filter by specific quarter
@@ -316,13 +367,44 @@ class MarketMaturityView(APIView):
                         "attr_loss": item["attr_loss"],
                     })
 
+            if region_param and region_param not in ("All", "All Regions"):
+                wanted = region_param.strip().upper()
+                country_rows = [
+                    r for r in country_rows
+                    if str(r.get("region") or "").strip().upper() == wanted
+                ]
+
+            helpdesk_filtered = helpdesk_rows
+            pop_filtered = pop_parent_rows
+            if quarter_param and quarter_param not in ("All", "All Quarters"):
+                wanted_q = normalize_quarter_label(quarter_param).upper()
+                helpdesk_filtered = [
+                    r for r in helpdesk_filtered
+                    if normalize_quarter_label(r.get("quarter_label")).upper() == wanted_q
+                ]
+                pop_filtered = [
+                    r for r in pop_filtered
+                    if normalize_quarter_label(r.get("quarter_label")).upper() == wanted_q
+                ]
+            if region_param and region_param not in ("All", "All Regions"):
+                wanted_r = region_param.strip().upper()
+                # Keep all Helpdesk parent rows: merge-table region/country can
+                # differ from POP (same parent in more than one market).
+                pop_filtered = [
+                    r for r in pop_filtered
+                    if str(r.get("region") or "").strip().upper() == wanted_r
+                ]
+
+            attach_country_helpdesk(country_rows, helpdesk_filtered, pop_filtered)
+
             country_rows.sort(key=lambda x: x["avg_basco_score"])
-            serializer = MarketMaturityRowSerializer(country_rows, many=True)
             return Response(
                 {
-                    "data": serializer.data,
+                    "data": country_rows,
+                    "kpis": compute_market_kpis(country_rows),
                     "filter_options": {
                         "quarters": ["All Quarters"] + all_quarters,
+                        "regions": ["All"] + all_regions,
                     },
                 },
                 status=status.HTTP_200_OK,
@@ -338,60 +420,6 @@ class MarketMaturityView(APIView):
                 {"detail": "Internal server error.", "error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        finally:
-            if conn:
-                conn.close()
-
-
-
-class VisualAdoptionView(APIView):
-    """
-    GET /api/reports/visual-adoption/
-
-    Returns Intel PMS visual usage broken down by retailer and visual type.
-
-    Role filtering:
-      RSM   → only rows where retailer_name is in request.user.retailer_ids
-      RMM   → all rows
-      ADMIN → all rows
-    """
-
-    permission_classes = [IsAuthenticated, IsAnyReportingRole]
-
-    @extend_schema(
-        summary="Visual adoption",
-        description=(
-            "Returns Intel PMS visual usage counts by retailer and visual type.\n\n"
-            "**RSM** sees only their assigned retailers.\n"
-            "**RMM** and **ADMIN** see all rows."
-        ),
-        responses={
-            200: VisualAdoptionRowSerializer(many=True),
-            403: OpenApiResponse(description="Insufficient role."),
-            500: OpenApiResponse(description="Database error."),
-        },
-        tags=["Reports"],
-    )
-    def get(self, request: Request) -> Response:
-        conn = None
-        try:
-            conn = get_warehouse_connection()
-            cursor = conn.cursor()
-            cursor.execute(VISUAL_ADOPTION_QUERY)
-            rows = _rows_to_dicts(cursor)
-
-            # Role-based filtering
-            # RSM retailer_ids must contain Sender_Email values from Job_Queue
-            if request.user.role == User.Role.RSM:
-                allowed = set(request.user.retailer_ids or [])
-                rows = [r for r in rows if r.get("retailer_name") in allowed]
-            # RMM and ADMIN: no filtering
-
-            serializer = VisualAdoptionRowSerializer(rows, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except pyodbc.Error:
-            return Response(_DB_ERROR_RESPONSE, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
             if conn:
                 conn.close()

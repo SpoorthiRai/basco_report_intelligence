@@ -17,6 +17,7 @@ export interface CreateUserPayload {
   role: 'RSM' | 'RMM' | 'ADMIN'
   retailer_ids?: string[]
   country?: string
+  region?: string
 }
 
 export async function createUser(payload: CreateUserPayload): Promise<User> {
@@ -29,6 +30,7 @@ export interface UpdateUserPayload {
   role?: 'RSM' | 'RMM' | 'ADMIN'
   retailer_ids?: string[]
   country?: string
+  region?: string
   is_active?: boolean
 }
 

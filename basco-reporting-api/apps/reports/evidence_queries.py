@@ -29,16 +29,32 @@ SELECT
     ISNULL(CAMPAIGN_NAME, 'Unknown') AS Campaign_Name,
     ISNULL(LAYOUT_CATEGORY, 'Unknown') AS Layout,
     ISNULL(CONTENT, 'Unknown') AS Content,
+    ISNULL(PRODUCT, 'Unknown') AS Product,
     ISNULL(OEM_PRESENCE_FLAG, 'No') AS OEM_Flag,
     ISNULL(OEM_NAMES, 'None') AS OEM_Values,
     ISNULL(INTEL_VISUAL_FLAG, 'No') AS Intel_Visual_Flag,
     ISNULL(VISUAL_CONTENT_NAME, 'None') AS Visual_Content_Name,
+    ISNULL(INTEL_VISUAL_USAGE, 'None') AS Intel_Visual_Usage,
+    ISNULL(GENERAL_VISUAL_FLAG, 'No') AS General_Visual_Flag,
     ISNULL(AI_MESSAGING_FLAG, 'No') AS AI_Messaging,
     ISNULL(INSIDE_MESSAGING_FLAG, 'No') AS Inside_Messaging,
     ISNULL(OFFER_FLAG, 'No') AS Offer_Flag,
+    ISNULL(OFFER_TYPE, 'No Offer') AS Offer_Type,
     ISNULL(CTA_FLAG, 'No') AS CTA_Flag,
     ISNULL(OBJECTIVE, 'Unknown') AS Objective
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
 WHERE {where_sql}
 ORDER BY SEND_DATE DESC, ANALYSIS_ID DESC
+"""
+
+
+def build_evidence_quarter_options_query(year: int = 2026) -> str:
+    """All 2026 Helpdesk quarters for the filter dropdown, independent of the selected quarter."""
+    target_year = int(year) if year else 2026
+    return f"""
+SELECT DISTINCT REPLACE(LTRIM(RTRIM(QUARTER)), '-', ' ') AS quarter_label
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
+WHERE YEAR(SEND_DATE) = {target_year}
+  AND QUARTER IS NOT NULL
+  AND LTRIM(RTRIM(QUARTER)) NOT IN ('', 'None', 'Unknown')
 """

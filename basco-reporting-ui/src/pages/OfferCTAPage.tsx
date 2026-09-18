@@ -2,7 +2,7 @@
 // Offer-led Creatives X CTA
 // 4-Panel layout: Offer Type x CTA stacked bar + KPI chips, Product x Offer heatmap, Promo missing CTA evidence table, All offer types evidence table
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type RefObject } from 'react';
 import {
   BarChart,
   Bar,
@@ -42,6 +42,8 @@ interface OfferEvidence {
   quarter_label: string;
   product?: string;
   cta_status?: string;
+  Campaign_Type?: string;
+  Messaging_Style?: string;
 }
 
 interface OfferCTAResponse {
@@ -60,7 +62,23 @@ interface OfferCTAResponse {
     quarters: string[];
     countries: string[];
     retailers: string[];
+    offer_types?: string[];
   };
+}
+
+function isEventDriven(row: OfferEvidence): boolean {
+  return (row.Campaign_Type || '').toLowerCase().includes('event');
+}
+
+function isTransactionalOrUrgency(style?: string): boolean {
+  const s = (style || '').toLowerCase();
+  return /transaction|urgenc|urgent|scarcity/.test(s);
+}
+
+function highlightMessagingMismatch(row: OfferEvidence): boolean {
+  const ot = (row.Offer_Type || '').trim();
+  const hasOffer = Boolean(ot) && !['No Offer', 'None', 'NA', 'Unknown'].includes(ot);
+  return hasOffer && isEventDriven(row) && !isTransactionalOrUrgency(row.Messaging_Style);
 }
 
 // Heatmap cell color based on percentage intensity (3-color modern data scale)
@@ -72,6 +90,24 @@ function getHeatmapBgAndText(pct: number): { bg: string; text: string } {
   return { bg: '#1E429F', text: 'text-white font-black' };
 }
 
+const PANEL_Y_SCROLL =
+  'flex-1 min-h-0 w-full mt-3 overflow-y-scroll overflow-x-hidden border border-[#E5E7EB] rounded-xl custom-scrollbar [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar-track]:bg-[#F1F5F9] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#94A3B8]';
+
+function useElementHeight(ref: RefObject<HTMLElement | null>, ready: boolean) {
+  const [height, setHeight] = useState<number | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    const el = ref.current;
+    if (!el) return;
+    const sync = () => setHeight(Math.round(el.getBoundingClientRect().height));
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, ready]);
+  return height;
+}
+
 export default function OfferCTAPage() {
   const [data, setData] = useState<OfferCTAResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -81,11 +117,12 @@ export default function OfferCTAPage() {
   const [countryFilter, setCountryFilter] = useState<string>('All Countries');
   const [retailerFilter, setRetailerFilter] = useState<string>('All Retailers');
   const [offerProductFilter, setOfferProductFilter] = useState<string>('All Products');
+  const [offerTypeFilter, setOfferTypeFilter] = useState<string>('All Offer Types');
+  const [attentionCtaFilter, setAttentionCtaFilter] = useState<'No CTA' | 'With CTA'>('No CTA');
   const [selectedCreative, setSelectedCreative] = useState<OfferEvidence | null>(null);
 
-  const promoEvidenceRef = useRef<HTMLDivElement>(null);
-
-  const allEvidenceRef = useRef<HTMLDivElement>(null);
+  const chartCardRef = useRef<HTMLDivElement>(null);
+  const heatmapCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -150,14 +187,31 @@ export default function OfferCTAPage() {
     ),
   ];
 
-  const filteredAllOfferList =
-    offerProductFilter === 'All Products'
-      ? allOfferList
-      : allOfferList.filter(
-          (r) =>
-            (r.product && r.product.toLowerCase().includes(offerProductFilter.toLowerCase())) ||
-            (r.Content && r.Content.toLowerCase().includes(offerProductFilter.toLowerCase()))
-        );
+  const offerTypeOptions =
+    data?.filter_options.offer_types && data.filter_options.offer_types.length > 0
+      ? data.filter_options.offer_types
+      : [
+          'All Offer Types',
+          ...Array.from(new Set(allOfferList.map((r) => r.Offer_Type).filter(Boolean))),
+        ];
+
+  const filteredAllOfferList = allOfferList.filter((r) => {
+    const productOk =
+      offerProductFilter === 'All Products' ||
+      (r.product && r.product.toLowerCase().includes(offerProductFilter.toLowerCase())) ||
+      (r.Content && r.Content.toLowerCase().includes(offerProductFilter.toLowerCase()));
+    const typeOk =
+      offerTypeFilter === 'All Offer Types' || r.Offer_Type === offerTypeFilter;
+    return productOk && typeOk;
+  });
+
+  const filteredAttentionList = promoMissingList.filter((r) => {
+    const hasCta = r.cta_status === 'Has CTA' || r.CTA_Flag === 'Yes';
+    return attentionCtaFilter === 'With CTA' ? hasCta : !hasCta;
+  });
+
+  const attentionHeight = useElementHeight(chartCardRef, !loading);
+  const exploreHeight = useElementHeight(heatmapCardRef, !loading);
 
   return (
     <div className="space-y-6 pb-12">
@@ -247,9 +301,12 @@ export default function OfferCTAPage() {
       {/* ════════════════════════════════════════════════════════════ */}
       {/* ROW 1: CTA PRESENCE (LEFT 58%) & PROMO MISSING (RIGHT 42%)   */}
       {/* ════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-1 gap-6 items-stretch">
         {/* ── LEFT (58% / lg:col-span-7): CTA Presence Across Offer Types */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between min-h-[580px] h-full">
+        <div
+          ref={chartCardRef}
+          className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col"
+        >
           <div>
             <div className="pb-3 border-b border-[#E5E7EB]">
               <h3 className="text-sm font-bold text-[#111827] tracking-tight">
@@ -342,41 +399,6 @@ export default function OfferCTAPage() {
                 </ResponsiveContainer>
               )}
             </div>
-
-            {/* Offer Type Breakdown Grid */}
-            <div className="mt-2 pt-2.5 border-t border-[#E5E7EB]">
-              <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block mb-1.5">
-                CTA Readiness by Offer Type:
-              </span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                {offerBars.map((b) => (
-                  <div
-                    key={b.offer_type}
-                    className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg p-1.5 flex flex-col justify-between"
-                  >
-                    <span className="text-[10px] font-bold text-[#111827] truncate" title={b.offer_type}>
-                      {b.offer_type}
-                    </span>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <span className="text-[9px] text-[#6B7280] font-medium">
-                        {b.has_cta}/{b.total}
-                      </span>
-                      <span
-                        className={`text-[9px] font-extrabold px-1 py-0.2 rounded ${
-                          b.cta_pct >= 60
-                            ? 'bg-[#10B981]/10 text-[#10B981]'
-                            : b.cta_pct >= 35
-                            ? 'bg-[#1E429F]/10 text-[#1E429F]'
-                            : 'bg-[#EF4444]/10 text-[#EF4444]'
-                        }`}
-                      >
-                        {b.cta_pct}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* 2 KPI Chips Below Chart */}
@@ -419,9 +441,9 @@ export default function OfferCTAPage() {
 
         {/* ── RIGHT (42% / lg:col-span-5): Promo Creatives with Missing CTA */}
         <div
-          ref={promoEvidenceRef}
           id="promo-missing-cta-table"
-          className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between min-h-[580px] h-full"
+          className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col overflow-hidden"
+          style={attentionHeight ? { height: attentionHeight } : undefined}
         >
           <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB] flex-wrap shrink-0">
             <div>
@@ -429,22 +451,48 @@ export default function OfferCTAPage() {
                 Offers Needing Attention
               </h3>
               <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                Promotional creatives with an offer but no clear next step.
+                Promotional creatives with an offer. Highlighted rows are Event-Driven with non-transactional messaging.
               </p>
             </div>
-            <span className="text-[11px] font-bold text-[#EF4444] bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg shrink-0">
-              {promoMissingList.length} Creatives
-            </span>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <div className="inline-flex rounded-lg border border-[#E5E7EB] overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setAttentionCtaFilter('No CTA')}
+                  className={`px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                    attentionCtaFilter === 'No CTA'
+                      ? 'bg-[#EF4444] text-white'
+                      : 'bg-white text-[#6B7280] hover:bg-[#F8FAFC]'
+                  }`}
+                >
+                  No CTA
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttentionCtaFilter('With CTA')}
+                  className={`px-2.5 py-1 text-[11px] font-bold transition-colors border-l border-[#E5E7EB] ${
+                    attentionCtaFilter === 'With CTA'
+                      ? 'bg-[#10B981] text-white'
+                      : 'bg-white text-[#6B7280] hover:bg-[#F8FAFC]'
+                  }`}
+                >
+                  With CTA
+                </button>
+              </div>
+              <span className="text-[11px] font-bold text-[#64748B] bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg shrink-0">
+                {filteredAttentionList.length} Creatives
+              </span>
+            </div>
           </div>
 
-          <div className="flex-1 min-h-0 w-full mt-3 overflow-y-auto max-h-[490px] border border-[#E5E7EB] rounded-xl">
+          <div className={PANEL_Y_SCROLL}>
             {loading && !data ? (
               <div className="p-8 text-center text-xs font-semibold text-[#6B7280] animate-pulse">
                 Loading promo evidence...
               </div>
-            ) : promoMissingList.length === 0 ? (
+            ) : filteredAttentionList.length === 0 ? (
               <div className="p-8 text-center text-xs font-medium text-[#6B7280]">
-                No promo creatives with missing CTA found.
+                No promotional creatives found for this CTA filter.
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
@@ -454,14 +502,29 @@ export default function OfferCTAPage() {
                     <th className="py-2.5 px-3">Parent Account</th>
                     <th className="py-2.5 px-3">Offer Type</th>
                     <th className="py-2.5 px-3">CTA Status</th>
+                    <th className="py-2.5 px-3">Messaging Style</th>
                     <th className="py-2.5 px-3">Product</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
-                  {promoMissingList.map((row, idx) => (
+                  {filteredAttentionList.map((row, idx) => {
+                    const hasCta = row.cta_status === 'Has CTA' || row.CTA_Flag === 'Yes';
+                    const mismatch = highlightMessagingMismatch(row);
+                    return (
                     <tr
                       key={`${row.Asset_URL}-${idx}`}
-                      className={idx % 2 === 0 ? 'bg-[#FFFBEB] hover:bg-[#FEF3C7]' : 'bg-white hover:bg-[#FEF3C7]/60'}
+                      className={
+                        mismatch
+                          ? 'bg-[#FEF3C7] hover:bg-[#FDE68A]'
+                          : idx % 2 === 0
+                          ? 'bg-white hover:bg-[#F8FAFC]'
+                          : 'bg-[#F8FAFC]/50 hover:bg-[#F8FAFC]'
+                      }
+                      title={
+                        mismatch
+                          ? 'Event-Driven creative with an offer, but messaging is not transactional or urgency-driven'
+                          : undefined
+                      }
                     >
                       <td className="py-2 px-3">
                         <button
@@ -491,15 +554,31 @@ export default function OfferCTAPage() {
                         {row.Offer_Type}
                       </td>
                       <td className="py-2 px-3 align-middle">
-                        <span className="bg-[#EF4444]/10 text-[#EF4444] text-[10px] font-bold px-2 py-0.5 rounded-full inline-block">
-                          No CTA
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
+                            hasCta
+                              ? 'bg-[#10B981]/10 text-[#10B981]'
+                              : 'bg-[#EF4444]/10 text-[#EF4444]'
+                          }`}
+                        >
+                          {hasCta ? 'Has CTA' : 'No CTA'}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 align-middle">
+                        <span
+                          className={`text-[10px] font-semibold ${
+                            mismatch ? 'text-[#B45309] font-bold' : 'text-[#6B7280]'
+                          }`}
+                        >
+                          {row.Messaging_Style || 'Unknown'}
                         </span>
                       </td>
                       <td className="py-2 px-3 align-middle text-[#6B7280] font-mono text-[10px]">
                         {row.product || 'Unknown'}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -512,21 +591,23 @@ export default function OfferCTAPage() {
       {/* ════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* ── LEFT (58% / lg:col-span-7): Product x Offer Type Heatmap */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between min-h-[480px] h-full">
-          <div>
-            <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-[#E5E7EB]">
-              <div>
-                <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                  Offer Strategy Across Products
-                </h3>
-                <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                  See which promotional mechanics are being used across Intel product families.
-                </p>
-              </div>
+        <div
+          ref={heatmapCardRef}
+          className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col"
+        >
+          <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-[#E5E7EB]">
+            <div>
+              <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                Offer Strategy Across Products
+              </h3>
+              <p className="text-xs text-[#6B7280] font-medium mt-0.5">
+                See which promotional mechanics are being used across Intel product families.
+              </p>
             </div>
+          </div>
 
-            {/* Heatmap Table */}
-            <div className="mt-3 overflow-x-auto border border-[#E5E7EB] rounded-xl max-h-[360px] overflow-y-auto">
+          {/* Heatmap Table */}
+          <div className="mt-3 overflow-x-auto border border-[#E5E7EB] rounded-xl">
               {loading && !data ? (
                 <div className="p-8 text-center text-xs font-semibold text-[#6B7280] animate-pulse">
                   Loading product offer heatmap...
@@ -577,7 +658,6 @@ export default function OfferCTAPage() {
                 </table>
               )}
             </div>
-          </div>
 
           {/* Heatmap Legend */}
           <div className="mt-3 pt-3 border-t border-[#E5E7EB] flex items-center justify-end gap-3 text-[10px]">
@@ -603,9 +683,9 @@ export default function OfferCTAPage() {
 
         {/* ── RIGHT (42% / lg:col-span-5): Different Offer Types Including No Offer */}
         <div
-          ref={allEvidenceRef}
           id="all-offer-evidence-table"
-          className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between min-h-[480px] h-full"
+          className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col overflow-hidden"
+          style={exploreHeight ? { height: exploreHeight } : undefined}
         >
           <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB] flex-wrap shrink-0">
             <div>
@@ -616,7 +696,7 @@ export default function OfferCTAPage() {
                 Review creatives by product and offer type.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs text-[#111827]">
                 <span className="text-[11px] font-medium text-[#6B7280]">Product:</span>
                 <select
@@ -631,20 +711,34 @@ export default function OfferCTAPage() {
                   ))}
                 </select>
               </div>
+              <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs text-[#111827]">
+                <span className="text-[11px] font-medium text-[#6B7280]">Offer Type:</span>
+                <select
+                  value={offerTypeFilter}
+                  onChange={(e) => setOfferTypeFilter(e.target.value)}
+                  className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer max-w-[140px]"
+                >
+                  {offerTypeOptions.map((ot) => (
+                    <option key={ot} value={ot}>
+                      {ot}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <span className="text-[11px] font-bold text-[#64748B] bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg shrink-0">
                 {filteredAllOfferList.length} Creatives
               </span>
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 w-full mt-3 overflow-y-auto max-h-[380px] border border-[#E5E7EB] rounded-xl">
+          <div className={PANEL_Y_SCROLL}>
             {loading && !data ? (
               <div className="p-8 text-center text-xs font-semibold text-[#6B7280] animate-pulse">
                 Loading offer evidence...
               </div>
             ) : filteredAllOfferList.length === 0 ? (
               <div className="p-8 text-center text-xs font-medium text-[#6B7280]">
-                No offer evidence found for the selected product.
+                No offer evidence found for the selected filters.
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
@@ -652,8 +746,8 @@ export default function OfferCTAPage() {
                   <tr>
                     <th className="py-2.5 px-3">Creative</th>
                     <th className="py-2.5 px-3">Parent Account</th>
-                    <th className="py-2.5 px-3">Offer Type</th>
                     <th className="py-2.5 px-3">Product</th>
+                    <th className="py-2.5 px-3">Offer Type</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
@@ -686,11 +780,11 @@ export default function OfferCTAPage() {
                       <td className="py-2 px-3 align-middle font-semibold text-[#111827]">
                         {row.Retailer}
                       </td>
-                      <td className="py-2 px-3 align-middle text-[#6B7280] font-medium">
-                        {row.Offer_Type}
-                      </td>
                       <td className="py-2 px-3 align-middle text-[#6B7280] font-mono text-[10px]">
                         {row.product || 'Unknown'}
+                      </td>
+                      <td className="py-2 px-3 align-middle text-[#6B7280] font-medium">
+                        {row.Offer_Type}
                       </td>
                     </tr>
                   ))}
@@ -723,6 +817,8 @@ export default function OfferCTAPage() {
             badgeColor: (selectedCreative?.cta_status === 'Has CTA' || selectedCreative?.CTA_Flag === 'Yes') ? '#10B981' : '#EF4444',
           },
           { label: 'Product', value: selectedCreative?.product || selectedCreative?.Content || 'Unknown' },
+          { label: 'Messaging Style', value: selectedCreative?.Messaging_Style || 'Unknown' },
+          { label: 'Campaign Type', value: selectedCreative?.Campaign_Type || 'Unknown' },
           { label: 'Country', value: selectedCreative?.Country || 'Unknown' },
           { label: 'Quarter', value: selectedCreative?.quarter_label || 'N/A' },
         ]}

@@ -7,7 +7,8 @@ SELECT
     PARENT_ACCOUNT AS Retailer,
     COUNTRY AS Country,
     REGION AS Region,
-    REPLACE(QUARTER, '-', ' ') AS quarter_label
+    REPLACE(QUARTER, '-', ' ') AS quarter_label,
+    YEAR(SEND_DATE) AS year_label
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
 WHERE CONTENT IS NOT NULL
   AND CONTENT NOT IN ('None', '', 'NA')

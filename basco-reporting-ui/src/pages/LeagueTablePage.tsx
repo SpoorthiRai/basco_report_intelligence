@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import api from "../api/client";
 import EvidenceLocker from "./EvidenceLocker";
 
@@ -18,12 +19,15 @@ export interface RetailerRow {
   quarter?: string;
   year?: number;
   period?: string;
+  logo?: number | null;
+  badge?: number | null;
+  text_mention?: number | null;
+  key_visuals?: number | null;
   topAccount?: "YES" | "NO";
 }
 
 type SortKey = keyof RetailerRow;
 type SortDir = "asc" | "desc";
-type RegionFilter = "All" | "APJ" | "EMEA" | "LATAM" | "CANADA";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtUSD(val: number): string {
@@ -46,7 +50,13 @@ function regionPillClass(region: string): string {
   }
 }
 
-const FMV_TOOLTIP = "Fair Market Value (FMV) and Attribution data from Intel POP marketing warehouse.";
+const EMPTY_KPIS = {
+  total_retailers: 0,
+  avg_basco: 0,
+  fmv_loss: 0,
+  total_queries: 0,
+  top_compliance_issue: { label: "—", creatives: 0, rate: 0 },
+};
 
 // ── KPI Chip Component ─────────────────────────────────────────────────────────
 function KpiChip({
@@ -96,6 +106,7 @@ function SortIndicator({
 // ── Main Page Component ────────────────────────────────────────────────────────
 export default function LeagueTablePage() {
   const [data, setData] = useState<RetailerRow[]>([]);
+  const [kpis, setKpis] = useState(EMPTY_KPIS);
   const [availableQuarters, setAvailableQuarters] = useState<string[]>([
     "All Quarters",
     "Q3 2026",
@@ -103,6 +114,7 @@ export default function LeagueTablePage() {
     "Q1 2026",
   ]);
   const [availableCountries, setAvailableCountries] = useState<string[]>(["All Countries"]);
+  const [availableRegions, setAvailableRegions] = useState<string[]>(["All"]);
   const [loading, setLoading] = useState<boolean>(true);
 
   const [selectedQuarter, setSelectedQuarter] = useState<string>("All Quarters");
@@ -114,9 +126,10 @@ export default function LeagueTablePage() {
 
   const quarterRef = useRef<HTMLDivElement>(null);
   const countryRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
   const [search, setSearch]   = useState("");
-  const [region, setRegion]   = useState<RegionFilter>("All");
+  const [region, setRegion]   = useState<string>("All");
   const [sortKey, setSortKey] = useState<SortKey>("basco");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [tooltip, setTooltip] = useState<{
@@ -125,23 +138,43 @@ export default function LeagueTablePage() {
     text: string;
   } | null>(null);
 
-  // Fetch 2026 Retailer Performance live data
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    const params = new URLSearchParams();
+    if (selectedQuarter && selectedQuarter !== "All Quarters") {
+      params.set("quarter", selectedQuarter);
+    }
+    if (selectedCountry && selectedCountry !== "All Countries") {
+      params.set("country", selectedCountry);
+    }
+    if (region && region !== "All") {
+      params.set("region", region);
+    }
+    const qs = params.toString();
     api
-      .get<{ data: RetailerRow[]; filter_options: { quarters: string[]; countries: string[]; regions: string[] } }>(
-        "/api/reports/league-table/"
-      )
+      .get<{
+        data: RetailerRow[];
+        kpis: typeof EMPTY_KPIS;
+        filter_options: { quarters: string[]; countries: string[]; regions: string[] };
+      }>(`/api/reports/league-table/${qs ? `?${qs}` : ""}`)
       .then((res) => {
         if (!isMounted) return;
-        const resData = res.data?.data || (Array.isArray(res.data) ? res.data : []);
+        const resData = res.data?.data || (Array.isArray(res.data) ? (res.data as unknown as RetailerRow[]) : []);
         setData(resData);
+        if (res.data?.kpis) {
+          setKpis({ ...EMPTY_KPIS, ...res.data.kpis, top_compliance_issue: { ...EMPTY_KPIS.top_compliance_issue, ...res.data.kpis.top_compliance_issue } });
+        } else {
+          setKpis(EMPTY_KPIS);
+        }
         if (res.data?.filter_options?.quarters) {
           setAvailableQuarters(res.data.filter_options.quarters);
         }
         if (res.data?.filter_options?.countries) {
           setAvailableCountries(res.data.filter_options.countries);
+        }
+        if (res.data?.filter_options?.regions?.length) {
+          setAvailableRegions(res.data.filter_options.regions);
         }
       })
       .catch((err) => {
@@ -154,7 +187,13 @@ export default function LeagueTablePage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedQuarter, selectedCountry, region]);
+
+  useEffect(() => {
+    if (region !== "All" && !availableRegions.includes(region)) {
+      setRegion("All");
+    }
+  }, [availableRegions, region]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -170,20 +209,19 @@ export default function LeagueTablePage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (location.hash !== "#retailer-creative-performance") return;
+    const timer = window.setTimeout(() => {
+      document.getElementById("retailer-creative-performance")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [location.hash, loading]);
+
   // ── Transform Raw Data into Table Rows ─────────────────────────────
-  const baseRows: RetailerRow[] = useMemo(() => {
-    let sourceData = data;
-
-    if (selectedQuarter !== "All Quarters") {
-      sourceData = sourceData.filter((d) => d.period === selectedQuarter || d.quarter === selectedQuarter);
-    }
-
-    if (selectedCountry !== "All Countries") {
-      sourceData = sourceData.filter((d) => d.country === selectedCountry);
-    }
-
-    return sourceData;
-  }, [data, selectedQuarter, selectedCountry]);
+  const baseRows: RetailerRow[] = data;
 
   // Country search filter
   const filteredCountries = useMemo(() => {
@@ -200,8 +238,7 @@ export default function LeagueTablePage() {
         const matchesSearch =
           r.retailer.toLowerCase().includes(search.toLowerCase()) ||
           r.country.toLowerCase().includes(search.toLowerCase());
-        const matchesRegion = region === "All" || r.region === region;
-        return matchesSearch && matchesRegion;
+        return matchesSearch;
       })
       .sort((a, b) => {
         let valA = a[sortKey];
@@ -219,25 +256,13 @@ export default function LeagueTablePage() {
           ? (valA as number) - (valB as number)
           : (valB as number) - (valA as number);
       });
-  }, [baseRows, search, region, sortKey, sortDir]);
+  }, [baseRows, search, sortKey, sortDir]);
 
-  // ── Dynamic KPI Calculations for Active Slice ────────────────────────────────
-  const totalRetailers = filtered.length;
-  const avgBasco = useMemo(() => {
-    if (!filtered.length) return "0.0";
-    const totalQ = filtered.reduce((acc, r) => acc + (r.queries || 1), 0);
-    const weightedSum = filtered.reduce((acc, r) => acc + (r.basco * (r.queries || 1)), 0);
-    return (weightedSum / Math.max(1, totalQ)).toFixed(1);
-  }, [filtered]);
-
-  const totalFmvAtRisk = useMemo(() => {
-    const sum = filtered.reduce((acc, r) => acc + (r.attr_loss ?? 0), 0);
-    return fmtUSD(sum);
-  }, [filtered]);
-
-  const totalQueries = useMemo(() => {
-    return filtered.reduce((acc, r) => acc + r.queries, 0);
-  }, [filtered]);
+  const totalRetailers = kpis.total_retailers;
+  const avgBasco = String(kpis.avg_basco);
+  const totalFmvAtRisk = fmtUSD(kpis.fmv_loss);
+  const totalQueries = kpis.total_queries;
+  const topComplianceIssue = kpis.top_compliance_issue;
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -476,6 +501,11 @@ export default function LeagueTablePage() {
             value={String(totalQueries)}
             accentColor="#1E429F"
           />
+          <KpiChip
+            label="Top Compliance Issue"
+            value={`${topComplianceIssue.label.replace("MISSING ", "")} · ${topComplianceIssue.creatives}`}
+            accentColor="#1E429F"
+          />
         </div>
 
         {/* ── Search & Region Filter Bar ───────────────────────────────────── */}
@@ -505,7 +535,7 @@ export default function LeagueTablePage() {
 
           {/* Region Tabs */}
           <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-[#E5E7EB] flex-wrap">
-            {(["All", "APJ", "EMEA", "LATAM"] as RegionFilter[]).map((r) => {
+            {availableRegions.map((r) => {
               const isActive = region === r;
               return (
                 <button

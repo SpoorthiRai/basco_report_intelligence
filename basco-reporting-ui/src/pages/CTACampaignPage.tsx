@@ -30,7 +30,8 @@ interface RetailerCTA {
   total: number;
   'Buy/Shop CTA': number;
   'Learn CTA': number;
-  'No CTA': number;
+  'Missing CTA'?: number;
+  'No CTA'?: number;
   'Urgency CTA': number;
   'Other CTA': number;
 }
@@ -53,17 +54,23 @@ interface MisalignedCreative {
   CTA_Text: string;
   CTA_Flag: string;
   Narrative_Style: string;
+  Voice_Of_Attribute?: string;
   Retailer: string;
   Region: string;
   Country: string;
   quarter_label: string;
   cta_bucket?: string;
+  aligned?: boolean;
+  alignment?: 'Aligned' | 'Misaligned' | string;
 }
 
 interface CTACampaignResponse {
   total_creatives: number;
   aligned_count: number;
   misaligned_count: number;
+  aligned_qoq_delta_pts?: number | null;
+  misaligned_qoq_delta_pts?: number | null;
+  qoq_label?: string;
   kpi_tiles: KPITile[];
   retailer_cta_breakdown: RetailerCTA[];
   top_cta_phrases: TopCTAPhrase[];
@@ -72,33 +79,46 @@ interface CTACampaignResponse {
     quarters: string[];
     countries: string[];
     retailers: string[];
+    products?: string[];
   };
 }
 
+const STACK_BUCKETS = ['Missing CTA', 'Buy/Shop CTA', 'Urgency CTA', 'Learn CTA', 'Other CTA'];
+
 const BUCKET_COLORS: Record<string, string> = {
+  'Missing CTA': '#64748B',
+  'No CTA': '#64748B',
   'Buy/Shop CTA': '#1E429F',
   'Urgency CTA': '#1E429F',
   'Learn CTA': '#0EA5E9',
-  'No CTA': '#64748B',
   'Other CTA': '#CBD5E1',
 };
 
 const TREEMAP_PALETTE = [
-  '#1E429F', // Rank 1 - Hero Sapphire
-  '#1D4ED8', // Rank 2 - Royal Blue
-  '#0284C7', // Rank 3 - Sky Teal
-  '#0EA5E9', // Rank 4 - Cyan
-  '#2563EB', // Rank 5 - Vibrant Blue
-  '#475569', // Rank 6 - Deep Slate
-  '#64748B', // Rank 7 - Cool Slate
+  '#1E429F',
+  '#1D4ED8',
+  '#0284C7',
+  '#0EA5E9',
+  '#2563EB',
+  '#475569',
+  '#64748B',
 ];
+
+function qoqCaption(delta: number | null | undefined, label?: string): { text: string; up: boolean | null } {
+  const vs = label || 'vs prior quarter';
+  if (delta == null) return { text: vs, up: null };
+  return {
+    text: `${delta >= 0 ? '↑' : '↓'} ${Math.abs(delta).toFixed(1)} pts ${vs}`,
+    up: delta >= 0,
+  };
+}
 
 // Custom Treemap Cell Content with high-contrast, razor-sharp typography
 const CustomizedTreemapContent = (props: any) => {
   const { x, y, width, height, index } = props;
   const phrase = props.phrase || props.payload?.phrase || props.name || '';
   const size = props.size ?? props.payload?.size ?? props.value ?? 0;
-  const color = TREEMAP_PALETTE[index % TREEMAP_PALETTE.length];
+  const color = BUCKET_COLORS[phrase] || TREEMAP_PALETTE[index % TREEMAP_PALETTE.length];
 
   if (!width || !height || width < 14 || height < 14) return null;
 
@@ -237,6 +257,8 @@ export default function CTACampaignPage() {
   const [countryFilter, setCountryFilter] = useState<string>('All Countries');
   const [retailerFilter, setRetailerFilter] = useState<string>('All Retailers');
   const [objectiveFilter, setObjectiveFilter] = useState<string>('All');
+  const [driveObjective, setDriveObjective] = useState<string>('All');
+  const [ctaProductFilter, setCtaProductFilter] = useState<string>('All Products');
   const [selectedCreative, setSelectedCreative] = useState<MisalignedCreative | null>(null);
 
   const evidenceTableRef = useRef<HTMLDivElement>(null);
@@ -255,6 +277,12 @@ export default function CTACampaignPage() {
     }
     if (retailerFilter && retailerFilter !== 'All' && retailerFilter !== 'All Retailers') {
       params.append('retailer', retailerFilter);
+    }
+    if (driveObjective === 'Conversion/Sales' || driveObjective === 'Awareness') {
+      params.append('drive_objective', driveObjective);
+    }
+    if (ctaProductFilter && ctaProductFilter !== 'All' && ctaProductFilter !== 'All Products') {
+      params.append('cta_product', ctaProductFilter);
     }
 
     const queryString = params.toString() ? `?${params.toString()}` : '';
@@ -279,7 +307,7 @@ export default function CTACampaignPage() {
     return () => {
       isMounted = false;
     };
-  }, [quarterFilter, countryFilter, retailerFilter]);
+  }, [quarterFilter, countryFilter, retailerFilter, driveObjective, ctaProductFilter]);
 
   // Process Treemap data based on objective filter
   const rawPhrases = data?.top_cta_phrases || [];
@@ -307,6 +335,8 @@ export default function CTACampaignPage() {
   const totalAssets = (data?.aligned_count || 0) + (data?.misaligned_count || 0);
   const alignedPct = totalAssets > 0 ? Math.round(((data?.aligned_count || 0) / totalAssets) * 100) : 0;
   const misalignedPct = totalAssets > 0 ? Math.round(((data?.misaligned_count || 0) / totalAssets) * 100) : 0;
+  const alignedTrend = qoqCaption(data?.aligned_qoq_delta_pts, data?.qoq_label);
+  const needsTrend = qoqCaption(data?.misaligned_qoq_delta_pts, data?.qoq_label);
 
   return (
     <div className="space-y-6 pb-12">
@@ -361,15 +391,15 @@ export default function CTACampaignPage() {
           </div>
 
           {/* Retailer dropdown */}
-          <div className="flex items-center gap-1.5 bg-[#1E429F] text-white px-3 py-1.5 rounded-lg shadow-sm">
-            <span className="text-xs font-semibold text-white/90">Retailer:</span>
+          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
+            <span className="text-[#6B7280] font-medium">Retailer:</span>
             <select
               value={retailerFilter}
               onChange={(e) => setRetailerFilter(e.target.value)}
-              className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer pr-1"
+              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
             >
-              {(data?.filter_options?.retailers || ['All']).map((r) => (
-                <option key={r} value={r} className="bg-slate-900 text-white">
+              {(data?.filter_options?.retailers || ['All Retailers']).map((r) => (
+                <option key={r} value={r} className="bg-white text-[#111827]">
                   {r}
                 </option>
               ))}
@@ -394,78 +424,79 @@ export default function CTACampaignPage() {
       {/* ════════════════════════════════════════════════════════════ */}
       {/* TOP ROW: Strategic Alignment + CTA Distribution KPI Strip   */}
       {/* ════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3.5">
-        {/* Card 1: Strategically Aligned */}
-        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3.5 items-stretch">
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col h-full">
+          <div className="flex items-center justify-between min-h-[16px]">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
               Aligned to Objective
             </span>
-            <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
+            <span className="w-2 h-2 rounded-full bg-[#1E429F] shrink-0" />
           </div>
-          <div className="mt-2">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black tracking-tight text-[#1E429F]">
-                {alignedPct}%
-              </span>
-            </div>
-            <span className="text-[10px] text-[#6B7280] font-medium block mt-0.5 truncate">
-              {data?.aligned_count?.toLocaleString() || 0} creatives
+          <div className="mt-3 flex items-baseline gap-1.5 leading-none">
+            <span className="text-2xl font-black tracking-tight text-[#1E429F]">
+              {alignedPct}%
+            </span>
+            <span className="text-[10px] text-[#6B7280] font-semibold">
+              ({data?.aligned_count?.toLocaleString() || 0})
             </span>
           </div>
+          <span className={`text-[10px] font-bold mt-1.5 truncate ${
+            alignedTrend.up == null ? 'text-[#6B7280]' : alignedTrend.up ? 'text-[#10B981]' : 'text-[#EF4444]'
+          }`}>
+            {alignedTrend.text}
+          </span>
         </div>
 
-        {/* Card 2: Misaligned Intent */}
-        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col h-full">
+          <div className="flex items-center justify-between min-h-[16px]">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
               Needs Alignment
             </span>
-            <span className="w-2 h-2 rounded-full bg-[#64748B]" />
+            <span className="w-2 h-2 rounded-full bg-[#64748B] shrink-0" />
           </div>
-          <div className="mt-2">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black tracking-tight text-[#64748B]">
-                {misalignedPct}%
-              </span>
-            </div>
-            <span className="text-[10px] text-[#6B7280] font-medium block mt-0.5 truncate">
-              {data?.misaligned_count?.toLocaleString() || 0} creatives
+          <div className="mt-3 flex items-baseline gap-1.5 leading-none">
+            <span className="text-2xl font-black tracking-tight text-[#64748B]">
+              {misalignedPct}%
+            </span>
+            <span className="text-[10px] text-[#6B7280] font-semibold">
+              ({data?.misaligned_count?.toLocaleString() || 0})
             </span>
           </div>
+          <span className={`text-[10px] font-bold mt-1.5 truncate ${
+            needsTrend.up == null ? 'text-[#6B7280]' : needsTrend.up ? 'text-[#EF4444]' : 'text-[#10B981]'
+          }`}>
+            {needsTrend.text}
+          </span>
         </div>
 
-        {/* Cards 3-6: CTA Distribution Breakdown */}
         {kpiTiles.slice(0, 4).map((tile) => (
           <div
             key={tile.label}
-            className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col justify-between"
+            className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col h-full"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between min-h-[16px]">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
                 {tile.label}
               </span>
               <span
-                className="w-2 h-2 rounded-full"
+                className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: BUCKET_COLORS[tile.label] || '#64748B' }}
               />
             </div>
-            <div className="mt-2">
-              <div className="flex items-baseline gap-1.5">
-                <span
-                  className="text-2xl font-black tracking-tight"
-                  style={{ color: BUCKET_COLORS[tile.label] || '#111827' }}
-                >
-                  {tile.pct}%
-                </span>
-                <span className="text-[10px] text-[#6B7280] font-semibold">
-                  ({tile.count.toLocaleString()})
-                </span>
-              </div>
-              <span className="text-[10px] text-[#6B7280] font-medium block mt-0.5 truncate">
-                Total Creatives
+            <div className="mt-3 flex items-baseline gap-1.5 leading-none">
+              <span
+                className="text-2xl font-black tracking-tight"
+                style={{ color: BUCKET_COLORS[tile.label] || '#111827' }}
+              >
+                {tile.pct}%
+              </span>
+              <span className="text-[10px] text-[#6B7280] font-semibold">
+                ({tile.count.toLocaleString()})
               </span>
             </div>
+            <span className="text-[10px] text-[#6B7280] font-medium mt-1.5 truncate">
+              Total Creatives
+            </span>
           </div>
         ))}
       </div>
@@ -479,13 +510,31 @@ export default function CTACampaignPage() {
           {/* Card 1: CTA Usage by Retailer (Fixed Height: 390px) */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between h-[390px]">
             <div>
-              <div className="pb-3 border-b border-[#E5E7EB]">
-                <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                  How Retailers Drive Action
-                </h3>
-                <p className="text-xs text-[#6B7280] mt-0.5">
-                  Compare CTA usage and mix across retailer creative.
-                </p>
+              <div className="pb-3 border-b border-[#E5E7EB] flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                    How Retailers Drive Action
+                  </h3>
+                  <p className="text-xs text-[#6B7280] mt-0.5">
+                    Compare CTA usage and mix across retailer creative.
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {(['Conversion/Sales', 'Awareness'] as const).map((objective) => (
+                    <button
+                      key={objective}
+                      type="button"
+                      onClick={() => setDriveObjective((prev) => (prev === objective ? 'All' : objective))}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        driveObjective === objective
+                          ? 'bg-[#1E429F] text-white shadow-xs'
+                          : 'bg-white text-[#6B7280] border border-[#E5E7EB] hover:text-[#111827] hover:bg-slate-50'
+                      }`}
+                    >
+                      {objective}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="w-full h-[240px] mt-2 flex items-center justify-center">
@@ -520,7 +569,7 @@ export default function CTACampaignPage() {
                           boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                         }}
                       />
-                      {Object.keys(BUCKET_COLORS).map((bucket) => (
+                      {STACK_BUCKETS.map((bucket) => (
                         <Bar
                           key={bucket}
                           dataKey={bucket}
@@ -538,11 +587,11 @@ export default function CTACampaignPage() {
 
             {/* Legend Below Chart */}
             <div className="pt-2 border-t border-[#E5E7EB] flex flex-wrap gap-x-4 gap-y-1 justify-center text-[10px]">
-              {Object.entries(BUCKET_COLORS).map(([bucket, color]) => (
+              {STACK_BUCKETS.map((bucket) => (
                 <div key={bucket} className="flex items-center gap-1.5">
                   <span
                     className="w-2.5 h-2.5 rounded-xs shrink-0"
-                    style={{ backgroundColor: color }}
+                    style={{ backgroundColor: BUCKET_COLORS[bucket] }}
                   />
                   <span className="text-[#6B7280] font-semibold">{bucket}</span>
                 </div>
@@ -551,44 +600,56 @@ export default function CTACampaignPage() {
           </div>
 
           {/* Card 2: Top CTA Phrases Used Treemap (Fixed Height: 420px) */}
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between h-[420px]">
-            <div>
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-[#E5E7EB]">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col h-[420px]">
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-[#E5E7EB] shrink-0">
                 <div>
                   <h3 className="text-sm font-bold text-[#111827] tracking-tight">
                     Most-Used Calls to Action
                   </h3>
                   <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                    See which CTA phrases appear most frequently across retailer creative.
+                    Clean CTA buckets showing which action types appear most often.
                   </p>
                 </div>
 
-                {/* Content Objective Filter Dropdown */}
-                <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg">
-                  <span className="text-[11px] font-bold text-[#6B7280]">Objective:</span>
-                  <select
-                    value={objectiveFilter}
-                    onChange={(e) => setObjectiveFilter(e.target.value)}
-                    className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
-                  >
-                    <option value="All">All</option>
-                    <option value="Conversion/Sales">Conversion/Sales</option>
-                    <option value="Awareness">Awareness</option>
-                  </select>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg">
+                    <span className="text-[11px] font-bold text-[#6B7280]">Product:</span>
+                    <select
+                      value={ctaProductFilter}
+                      onChange={(e) => setCtaProductFilter(e.target.value)}
+                      className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer max-w-[140px]"
+                    >
+                      {(data?.filter_options?.products || ['All Products']).map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg">
+                    <span className="text-[11px] font-bold text-[#6B7280]">Objective:</span>
+                    <select
+                      value={objectiveFilter}
+                      onChange={(e) => setObjectiveFilter(e.target.value)}
+                      className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
+                    >
+                      <option value="All">All</option>
+                      <option value="Conversion/Sales">Conversion/Sales</option>
+                      <option value="Awareness">Awareness</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="w-full h-[225px] mt-2 flex items-center justify-center">
+              <div className="w-full flex-1 min-h-0 mt-2 flex items-center justify-center">
                 {loading && !data ? (
                   <div className="w-full h-full bg-[#F8FAFC] rounded-xl animate-pulse flex items-center justify-center">
-                    <span className="text-xs font-semibold text-[#6B7280]">Loading CTA treemap...</span>
+                    <span className="text-xs font-semibold text-[#6B7280]">Loading CTA mix...</span>
                   </div>
                 ) : treemapData.length === 0 ? (
                   <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[#6B7280]">
-                    No CTA phrases found for {objectiveFilter}.
+                    No CTA buckets found for the selected filters.
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={225}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <Treemap
                       data={treemapData}
                       dataKey="size"
@@ -599,7 +660,7 @@ export default function CTACampaignPage() {
                       <Tooltip
                         formatter={(value: any, _name: any, item: any) => [
                           `${value} creatives`,
-                          `Phrase: "${item?.payload?.phrase || item?.name}"`,
+                          item?.payload?.phrase || item?.name,
                         ]}
                         contentStyle={{
                           borderRadius: '0.5rem',
@@ -612,30 +673,6 @@ export default function CTACampaignPage() {
                   </ResponsiveContainer>
                 )}
               </div>
-            </div>
-
-            {/* Top Phrases Quick-Reference Badges */}
-            <div className="pt-2 border-t border-[#E5E7EB]">
-              <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block mb-1.5">
-                Ranked Top Phrases (Volume):
-              </span>
-              <div className="flex flex-wrap gap-1.5 max-h-[64px] overflow-y-auto">
-                {treemapData.slice(0, 10).map((item, idx) => (
-                  <div
-                    key={item.phrase}
-                    className="bg-[#F8FAFC] border border-[#E5E7EB] hover:border-[#1E429F]/40 rounded-lg px-2 py-0.5 flex items-center gap-1.5 text-xs transition-colors"
-                  >
-                    <span className="text-[10px] font-extrabold text-[#1E429F]">#{idx + 1}</span>
-                    <span className="font-semibold text-[#111827] max-w-[120px] truncate text-[11px]" title={item.phrase}>
-                      {item.phrase}
-                    </span>
-                    <span className="bg-[#1E429F]/10 text-[#1E429F] text-[10px] font-extrabold px-1.5 py-0.2 rounded-md">
-                      {item.size}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
 
@@ -651,7 +688,7 @@ export default function CTACampaignPage() {
                 Campaigns to Review
               </h3>
               <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                Creatives where the CTA is missing or does not support the campaign objective.
+                All campaign objectives and CTA types, with alignment and Intel Voice of Attribute.
               </p>
             </div>
             <span className="text-[11px] font-bold text-[#64748B] bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg shrink-0">
@@ -666,7 +703,7 @@ export default function CTACampaignPage() {
               </div>
             ) : evidenceList.length === 0 ? (
               <div className="p-8 text-center text-xs font-medium text-[#6B7280]">
-                No misaligned creatives found for current filters.
+                No creatives found for current filters.
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
@@ -674,8 +711,9 @@ export default function CTACampaignPage() {
                   <tr>
                     <th className="py-2.5 px-3">Creative</th>
                     <th className="py-2.5 px-3">Campaign Objective</th>
-                    <th className="py-2.5 px-3">CTA</th>
                     <th className="py-2.5 px-3">CTA Type</th>
+                    <th className="py-2.5 px-3">Alignment</th>
+                    <th className="py-2.5 px-3">Intel Voice of Attribute</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
@@ -708,21 +746,40 @@ export default function CTACampaignPage() {
                         </span>
                       </td>
                       <td className="py-2 px-3 align-top font-medium text-[#111827]">
-                        <span className="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded text-[10px] font-bold inline-block">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold inline-block border ${
+                          row.Objective === 'Conversion/Sales'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : row.Objective === 'Awareness'
+                            ? 'bg-[#1E429F]/10 text-[#1E429F] border-[#1E429F]/20'
+                            : 'bg-[#F8FAFC] text-[#111827] border-[#E5E7EB]'
+                        }`}>
                           {row.Objective}
                         </span>
-                      </td>
-                      <td className="py-2 px-3 align-top text-[#6B7280] font-mono text-[11px]">
-                        {row.CTA_Text || 'None'}
                       </td>
                       <td className="py-2 px-3 align-top">
                         <span
                           className="px-2 py-0.5 rounded text-[10px] font-bold text-white whitespace-nowrap inline-block"
                           style={{
-                            backgroundColor: BUCKET_COLORS[row.cta_bucket || 'No CTA'] || '#1E429F',
+                            backgroundColor: BUCKET_COLORS[row.cta_bucket || 'Missing CTA'] || '#1E429F',
                           }}
                         >
-                          {row.cta_bucket || 'No CTA'}
+                          {row.cta_bucket || 'Missing CTA'}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 align-top">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold inline-block ${
+                            row.aligned
+                              ? 'bg-[#10B981]/10 text-[#047857] border border-[#10B981]/25'
+                              : 'bg-[#EF4444]/10 text-[#B91C1C] border border-[#EF4444]/25'
+                          }`}
+                        >
+                          {row.alignment || (row.aligned ? 'Aligned' : 'Misaligned')}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 align-top text-[#111827] text-[11px] max-w-[140px]">
+                        <span className="line-clamp-2" title={row.Voice_Of_Attribute || ''}>
+                          {row.Voice_Of_Attribute || '—'}
                         </span>
                       </td>
                     </tr>
@@ -749,13 +806,20 @@ export default function CTACampaignPage() {
             badge: true,
             badgeColor: '#BE123C',
           },
+          {
+            label: 'Alignment',
+            value: selectedCreative?.alignment || (selectedCreative?.aligned ? 'Aligned' : 'Misaligned'),
+            badge: true,
+            badgeColor: selectedCreative?.aligned ? '#047857' : '#B91C1C',
+          },
           { label: 'CTA Text', value: selectedCreative?.CTA_Text || 'None' },
           {
-            label: 'CTA Bucket',
-            value: selectedCreative?.cta_bucket || 'No CTA',
+            label: 'CTA Type',
+            value: selectedCreative?.cta_bucket || 'Missing CTA',
             badge: true,
-            badgeColor: BUCKET_COLORS[selectedCreative?.cta_bucket || 'No CTA'] || '#F97316',
+            badgeColor: BUCKET_COLORS[selectedCreative?.cta_bucket || 'Missing CTA'] || '#F97316',
           },
+          { label: 'Intel Voice of Attribute', value: selectedCreative?.Voice_Of_Attribute || '—' },
           { label: 'Country', value: selectedCreative?.Country || 'Unknown' },
           { label: 'Region', value: selectedCreative?.Region || 'Unknown' },
         ]}

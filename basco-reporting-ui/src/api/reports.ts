@@ -9,27 +9,57 @@ import type {
   VisualAdoptionRow,
 } from '../types'
 
-export async function getLeagueTable(quarter: string = 'Q3 2026'): Promise<LeagueTableRow[]> {
-  const query = quarter && quarter !== 'All Quarters' && quarter !== 'All' ? `?quarter=${encodeURIComponent(quarter)}` : ''
-  const { data } = await client.get<any>(`/api/reports/league-table/${query}`)
+export async function getLeagueTable(
+  quarter: string = 'Q3 2026',
+  region: string = 'All',
+): Promise<{
+  data: LeagueTableRow[]
+  kpis?: Record<string, unknown>
+  parent_accounts?: Array<Record<string, unknown>>
+  filter_options?: { quarters: string[]; countries: string[]; regions: string[] }
+}> {
+  const params = new URLSearchParams()
+  if (quarter && quarter !== 'All Quarters' && quarter !== 'All') {
+    params.set('quarter', quarter)
+  }
+  if (region && region !== 'All' && region !== 'All Regions') {
+    params.set('region', region)
+  }
+  const qs = params.toString()
+  const { data } = await client.get<any>(`/api/reports/league-table/${qs ? `?${qs}` : ''}`)
   if (Array.isArray(data)) {
-    return data
+    return { data }
   }
-  if (data && Array.isArray(data.data)) {
-    return data.data
+  return {
+    data: Array.isArray(data?.data) ? data.data : [],
+    kpis: data?.kpis,
+    parent_accounts: Array.isArray(data?.parent_accounts) ? data.parent_accounts : [],
+    filter_options: data?.filter_options,
   }
-  return []
 }
 
-export async function getMarketMaturity(quarter?: string): Promise<{ data: MarketMaturityRow[]; filter_options?: { quarters: string[] } }> {
-  const query = quarter && quarter !== 'All Quarters' && quarter !== 'All' ? `?quarter=${encodeURIComponent(quarter)}` : ''
-  const { data } = await client.get<any>(`/api/reports/market-maturity/${query}`)
+export async function getMarketMaturity(
+  quarter?: string,
+  region?: string,
+): Promise<{
+  data: MarketMaturityRow[]
+  kpis?: { markets_count: number; avg_score: number; markets_at_risk: number; markets_on_track: number }
+  filter_options?: { quarters: string[]; regions?: string[] }
+}> {
+  const params = new URLSearchParams()
+  if (quarter && quarter !== 'All Quarters' && quarter !== 'All') {
+    params.set('quarter', quarter)
+  }
+  if (region && region !== 'All' && region !== 'All Regions') {
+    params.set('region', region)
+  }
+  const qs = params.toString()
+  const { data } = await client.get<any>(`/api/reports/market-maturity/${qs ? `?${qs}` : ''}`)
   if (Array.isArray(data)) {
     return { data }
   }
   return data || { data: [] }
 }
-
 
 export async function getVisualAdoption(): Promise<VisualAdoptionRow[]> {
   const { data } = await client.get<VisualAdoptionRow[]>('/api/reports/visual-adoption/')
