@@ -80,6 +80,25 @@ const FAMILY_COLORS: Record<string, string> = {
 
 const DEFAULT_FAMILY_COLOR = '#64748B';
 
+function GenerationXAxisTick({ x, y, payload }: { x?: number; y?: number; payload?: { value?: string } }) {
+  const label = String(payload?.value || '');
+  const isUnspecified = label === 'Series/Gen not specified';
+  return (
+    <g transform={`translate(${x ?? 0},${y ?? 0})`}>
+      <text textAnchor="middle" fill="#111827" fontSize={10} fontWeight={600}>
+        {isUnspecified ? (
+          <>
+            <tspan x={0} dy={10}>Series/</tspan>
+            <tspan x={0} dy={12}>Gen not specified</tspan>
+          </>
+        ) : (
+          <tspan x={0} dy={12}>{label}</tspan>
+        )}
+      </text>
+    </g>
+  );
+}
+
 const GUIDANCE_COLORS: Record<string, string> = {
   'Missing Text Mention': '#1E429F',
   'Badge Size': '#0284C7',
@@ -427,9 +446,14 @@ export default function ProductMixPage() {
                   />
                   <Legend
                     verticalAlign="bottom"
+                    wrapperStyle={{ fontSize: 10, paddingTop: 4 }}
                     formatter={(value: string) => {
                       const item = (data?.compliance_guidance || []).find((g) => g.label === value);
-                      return `${value} (${item?.pct ?? 0}%)`;
+                      return (
+                        <span className="text-[10px] font-medium text-[#111827] leading-tight">
+                          {`${value} (${item?.pct ?? 0}%)`}
+                        </span>
+                      );
                     }}
                   />
                 </PieChart>
@@ -761,17 +785,14 @@ export default function ProductMixPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={genData}
-                  margin={{ top: 25, right: 15, left: 15, bottom: 45 }}
+                  margin={{ top: 25, right: 15, left: 15, bottom: 28 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 10.5, fill: '#111827', fontWeight: 600 }}
                     interval={0}
-                    angle={-18}
-                    textAnchor="end"
-                    height={55}
-                    dx={-2}
+                    height={42}
+                    tick={<GenerationXAxisTick />}
                   />
                   <YAxis
                     width={35}
