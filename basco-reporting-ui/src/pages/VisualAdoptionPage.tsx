@@ -12,8 +12,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   LabelList,
-  Cell,
-  ReferenceLine,
 } from 'recharts';
 import api from '../api/client';
 import ImageModal from '../components/common/ImageModal';
@@ -55,6 +53,7 @@ interface UsageTableRow {
   offer: string;
   cta: string;
   usage: string;
+  intel_visual_usage?: string;
   quarter_label?: string;
   Region?: string;
   Country?: string;
@@ -333,7 +332,7 @@ export default function VisualAdoptionPage() {
                 {data?.kpis?.used_intel_visuals?.toLocaleString() ?? 0}
               </div>
               <span className="text-[10px] text-slate-300 font-medium">
-                (Intel Layouts)
+                (Intel + Custom-Intel Layouts)
               </span>
             </div>
           )}
@@ -394,22 +393,6 @@ export default function VisualAdoptionPage() {
               <p className="text-xs text-[#6B7280] mb-2">
                 Share of retailer creatives using approved Intel campaign visuals.
               </p>
-              
-              <div className="flex flex-wrap items-center gap-3 text-[10px] mb-2 font-bold">
-                <span className="text-[#6B7280] uppercase tracking-wider">Adoption Tiers:</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-[#1E429F]"></span>
-                  <span className="text-[#1E429F]">On Track (≥90%)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-[#0EA5E9]"></span>
-                  <span className="text-[#0EA5E9]">Watch (80-89%)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-[#94A3B8]"></span>
-                  <span className="text-[#64748B]">Action Required (&lt;80%)</span>
-                </div>
-              </div>
             </div>
 
             {/* Horizontal Bar Chart — Stretches cleanly to fill available height */}
@@ -440,7 +423,7 @@ export default function VisualAdoptionPage() {
                     <YAxis
                       dataKey="retailer"
                       type="category"
-                      width={140}
+                      width={170}
                       interval={0}
                       tick={{ fontSize: 11, fill: '#111827', fontWeight: 600 }}
                     />
@@ -460,18 +443,12 @@ export default function VisualAdoptionPage() {
                       itemStyle={{ color: '#0EA5E9', fontWeight: 600 }}
                       labelStyle={{ color: '#ffffff', fontWeight: 700, marginBottom: '4px' }}
                     />
-                    <ReferenceLine x={90} stroke="#64748B" strokeDasharray="3 3" strokeWidth={1} />
                     <Bar
                       dataKey="adoption_pct"
+                      fill="#1E429F"
                       radius={[0, 5, 5, 0]}
                       barSize={18}
                     >
-                      {topRetailersAdoption.map((entry, index) => {
-                        let color = '#1E429F'; // >= 90%
-                        if (entry.adoption_pct < 80) color = '#94A3B8';
-                        else if (entry.adoption_pct < 90) color = '#0EA5E9';
-                        return <Cell key={`cell-${index}`} fill={color} />;
-                      })}
                       <LabelList
                         dataKey="adoption_pct"
                         position="right"
@@ -485,30 +462,6 @@ export default function VisualAdoptionPage() {
                 </ResponsiveContainer>
               )}
             </div>
-
-            {/* Dynamic Observation */}
-            {(() => {
-              const actionRequiredCount = (data?.retailer_adoption || []).filter(r => r.adoption_pct < 80).length;
-              if (actionRequiredCount > 0) {
-                return (
-                  <div className="mt-3 pt-3 border-t border-[#E5E7EB] flex items-center justify-between">
-                    <span className="text-[11px] text-[#6B7280] font-medium">
-                      <strong className="text-[#111827]">{actionRequiredCount} retailer{actionRequiredCount !== 1 ? 's' : ''}</strong> {actionRequiredCount === 1 ? 'has' : 'have'} visual adoption below 80%, representing an immediate opportunity for alignment.
-                    </span>
-                  </div>
-                );
-              }
-              if (data && data.retailer_adoption && data.retailer_adoption.length > 0) {
-                return (
-                  <div className="mt-3 pt-3 border-t border-[#E5E7EB] flex items-center justify-between">
-                    <span className="text-[11px] text-[#1E429F] font-bold">
-                      All monitored retailers have visual adoption of 80% or higher. Great alignment!
-                    </span>
-                  </div>
-                );
-              }
-              return null;
-            })()}
           </div>
         </div>
 
@@ -577,7 +530,7 @@ export default function VisualAdoptionPage() {
                 Retailer Usage of Selected Visual
               </h3>
               <p className="text-[11px] text-[#6B7280] mt-0.5">
-                Distribution of the selected Intel visual across retail partners.
+                Completely used and partially used Intel visuals across child accounts.
               </p>
             </div>
 
@@ -607,7 +560,7 @@ export default function VisualAdoptionPage() {
                     <YAxis
                       dataKey="retailer"
                       type="category"
-                      width={130}
+                      width={160}
                       interval={0}
                       tick={{ fontSize: 11, fill: '#111827', fontWeight: 600 }}
                     />
@@ -718,8 +671,8 @@ export default function VisualAdoptionPage() {
                 className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
               >
                 <option value="All">All</option>
-                <option value="Partial">Partial</option>
-                <option value="Completely">Completely</option>
+                <option value="Partially used">Partially used</option>
+                <option value="Completely used">Completely used</option>
               </select>
             </div>
             <span className="text-[11px] font-bold text-[#64748B] bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg">
@@ -744,6 +697,7 @@ export default function VisualAdoptionPage() {
                   <th className="py-2.5 px-3">Master Visual</th>
                   <th className="py-2.5 px-3">Actual Creative</th>
                   <th className="py-2.5 px-3">Retailer</th>
+                  <th className="py-2.5 px-3">Intel Visual Usage</th>
                   <th className="py-2.5 px-3">Campaign</th>
                   <th className="py-2.5 px-3">Products</th>
                   <th className="py-2.5 px-3">Offer (Y/N)</th>
@@ -803,6 +757,19 @@ export default function VisualAdoptionPage() {
                       </button>
                     </td>
                     <td className="py-2 px-3 align-middle font-semibold text-[#111827]">{row.retailer}</td>
+                    <td className="py-2 px-3 align-middle">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          (row.intel_visual_usage || row.usage || '').toLowerCase().includes('complete')
+                            ? 'bg-[#10B981]/10 text-[#10B981]'
+                            : (row.intel_visual_usage || row.usage || '').toLowerCase().includes('partial')
+                            ? 'bg-[#F59E0B]/10 text-[#B45309]'
+                            : 'bg-[#F8FAFC] text-[#6B7280] border border-[#E5E7EB]'
+                        }`}
+                      >
+                        {row.intel_visual_usage || row.usage}
+                      </span>
+                    </td>
                     <td className="py-2 px-3 align-middle text-[#6B7280] font-medium">{row.campaign}</td>
                     <td className="py-2 px-3 align-middle text-[#6B7280] font-mono text-[10px]">{row.products}</td>
                     <td className="py-2 px-3 align-middle">

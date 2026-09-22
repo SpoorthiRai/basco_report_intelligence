@@ -15,6 +15,8 @@ import { useLeagueTable } from "../hooks/useLeagueTable";
 
 export interface ParentAccountRow {
   parent_account: string;
+  child_account?: string;
+  quarter?: string;
   country: string;
   region: string;
   basco_score: number;
@@ -61,6 +63,21 @@ function medianLoss(values: number[]): number {
   if (!sorted.length) return 0;
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function SortIndicator({
+  col,
+  active,
+  dir,
+}: {
+  col: string
+  active: string
+  dir: "asc" | "desc"
+}) {
+  if (col !== active) {
+    return <span className="ml-1 opacity-35 text-[10px]">⇅</span>
+  }
+  return <span className="ml-1 text-[#0D9488] text-[10px]">{dir === "asc" ? "▲" : "▼"}</span>
 }
 
 function fmtCompactUsd(value: number): string {
@@ -315,7 +332,7 @@ const CustomTooltip = ({ active, payload }: any) => {
         {item.parent_accounts && item.parent_accounts.length > 0 && (
           <div className="pt-2 border-t border-slate-700/60">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-              Parent Retailers:
+              Retailers:
             </span>
             <div className="flex flex-wrap gap-1">
               {item.parent_accounts.map((acc: string) => (
@@ -348,6 +365,10 @@ export default function MarketMaturityPage() {
   const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [countryFilter, setCountryFilter] = useState<string>("All Countries");
+  const [explorerQuarter, setExplorerQuarter] = useState<string>("All Quarters");
+  const [explorerTopAccount, setExplorerTopAccount] = useState<string>("All");
+  const [sortKey, setSortKey] = useState<string>("basco_score");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const { data: apiResponse } = useMarketMaturity(selectedQuarter, selectedRegion);
   const { data: leagueResponse } = useLeagueTable(selectedQuarter, selectedRegion);
@@ -399,7 +420,9 @@ export default function MarketMaturityPage() {
           new Set(
             (leagueResponse?.data || [])
               .filter((row: { country?: string }) => (row.country || "").toLowerCase() === countryKey)
-              .map((row: { parent_account?: string; retailer?: string }) => row.parent_account || row.retailer)
+              .map((row: { child_account?: string; parent_account?: string; retailer?: string }) =>
+                row.child_account || row.parent_account || row.retailer
+              )
               .filter(Boolean) as string[]
           )
         );
@@ -474,10 +497,10 @@ export default function MarketMaturityPage() {
       else healthyCountries.push(d.country);
     });
 
-    const criticalAccounts = parentAccountList.filter((a) => a.quadrant === "Priority Action").map((a) => a.parent_account);
-    const highRiskAccounts = parentAccountList.filter((a) => a.quadrant === "High-Value Opportunity").map((a) => a.parent_account);
-    const emergingAccounts = parentAccountList.filter((a) => a.quadrant === "Build Momentum").map((a) => a.parent_account);
-    const healthyAccounts = parentAccountList.filter((a) => a.quadrant === "Strong Performance").map((a) => a.parent_account);
+    const criticalAccounts = Array.from(new Set(parentAccountList.filter((a) => a.quadrant === "Priority Action").map((a) => a.child_account || a.parent_account)));
+    const highRiskAccounts = Array.from(new Set(parentAccountList.filter((a) => a.quadrant === "High-Value Opportunity").map((a) => a.child_account || a.parent_account)));
+    const emergingAccounts = Array.from(new Set(parentAccountList.filter((a) => a.quadrant === "Build Momentum").map((a) => a.child_account || a.parent_account)));
+    const healthyAccounts = Array.from(new Set(parentAccountList.filter((a) => a.quadrant === "Strong Performance").map((a) => a.child_account || a.parent_account)));
 
     return {
       criticalCountries,
@@ -498,22 +521,91 @@ export default function MarketMaturityPage() {
     return ["All Countries", ...countries];
   }, [parentAccountList]);
 
+  const availableExplorerQuarters = useMemo(() => {
+    const found = Array.from(
+      new Set(parentAccountList.map((a) => a.quarter).filter((q): q is string => Boolean(q)))
+    );
+    return ["All Quarters", ...found];
+  }, [parentAccountList]);
+
   // ── Filtered Parent Accounts for the Drilldown Table ───────────────────────
   const filteredAccounts = useMemo(() => {
-    return parentAccountList.filter((acc) => {
+    const retailerName = (acc: ParentAccountRow) => acc.child_account || acc.parent_account;
+    const rows = parentAccountList.filter((acc) => {
       const matchesQuadrant = selectedQuadrant === "ALL" || acc.quadrant === selectedQuadrant;
       const matchesCountry = countryFilter === "All Countries" || acc.country === countryFilter;
+      const matchesQuarter = explorerQuarter === "All Quarters" || acc.quarter === explorerQuarter;
+      const matchesTop =
+        explorerTopAccount === "All" ||
+        (explorerTopAccount === "Yes" && Boolean(acc.topAccount)) ||
+        (explorerTopAccount === "No" && !acc.topAccount);
       const matchesSearch =
         !searchQuery.trim() ||
-        acc.parent_account.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        retailerName(acc).toLowerCase().includes(searchQuery.toLowerCase()) ||
         acc.country.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchesQuadrant && matchesCountry && matchesSearch;
+      return matchesQuadrant && matchesCountry && matchesQuarter && matchesTop && matchesSearch;
     });
-  }, [parentAccountList, selectedQuadrant, countryFilter, searchQuery]);
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const valueOf = (acc: ParentAccountRow) => {
+        switch (sortKey) {
+          case "quarter":
+            return acc.quarter || "";
+          case "parent_account":
+            return retailerName(acc);
+          case "country":
+            return `${acc.country} ${acc.region}`;
+          case "quadrant":
+            return acc.quadrant;
+          case "basco_score":
+            return Number(acc.basco_score || 0);
+          case "fmv":
+            return Number(acc.fmv || 0);
+          case "attr_loss":
+            return Number(acc.attr_loss || 0);
+          case "total_jobs":
+            return Number(acc.total_jobs || 0);
+          case "helpdesk_usage":
+            return acc.helpdesk_usage === "Yes" ? 1 : 0;
+          case "helpdesk_queries":
+            return Number(acc.helpdesk_queries || 0);
+          case "helpdesk_artworks":
+            return Number(acc.helpdesk_artworks || 0);
+          default:
+            return Number(acc.basco_score || 0);
+        }
+      };
+      const left = valueOf(a);
+      const right = valueOf(b);
+      if (typeof left === "string" || typeof right === "string") {
+        return String(left).localeCompare(String(right)) * dir;
+      }
+      return (Number(left) - Number(right)) * dir;
+    });
+  }, [
+    parentAccountList,
+    selectedQuadrant,
+    countryFilter,
+    explorerQuarter,
+    explorerTopAccount,
+    searchQuery,
+    sortKey,
+    sortDir,
+  ]);
+
+  const handleExplorerSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDir(key === "parent_account" || key === "country" || key === "quarter" || key === "quadrant" ? "asc" : "desc");
+  };
 
   const footNote = useMemo(() => {
-    return `FMV data sourced from Intel POP records. ${currentDataset.length} countries and ${parentAccountList.length} parent accounts represented for ${selectedQuarter}.`;
+    return `FMV data sourced from Intel POP records. ${currentDataset.length} countries and ${parentAccountList.length} retailers represented for ${selectedQuarter}.`;
   }, [currentDataset.length, parentAccountList.length, selectedQuarter]);
 
   return (
@@ -684,7 +776,7 @@ export default function MarketMaturityPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                🏢 Parent Accounts ({parentAccountList.length})
+                🏢 Retailers ({parentAccountList.length})
               </button>
             </div>
           </div>
@@ -1058,14 +1150,14 @@ export default function MarketMaturityPage() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm md:text-base font-black text-[#111827] tracking-tight">
-                Parent Account Execution &amp; Risk Explorer
+                Retailer Execution &amp; Risk Explorer
               </h2>
               <span className="bg-[#1E429F]/10 text-[#1E429F] text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                {filteredAccounts.length} Parent Accounts
+                {filteredAccounts.length} Retailers
               </span>
             </div>
             <p className="text-[11px] text-[#6B7280] mt-0.5">
-              Granular compliance execution, FMV exposure, and attribution loss mapped at parent retailer level.
+              Granular compliance execution, FMV exposure, and attribution loss mapped at retailer (child account) level.
             </p>
           </div>
 
@@ -1077,7 +1169,7 @@ export default function MarketMaturityPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search parent account or country..."
+                placeholder="Search retailer or country..."
                 className="w-56 bg-slate-50 border border-[#E5E7EB] focus:border-[#1E429F] focus:bg-white rounded-xl px-3 py-1.5 text-xs text-[#111827] placeholder:text-slate-400 outline-none transition-all"
               />
               {searchQuery && (
@@ -1101,6 +1193,26 @@ export default function MarketMaturityPage() {
                   {country}
                 </option>
               ))}
+            </select>
+            <select
+              value={explorerQuarter}
+              onChange={(e) => setExplorerQuarter(e.target.value)}
+              className="bg-slate-50 border border-[#E5E7EB] text-xs font-semibold rounded-xl px-3 py-1.5 text-[#111827] outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+            >
+              {availableExplorerQuarters.map((quarter) => (
+                <option key={quarter} value={quarter}>
+                  {quarter}
+                </option>
+              ))}
+            </select>
+            <select
+              value={explorerTopAccount}
+              onChange={(e) => setExplorerTopAccount(e.target.value)}
+              className="bg-slate-50 border border-[#E5E7EB] text-xs font-semibold rounded-xl px-3 py-1.5 text-[#111827] outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+            >
+              <option value="All">All Accounts</option>
+              <option value="Yes">Top Account</option>
+              <option value="No">Non Top Account</option>
             </select>
           </div>
         </div>
@@ -1138,23 +1250,46 @@ export default function MarketMaturityPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50/80 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider border-b border-[#E5E7EB]">
               <tr>
-                <th className="py-2.5 px-3.5">Parent Account</th>
-                <th className="py-2.5 px-3">Primary Market &amp; Region</th>
-                <th className="py-2.5 px-3">Quadrant Status</th>
-                <th className="py-2.5 px-3 text-right">BASCO Score</th>
-                <th className="py-2.5 px-3 text-right">Total FMV</th>
-                <th className="py-2.5 px-3 text-right">Attribution Loss</th>
-                <th className="py-2.5 px-3 text-right">Creatives</th>
-                <th className="py-2.5 px-3 text-right">Helpdesk Queries</th>
-                <th className="py-2.5 px-3 text-right">Helpdesk Artworks</th>
-                <th className="py-2.5 px-3 text-center">Helpdesk Usage</th>
+                <th className="py-2.5 px-3.5 cursor-pointer select-none" onClick={() => handleExplorerSort("quarter")}>
+                  Quarter <SortIndicator col="quarter" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3.5 cursor-pointer select-none" onClick={() => handleExplorerSort("parent_account")}>
+                  Retailer <SortIndicator col="parent_account" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3 cursor-pointer select-none" onClick={() => handleExplorerSort("country")}>
+                  Primary Market &amp; Region <SortIndicator col="country" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3 cursor-pointer select-none" onClick={() => handleExplorerSort("quadrant")}>
+                  Quadrant Status <SortIndicator col="quadrant" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3 text-right cursor-pointer select-none" onClick={() => handleExplorerSort("basco_score")}>
+                  BASCO Score <SortIndicator col="basco_score" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3 text-right cursor-pointer select-none" onClick={() => handleExplorerSort("fmv")}>
+                  Total FMV <SortIndicator col="fmv" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3 text-right cursor-pointer select-none" onClick={() => handleExplorerSort("attr_loss")}>
+                  Attribution Loss <SortIndicator col="attr_loss" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3 text-right cursor-pointer select-none" onClick={() => handleExplorerSort("total_jobs")}>
+                  Creatives <SortIndicator col="total_jobs" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3 text-center cursor-pointer select-none" onClick={() => handleExplorerSort("helpdesk_usage")}>
+                  Helpdesk Usage <SortIndicator col="helpdesk_usage" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3 text-right cursor-pointer select-none" onClick={() => handleExplorerSort("helpdesk_queries")}>
+                  Helpdesk Queries <SortIndicator col="helpdesk_queries" active={sortKey} dir={sortDir} />
+                </th>
+                <th className="py-2.5 px-3 text-right cursor-pointer select-none" onClick={() => handleExplorerSort("helpdesk_artworks")}>
+                  Helpdesk Artworks <SortIndicator col="helpdesk_artworks" active={sortKey} dir={sortDir} />
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {filteredAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-slate-400 font-medium">
-                    No parent accounts found matching the selected filters.
+                  <td colSpan={11} className="py-8 text-center text-slate-400 font-medium">
+                    No retailers found matching the selected filters.
                   </td>
                 </tr>
               ) : (
@@ -1188,14 +1323,18 @@ export default function MarketMaturityPage() {
 
                   return (
                     <tr
-                      key={`${acc.parent_account}-${idx}`}
+                      key={`${acc.child_account || acc.parent_account}-${acc.quarter}-${acc.country}-${idx}`}
                       className="hover:bg-slate-50/80 transition-colors"
                     >
-                      {/* Parent Account Name */}
+                      <td className="py-2.5 px-3.5">
+                        <span className="inline-block bg-[#1E429F]/10 text-[#1E429F] px-2 py-0.5 rounded-md font-bold text-[11px] border border-[#1E429F]/20">
+                          {acc.quarter || "—"}
+                        </span>
+                      </td>
                       <td className="py-2.5 px-3.5">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-[#111827]">
-                            {acc.parent_account}
+                            {acc.child_account || acc.parent_account}
                           </span>
                           {acc.topAccount && (
                             <span className="bg-[#1E429F]/10 text-[#1E429F] border border-[#1E429F]/20 text-[9px] font-extrabold px-1.5 py-0.2 rounded-md">
@@ -1252,12 +1391,6 @@ export default function MarketMaturityPage() {
                       <td className="py-2.5 px-3 text-right text-slate-500 font-semibold">
                         {acc.total_jobs}
                       </td>
-                      <td className="py-2.5 px-3 text-right text-slate-700 font-semibold">
-                        {acc.helpdesk_queries ?? 0}
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-slate-700 font-semibold">
-                        {acc.helpdesk_artworks ?? 0}
-                      </td>
                       <td className="py-2.5 px-3 text-center">
                         {acc.helpdesk_usage === "Yes" ? (
                           <span className="inline-flex text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-[#10B981]/10 text-[#059669] border border-[#10B981]/25">
@@ -1268,6 +1401,12 @@ export default function MarketMaturityPage() {
                             No
                           </span>
                         )}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-slate-700 font-semibold">
+                        {acc.helpdesk_queries ?? 0}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-slate-700 font-semibold">
+                        {acc.helpdesk_artworks ?? 0}
                       </td>
                     </tr>
                   );

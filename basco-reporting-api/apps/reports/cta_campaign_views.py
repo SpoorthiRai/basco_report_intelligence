@@ -2,70 +2,65 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from core.db import get_warehouse_connection
+from .permissions import IsAnyReportingRole
 from .views import sort_quarters_desc, apply_user_scope
 from .cta_campaign_queries import CTA_CAMPAIGN_QUERY
 from .evidence_views import PRODUCT_FAMILIES, extract_product_families
 
 
-def classify_cta(cta_flag, cta_text):
+def _blank(value) -> bool:
+    return str(value or "").strip() in ("", "None", "NA", "Unknown", "null")
+
+
+def normalize_cta_bucket(raw_bucket, cta_flag=None, cta_text=None) -> str:
+    """Map warehouse CTA_Bucket / flag into Campaign Effectiveness tiles."""
+    text = str(raw_bucket or "").strip().lower().replace(" ", "").replace("_", "").replace("-", "")
+    if text in ("nocta", "missingcta"):
+        return "Missing CTA"
+    if "buy" in text or "shop" in text:
+        return "Buy/Shop CTA"
+    if "learn" in text:
+        return "Learn CTA"
+    if "urgenc" in text:
+        return "Urgency CTA"
+    if text in ("other", "others", "othercta"):
+        return "Other CTA"
+    if str(cta_flag or "").strip().lower() in ("no", "n", "false", "0") or _blank(cta_text):
+        return "Missing CTA"
+    return "Other CTA"
+
+
+def classify_cta(cta_flag, cta_text, mapped_bucket=None):
+    """Prefer BASCO_CTA_MAPPING.CTA_Bucket; Missing CTA when no CTA text/flag."""
+    return normalize_cta_bucket(mapped_bucket, cta_flag, cta_text)
+
+
+def is_aligned(objective, cta_bucket) -> bool:
     """
-    Classify a CTA into one of 5 buckets.
-    Order matters — check No CTA first.
+    CASE
+      WHEN OBJECTIVE = Conversion/Sales AND CTA_Bucket IN (Buy / Shop CTA, Urgency CTA) THEN Aligned
+      WHEN OBJECTIVE = Awareness AND CTA_Bucket = Learn CTA THEN Aligned
+      WHEN OBJECTIVE = Awareness AND CTA_Bucket = No CTA THEN Aligned
+      WHEN OBJECTIVE = Awareness AND CTA_Bucket IN (Buy / Shop CTA, Urgency CTA) THEN Aligned
+      WHEN OBJECTIVE = Conversion/Sales AND CTA_Bucket = Learn CTA THEN Misaligned
+      WHEN OBJECTIVE = Conversion/Sales AND CTA_Bucket = No CTA THEN Misaligned
+      ELSE Misaligned
     """
-    if cta_flag == 'No' or not cta_text or cta_text in ('None', '', 'NA'):
-        return 'Missing CTA'
-
-    t = cta_text.lower()
-
-    buy_keywords = [
-        'shop', 'compre', 'compra', 'buy', '購買', 'ซื้อ', 'beli',
-        'acquista', 'añadir', 'aggiungi', 'adicionar', 'garanta',
-        'comprar', 'kauf', 'acheter', 'koop'
-    ]
-    learn_keywords = [
-        'discover', 'descubr', 'learn', 'saiba', 'confira',
-        'découv', 'entdecken', 'ver ', 'voir', 'se alle',
-        'bekijk', 'les mer', 'zobacz', 'en savoir', 'explore',
-        'find', 'finde', '知る', '了解'
-    ]
-    urgency_keywords = [
-        'aproveite', 'garanta já', 'claim', 'compre já',
-        'en profiter', 'entre no jogo', 'jetzt', 'now >',
-        'hoje', 'hoy', 'aujourd'
-    ]
-
-    for kw in buy_keywords:
-        if kw in t:
-            return 'Buy/Shop CTA'
-    for kw in learn_keywords:
-        if kw in t:
-            return 'Learn CTA'
-    for kw in urgency_keywords:
-        if kw in t:
-            return 'Urgency CTA'
-
-    return 'Other CTA'
-
-
-def is_aligned(objective, cta_bucket):
-    """
-    Alignment rule:
-    Conversion/Sales → needs Buy/Shop CTA or Urgency CTA
-    Awareness        → Learn CTA or Other CTA is fine
-                       No CTA is also acceptable for awareness
-    """
-    if objective == 'Conversion/Sales':
-        return cta_bucket in ('Buy/Shop CTA', 'Urgency CTA')
-    elif objective == 'Awareness':
-        return True  # Awareness is always considered aligned
+    obj = str(objective or "").strip()
+    bucket = normalize_cta_bucket(cta_bucket)
+    if obj == "Conversion/Sales":
+        return bucket in ("Buy/Shop CTA", "Urgency CTA")
+    if obj == "Awareness":
+        return bucket in ("Learn CTA", "Missing CTA", "Buy/Shop CTA", "Urgency CTA")
     return False
 
 
 class CTACampaignView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAnyReportingRole]
 
     def get(self, request):
         quarter_filter = request.query_params.get('quarter', None)
+        region_filter = request.query_params.get('region', None)
         country_filter = request.query_params.get('country', None)
         retailer_filter = request.query_params.get('retailer', None)
         drive_objective = request.query_params.get('drive_objective', None)
@@ -95,12 +90,19 @@ class CTACampaignView(APIView):
             r['Country'] for r in rows
             if r.get('Country') and r['Country'] != 'Unknown'
         ))
+        all_regions = sorted(set(
+            r['Region'] for r in rows
+            if r.get('Region') and str(r.get('Region')).strip() not in ('Unknown', 'None', '', 'NA', 'Unmapped')
+        ))
         all_retailers = sorted(set(
             r['Retailer'] for r in rows
             if r.get('Retailer') and r['Retailer'] != 'Unknown'
         ))
 
-        # Apply country / retailer first so QoQ can compare adjacent quarters
+        # Apply region / country / retailer first so QoQ can compare adjacent quarters
+        if region_filter and region_filter not in ('All', 'All Regions'):
+            wanted = region_filter.strip().upper()
+            rows = [r for r in rows if str(r.get('Region') or '').strip().upper() == wanted]
         if country_filter and country_filter not in ('All', 'All Countries'):
             rows = [r for r in rows if r.get('Country') == country_filter]
         if retailer_filter and retailer_filter not in ('All', 'All Retailers'):
@@ -109,12 +111,15 @@ class CTACampaignView(APIView):
         for r in rows:
             r['cta_bucket'] = classify_cta(
                 r.get('CTA_Flag', 'No'),
-                r.get('CTA_Text', '')
+                r.get('CTA_Text', ''),
+                r.get('Mapped_CTA_Bucket'),
             )
             r['aligned'] = is_aligned(
                 r.get('Objective', ''),
                 r['cta_bucket']
             )
+            clean = str(r.get('Clean_CTA') or '').strip()
+            r['Clean_CTA'] = clean if clean and not _blank(clean) else ''
 
         # QoQ alignment from classified rows before the quarter slice
         qoq_map = {}
@@ -169,7 +174,6 @@ class CTACampaignView(APIView):
             _tile('Buy/Shop CTA', '#1E429F'),
             _tile('Learn CTA', '#0EA5E9'),
             _tile('Urgency CTA', '#1E429F'),
-            _tile('Other CTA', '#CBD5E1'),
         ]
 
         aligned_count = sum(1 for r in rows if r['aligned'])
@@ -203,7 +207,7 @@ class CTACampaignView(APIView):
             reverse=True
         )[:20]
 
-        # --- Clean CTA buckets for Most-Used Calls to Action ---
+        # --- Most-Used Calls to Action: Clean_CTA phrases ---
         phrase_rows = rows
         if cta_product and cta_product not in ('All', 'All Products'):
             phrase_rows = [
@@ -211,31 +215,35 @@ class CTACampaignView(APIView):
                 if cta_product in extract_product_families(r.get('Content') or r.get('Product') or '')
             ]
 
-        bucket_phrase_map = {}
-        bucket_obj_map = {}
+        phrase_map = {}
+        phrase_obj_map = {}
         for r in phrase_rows:
-            bucket = r.get('cta_bucket') or 'Missing CTA'
+            phrase = str(r.get('Clean_CTA') or '').strip()
+            if not phrase or _blank(phrase):
+                continue
             obj = r.get('Objective', 'Unknown')
-            bucket_phrase_map[bucket] = bucket_phrase_map.get(bucket, 0) + 1
-            if bucket not in bucket_obj_map:
-                bucket_obj_map[bucket] = {'Conversion/Sales': 0, 'Awareness': 0, 'Other': 0}
-            if obj in bucket_obj_map[bucket]:
-                bucket_obj_map[bucket][obj] += 1
+            phrase_map[phrase] = phrase_map.get(phrase, 0) + 1
+            if phrase not in phrase_obj_map:
+                phrase_obj_map[phrase] = {'Conversion/Sales': 0, 'Awareness': 0, 'Other': 0}
+            if obj in phrase_obj_map[phrase]:
+                phrase_obj_map[phrase][obj] += 1
             else:
-                bucket_obj_map[bucket]['Other'] += 1
+                phrase_obj_map[phrase]['Other'] += 1
 
-        bucket_order = ['Missing CTA', 'Buy/Shop CTA', 'Urgency CTA', 'Learn CTA', 'Other CTA']
-        top_cta_phrases = [
-            {
-                'phrase': bucket,
-                'volume': bucket_phrase_map.get(bucket, 0),
-                'objective_breakdown': bucket_obj_map.get(bucket, {}),
-                'conversion_count': bucket_obj_map.get(bucket, {}).get('Conversion/Sales', 0),
-                'awareness_count': bucket_obj_map.get(bucket, {}).get('Awareness', 0),
-            }
-            for bucket in bucket_order
-            if bucket_phrase_map.get(bucket, 0) > 0
-        ]
+        top_cta_phrases = sorted(
+            [
+                {
+                    'phrase': phrase,
+                    'volume': volume,
+                    'objective_breakdown': phrase_obj_map.get(phrase, {}),
+                    'conversion_count': phrase_obj_map.get(phrase, {}).get('Conversion/Sales', 0),
+                    'awareness_count': phrase_obj_map.get(phrase, {}).get('Awareness', 0),
+                }
+                for phrase, volume in phrase_map.items()
+            ],
+            key=lambda item: item['volume'],
+            reverse=True,
+        )[:20]
 
         seen_urls = set()
         deduped_evidence = []
@@ -245,16 +253,17 @@ class CTACampaignView(APIView):
             if not url or url in seen_urls:
                 continue
             seen_urls.add(url)
-            voice = str(r.get('Voice_Of_Attribute') or '').strip()
+            voice = str(r.get('Application_Of_Voice') or r.get('Voice_Of_Attribute') or '').strip()
             if voice in ('', 'None', 'NA', 'Unknown'):
                 voice = '—'
             aligned = bool(r.get('aligned'))
             deduped_evidence.append({
                 'Asset_URL': url,
                 'Objective': r.get('Objective'),
-                'CTA_Text': r.get('CTA_Text'),
+                'CTA_Text': r.get('Clean_CTA') or r.get('CTA_Text'),
                 'CTA_Flag': r.get('CTA_Flag'),
                 'Narrative_Style': r.get('Narrative_Style'),
+                'Application_Of_Voice': voice,
                 'Voice_Of_Attribute': voice,
                 'Retailer': r.get('Retailer'),
                 'Region': r.get('Region'),
@@ -286,6 +295,7 @@ class CTACampaignView(APIView):
             'misaligned_evidence':    deduped_evidence[:100],
             'filter_options': {
                 'quarters':  ['All Quarters'] + all_quarters,
+                'regions':   ['All Regions'] + all_regions,
                 'countries': ['All Countries'] + all_countries,
                 'retailers': ['All Retailers'] + all_retailers,
                 'products':  PRODUCT_FAMILIES,

@@ -1,18 +1,7 @@
-"""
-apps/reports/views.py
-----------------------
-Four JWT-protected reporting endpoints that query the BLUE_BASCO warehouse.
+"""JWT-protected reporting endpoints against the BASCO warehouse.
 
-All views follow the same pattern:
-  1. Require JWT authentication (IsAuthenticated)
-  2. Require IsAnyReportingRole (RSM / RMM / ADMIN)
-  3. Open a raw pyodbc connection via get_warehouse_connection()
-  4. Execute the relevant SQL stub from queries.py
-  5. Convert cursor rows → list of dicts
-  6. Apply in-Python role-based row filtering
-  7. Serialize and return
-
-Real SQL queries will replace the stubs in queries.py in a later step.
+Shared helpers (apply_user_scope, quarter sorting) live here; page-specific
+views live in their own modules and import these helpers.
 """
 
 import pyodbc
@@ -33,16 +22,13 @@ from .kpi import (
     compute_league_kpis,
     compute_market_kpis,
     group_parent_accounts,
+    normalize_parent,
 )
 from .queries import (
-    CTA_MIX_QUERY,
     HELPDESK_MASTER_MERGE_PARENT_USAGE_QUERY,
     LEAGUE_TABLE_QUERY,
     MARKET_MATURITY_QUERY,
     POP_PARENT_COUNTRY_QUERY,
-)
-from .serializers import (
-    CtaMixRowSerializer,
 )
 
 # ---------------------------------------------------------------------------
@@ -78,11 +64,37 @@ def apply_user_scope(rows, user, country_key="country", region_key="region", ret
         return rows
 
     if user.role == User.Role.RSM:
-        allowed = set(user.retailer_ids or [])
-        return [
-            r for r in rows
-            if r.get(retailer_key) in allowed or r.get("retailer") in allowed or r.get("clean_email") in allowed or r.get("sender_email") in allowed
-        ]
+        allowed_raw = {str(v).strip() for v in (user.retailer_ids or []) if str(v).strip()}
+        allowed_norm = {normalize_parent(v) for v in allowed_raw if normalize_parent(v)}
+        account_keys = (
+            retailer_key,
+            "retailer",
+            "Retailer",
+            "child_account",
+            "Child_Account",
+            "parent_account",
+            "Parent_Account",
+        )
+
+        def _in_rsm_scope(row: dict) -> bool:
+            if row.get("clean_email") in allowed_raw or row.get("sender_email") in allowed_raw:
+                return True
+            for key in account_keys:
+                text = str(row.get(key) or "").strip()
+                if not text:
+                    continue
+                if text in allowed_raw:
+                    return True
+                norm = normalize_parent(text)
+                if not norm:
+                    continue
+                if norm in allowed_norm:
+                    return True
+                if any(norm.startswith(a + " ") or a.startswith(norm + " ") for a in allowed_norm):
+                    return True
+            return False
+
+        return [r for r in rows if _in_rsm_scope(r)]
 
     if user.role == User.Role.RMM:
         user_region = (getattr(user, "region", "") or "").strip().upper()
@@ -198,11 +210,11 @@ class LeagueTableView(APIView):
                 request.user,
                 country_key="country",
                 region_key="region",
-                retailer_key="parent_account",
+                retailer_key="child_account",
             )
 
             # Role-based & regional scoping
-            rows = apply_user_scope(rows, request.user, country_key='country', region_key='region', retailer_key='retailer')
+            rows = apply_user_scope(rows, request.user, country_key='country', region_key='region', retailer_key='child_account')
 
             # Master options for 2026 based on scoped data
             all_quarters = sort_quarters_desc(list(set(r['quarter'] for r in rows if r.get('quarter'))))
@@ -289,7 +301,7 @@ class MarketMaturityView(APIView):
                 request.user,
                 country_key="country",
                 region_key="region",
-                retailer_key="parent_account",
+                retailer_key="child_account",
             )
 
             cursor.execute(POP_PARENT_COUNTRY_QUERY)
@@ -298,7 +310,7 @@ class MarketMaturityView(APIView):
                 request.user,
                 country_key="country",
                 region_key="region",
-                retailer_key="parent_account",
+                retailer_key="child_account",
             )
 
             # Apply user role & regional scoping
@@ -420,47 +432,6 @@ class MarketMaturityView(APIView):
                 {"detail": "Internal server error.", "error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        finally:
-            if conn:
-                conn.close()
-
-
-class CtaMixView(APIView):
-    """
-    GET /api/reports/cta-mix/
-
-    Returns campaign type and CTA breakdown across all creatives.
-    All roles see the full dataset — no row-level filtering.
-    """
-
-    permission_classes = [IsAuthenticated, IsAnyReportingRole]
-
-    @extend_schema(
-        summary="CTA mix",
-        description=(
-            "Returns campaign type and CTA breakdown across all creatives.\n\n"
-            "All roles (**RSM**, **RMM**, **ADMIN**) see the full dataset."
-        ),
-        responses={
-            200: CtaMixRowSerializer(many=True),
-            403: OpenApiResponse(description="Insufficient role."),
-            500: OpenApiResponse(description="Database error."),
-        },
-        tags=["Reports"],
-    )
-    def get(self, request: Request) -> Response:
-        conn = None
-        try:
-            conn = get_warehouse_connection()
-            cursor = conn.cursor()
-            cursor.execute(CTA_MIX_QUERY)
-            rows = _rows_to_dicts(cursor)
-            # No role-based filtering for this report
-            serializer = CtaMixRowSerializer(rows, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except pyodbc.Error:
-            return Response(_DB_ERROR_RESPONSE, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
             if conn:
                 conn.close()

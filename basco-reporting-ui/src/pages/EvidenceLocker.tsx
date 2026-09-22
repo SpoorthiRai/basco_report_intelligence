@@ -7,42 +7,57 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../api/client';
 
 interface CreativeItem {
-  Analysis_ID: number | string;
-  Asset_URL: string;
-  compliance_status: 'Compliant' | 'Non-Compliant';
-  sender_email?: string;
-  Country?: string;
-  Region?: string;
-  Parent_Account?: string;
-  Subject?: string;
-  Campaign_Type?: string;
-  Campaign_Name?: string;
-  Layout?: string;
-  Content?: string;
-  Product?: string;
-  OEM_Flag?: string;
-  OEM_Values?: string;
-  Intel_Visual_Flag?: string;
-  Visual_Content_Name?: string;
-  Intel_Visual_Usage?: string;
-  General_Visual_Flag?: string;
-  AI_Messaging?: string;
-  Inside_Messaging?: string;
-  Offer_Flag?: string;
-  Offer_Type?: string;
-  CTA_Flag?: string;
-  Objective?: string;
-  quarter_label?: string;
-  product_families?: string[];
-  generations?: string[];
+  Analysis_ID: number | string
+  Asset_URL: string
+  MD_Tag?: string
+  compliance_status?: 'Compliant' | 'Non-Compliant'
+  Country?: string
+  Region?: string
+  Retailer?: string
+  Parent_Account?: string
+  Child_Account?: string
+  Campaign_Type?: string
+  Campaign_Name?: string
+  Layout?: string
+  Content?: string
+  Product?: string
+  Subject?: string
+  sender_email?: string
+  Intel_Visual_Flag?: string
+  Visual_Content_Name?: string
+  Intel_Visual_Usage?: string
+  AI_Messaging?: string
+  Inside_Messaging?: string
+  CTA_Flag?: string
+  CTA?: string
+  Objective?: string
+  Offer_Flag?: string
+  Offer_Type?: string
+  Offer_Text?: string
+  OEM_Flag?: string
+  OEM_Values?: string
+  quarter_label?: string
+  product_families?: string[]
+  Presence_Logo?: string
+  Logo?: number | string
+  Presence_Badge?: string
+  Badge?: number | string
+  Presence_Text?: string
+  Text_Mention?: number | string
+  Presence_Visual?: string
+  Key_Visuals?: number | string
+  BASCO_SCORE?: number
+  basco_score?: number
+  FeedbackType?: string
+  Reason?: string
 }
 
 interface EvidenceLockerResponse {
   quarter: string;
   summary: {
     total: number;
-    compliant: number;
-    non_compliant: number;
+    compliant?: number;
+    non_compliant?: number;
   };
   filter_options: {
     quarters: string[];
@@ -78,39 +93,73 @@ function isPresent(value?: string | null): boolean {
   return Boolean(v) && !['none', 'unknown', 'no', 'n/a', 'na', ''].includes(v.toLowerCase());
 }
 
+function presencePass(presence?: string | null, numeric?: number | string | null): boolean {
+  if (presence && isMandatePass(presence)) return true
+  const n = Number(numeric)
+  return Number.isFinite(n) && n > 0
+}
+
 function logoPass(item: CreativeItem): boolean {
-  return isMandatePass(item.Intel_Visual_Flag);
+  return presencePass(item.Presence_Logo, item.Logo)
 }
 
 function badgePass(item: CreativeItem): boolean {
-  return isMandatePass(item.Inside_Messaging);
+  return presencePass(item.Presence_Badge, item.Badge)
 }
 
 function textPass(item: CreativeItem): boolean {
-  return isMandatePass(item.AI_Messaging);
+  return presencePass(item.Presence_Text, item.Text_Mention)
 }
 
 function visualPass(item: CreativeItem): boolean {
-  if (isMandatePass(item.General_Visual_Flag)) return true;
-  const usage = String(item.Intel_Visual_Usage || '').toLowerCase();
-  if (usage.includes('used') && !usage.includes('not used')) return true;
-  return isPresent(item.Visual_Content_Name);
+  return presencePass(item.Presence_Visual, item.Key_Visuals)
 }
 
 function complianceScore(item: CreativeItem): number {
-  const flags = [logoPass(item), badgePass(item), textPass(item), visualPass(item)];
-  return Math.round((flags.filter(Boolean).length / flags.length) * 100);
+  if (item.basco_score != null && Number.isFinite(Number(item.basco_score))) {
+    return Number(item.basco_score)
+  }
+  const flags = [logoPass(item), badgePass(item), textPass(item), visualPass(item)]
+  return Math.round((flags.filter(Boolean).length / flags.length) * 100)
+}
+
+type StatusBucket = 'compliant' | 'non_compliant' | 'at_risk'
+
+function statusBucket(item: CreativeItem): StatusBucket {
+  const score = complianceScore(item)
+  if (score >= 90) return 'compliant'
+  if (score >= 80) return 'non_compliant'
+  return 'at_risk'
+}
+
+function scoreColorClass(score: number): string {
+  if (score >= 90) return 'text-[#10B981]'
+  if (score >= 80) return 'text-[#F59E0B]'
+  return 'text-[#EF4444]'
 }
 
 function complianceFeedback(item: CreativeItem): string {
-  const missing: string[] = [];
-  if (!logoPass(item)) missing.push('Logo');
-  if (!badgePass(item)) missing.push('Badge');
-  if (!textPass(item)) missing.push('Text');
-  if (!visualPass(item)) missing.push('Visual');
-  if (missing.length) return `Missing ${missing.join(', ')}`;
-  if (isPresent(item.Objective)) return String(item.Objective);
-  return 'Meets brand requirements';
+  if (item.FeedbackType) return item.FeedbackType
+  const missing: string[] = []
+  if (!logoPass(item)) missing.push('Logo')
+  if (!badgePass(item)) missing.push('Badge')
+  if (!textPass(item)) missing.push('Text')
+  if (!visualPass(item)) missing.push('Visual')
+  if (missing.length) return `Missing ${missing.join(', ')}`
+  return 'Meets brand requirements'
+}
+
+function hasOfferType(item: CreativeItem): boolean {
+  const t = String(item.Offer_Type || '').trim().toLowerCase()
+  return Boolean(t) && !['no offer', 'none', 'no', 'n/a', 'na', 'unknown'].includes(t)
+}
+
+function ctaIsNo(item: CreativeItem): boolean {
+  return !isMandatePass(item.CTA_Flag)
+}
+
+function highlightMissingCta(item: CreativeItem): boolean {
+  return hasOfferType(item) && ctaIsNo(item)
 }
 
 function displayOrDash(value?: string | null): string {
@@ -162,7 +211,7 @@ function CreativeBannerVisual({ item, isCompliant }: { item: CreativeItem; isCom
           {content}
         </h4>
         <p className="text-[10px] text-slate-300 font-medium line-clamp-1 mt-0.5">
-          {item.Subject || 'Built for Next-Gen Performance & AI'}
+          {item.Child_Account || item.Retailer || 'Built for Next-Gen Performance & AI'}
         </p>
       </div>
 
@@ -344,9 +393,6 @@ const DEFAULT_PRODUCTS = [
 
 const DEFAULT_QUARTERS = [
   'All Quarters',
-  'Q3 2026',
-  'Q2 2026',
-  'Q1 2026',
 ];
 
 const DEFAULT_REGIONS = ['All Regions'];
@@ -356,11 +402,14 @@ const DEFAULT_COUNTRIES = ['All Countries'];
 function CreativeModal({
   item,
   onClose,
+  mode = 'compliance',
 }: {
   item: CreativeItem;
   onClose: () => void;
+  mode?: 'compliance' | 'execution';
 }) {
-  const isCompliant = item.compliance_status === 'Compliant';
+  const bucket = mode === 'compliance' ? statusBucket(item) : null;
+  const isCompliant = bucket === 'compliant';
   const normUrl = normalizeAssetUrl(item.Asset_URL);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -372,9 +421,10 @@ function CreativeModal({
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const logoPass  = isMandatePass(item.Intel_Visual_Flag);
-  const badgePass = isMandatePass(item.Inside_Messaging);
-  const ctaPass   = isMandatePass(item.CTA_Flag);
+  const logoOk = logoPass(item)
+  const badgeOk = badgePass(item)
+  const textOk = textPass(item)
+  const visualOk = visualPass(item)
 
   return (
     <div
@@ -395,10 +445,10 @@ function CreativeModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-[#0B1325] to-[#1C3668] rounded-t-2xl">
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">
-              {item.Subject || item.Campaign_Name || 'Creative Detail'}
+              {item.Child_Account || item.Retailer || item.Campaign_Name || 'Creative Detail'}
             </h3>
             <p className="text-xs text-slate-300 mt-0.5">
-              Analysis ID: {item.Analysis_ID} &nbsp;•&nbsp; {item.quarter_label || '—'}
+              {[item.Country, item.Region, item.quarter_label].filter(Boolean).join(' • ') || '—'}
             </p>
           </div>
           <button
@@ -425,7 +475,7 @@ function CreativeModal({
                 )}
                 <img
                   src={normUrl}
-                  alt={item.Subject || 'Creative Asset'}
+                  alt={item.Child_Account || item.Retailer || 'Creative Asset'}
                   onLoad={() => setImgLoaded(true)}
                   onError={() => setImgError(true)}
                   className={`w-full h-full object-contain transition-opacity duration-300 ${
@@ -437,55 +487,60 @@ function CreativeModal({
             ) : (
               <CreativeBannerVisual item={item} isCompliant={isCompliant} />
             )}
-            {/* Compliance badge overlay */}
+            {mode === 'compliance' && bucket && (
             <span
               className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide shadow-md ${
-                isCompliant
+                bucket === 'compliant'
                   ? 'bg-[#10B981] text-white'
-                  : 'bg-[#EF4444] text-white'
+                  : bucket === 'non_compliant'
+                    ? 'bg-[#EF4444] text-white'
+                    : 'bg-[#F59E0B] text-white'
               }`}
             >
-              {isCompliant ? '✅ Compliant' : '🔴 Non-Compliant'}
+              {bucket === 'compliant' ? '✅ Compliant' : bucket === 'non_compliant' ? '🔴 Non-Compliant' : '🔶 At Risk'}
             </span>
+            )}
           </div>
 
           {/* Right: metadata */}
           <div className="md:w-1/2 p-6 flex flex-col gap-4">
 
-            {/* Mandate scoreboard (3 core visual pillars) */}
-            <div className="grid grid-cols-3 gap-2 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-center text-[11px] font-bold">
+            {mode === 'compliance' && (
+            <div className="grid grid-cols-4 gap-2 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-3 text-center text-[11px] font-bold">
               {[
-                { label: 'Logo',  pass: logoPass },
-                { label: 'Badge', pass: badgePass },
-                { label: 'CTA',   pass: ctaPass },
+                { label: 'Logo', pass: logoOk },
+                { label: 'Badge', pass: badgeOk },
+                { label: 'Text', pass: textOk },
+                { label: 'Visual', pass: visualOk },
               ].map(({ label, pass }) => (
                 <div key={label}>
                   <span className="text-[#6B7280] block text-[10px] font-semibold mb-0.5">{label}</span>
-                  <span className="text-base">{pass ? '✅' : '❌'}</span>
+                  <span className={`text-base ${pass ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                    {pass ? 'Yes' : 'No'}
+                  </span>
                 </div>
               ))}
             </div>
-
-
+            )}
 
             {/* Metadata rows */}
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
-              {[
-                { dt: 'Sender',         dd: item.sender_email },
-                { dt: 'Country',        dd: item.Country },
-                { dt: 'Region',         dd: item.Region },
-                { dt: 'Parent Account', dd: item.Parent_Account },
-                { dt: 'Campaign Type',  dd: item.Campaign_Type },
-                { dt: 'Campaign Name',  dd: item.Campaign_Name },
-                { dt: 'Layout',         dd: item.Layout },
-                { dt: 'Content',        dd: item.Content },
-                { dt: 'OEM',            dd: item.OEM_Values || (item.OEM_Flag === 'Yes' ? 'Present' : 'Not present') },
-                { dt: 'Visual Name',    dd: item.Visual_Content_Name },
-                { dt: 'AI Messaging',   dd: item.AI_Messaging },
-                { dt: 'Inside Msg',     dd: item.Inside_Messaging },
-                { dt: 'Offer',          dd: item.Offer_Flag },
-                { dt: 'CTA',            dd: item.CTA_Flag },
-              ].map(({ dt, dd }) =>
+              {(mode === 'compliance'
+                ? [
+                    { dt: 'Retailer', dd: item.Child_Account || item.Retailer },
+                    { dt: 'Country', dd: item.Country },
+                    { dt: 'Region', dd: item.Region },
+                    { dt: 'Quarter', dd: item.quarter_label },
+                  ]
+                : [
+                    { dt: 'Retailer', dd: item.Child_Account || item.Retailer },
+                    { dt: 'Campaign Type', dd: item.Campaign_Type },
+                    { dt: 'Layout', dd: item.Layout },
+                    { dt: 'Content', dd: item.Content },
+                    { dt: 'Offer Type', dd: item.Offer_Type },
+                    { dt: 'CTA', dd: isMandatePass(item.CTA_Flag) ? 'Yes' : 'No' },
+                  ]
+              ).map(({ dt, dd }) =>
                 dd && dd !== 'None' && dd !== 'Unknown' ? (
                   <div key={dt}>
                     <dt className="text-[#6B7280] font-semibold text-[10px] uppercase tracking-wide">{dt}</dt>
@@ -495,8 +550,14 @@ function CreativeModal({
               )}
             </dl>
 
-            {/* Objective */}
-            {item.Objective && item.Objective !== 'None' && item.Objective !== 'Unknown' && (
+            {mode === 'compliance' && item.Reason ? (
+              <div>
+                <p className="text-[10px] text-[#6B7280] font-semibold uppercase tracking-wide mb-1">Reason</p>
+                <p className="text-xs text-[#111827] leading-relaxed whitespace-pre-wrap">{item.Reason}</p>
+              </div>
+            ) : null}
+
+            {mode === 'execution' && item.Objective && item.Objective !== 'None' && item.Objective !== 'Unknown' && (
               <div className="mt-auto">
                 <p className="text-[10px] text-[#6B7280] font-semibold uppercase tracking-wide mb-1">Objective</p>
                 <p className="text-xs text-[#111827] italic leading-relaxed">"{item.Objective}"</p>
@@ -521,6 +582,7 @@ export default function EvidenceLocker() {
   const [productFilter, setProductFilter] = useState<string>('All Products');
   const [regionFilter, setRegionFilter] = useState<string>('All Regions');
   const [countryFilter, setCountryFilter] = useState<string>('All Countries');
+  const [statusFilter, setStatusFilter] = useState<StatusBucket | null>(null);
 
   // Persistent option lists that NEVER shrink when filters change
   const [availableProducts, setAvailableProducts] = useState<string[]>(DEFAULT_PRODUCTS);
@@ -604,8 +666,6 @@ export default function EvidenceLocker() {
           quarter: quarterFilter !== 'All' && quarterFilter !== 'All Quarters' ? quarterFilter : 'All Quarters',
           summary: {
             total: fallback.length,
-            compliant: fallback.filter((c) => c.compliance_status === 'Compliant').length,
-            non_compliant: fallback.filter((c) => c.compliance_status === 'Non-Compliant').length,
           },
           filter_options: {
             quarters: DEFAULT_QUARTERS,
@@ -680,8 +740,16 @@ export default function EvidenceLocker() {
 
   const filteredCreatives = useMemo(() => {
     if (!data?.creatives) return [];
-    return data.creatives.filter((c) => matchesProduct(c) && matchesRegion(c) && matchesCountry(c));
-  }, [data, matchesProduct, matchesRegion, matchesCountry]);
+    return data.creatives.filter((c) => {
+      if (!matchesProduct(c) || !matchesRegion(c) || !matchesCountry(c)) return false;
+      if (activeTab === 'execution' || !statusFilter) return true;
+      return statusBucket(c) === statusFilter;
+    });
+  }, [data, matchesProduct, matchesRegion, matchesCountry, statusFilter, activeTab]);
+
+  const toggleStatusFilter = (bucket: StatusBucket) => {
+    setStatusFilter((prev) => (prev === bucket ? null : bucket));
+  };
 
   const handleImageLoad = (id: string | number) => {
     setImageLoaded((prev) => ({ ...prev, [String(id)]: true }));
@@ -694,7 +762,7 @@ export default function EvidenceLocker() {
   return (
     <section
       id="retailer-creative-performance"
-      className="mt-8 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden flex flex-col scroll-mt-20"
+      className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden flex flex-col scroll-mt-20"
     >
       {/* ── Dark Header Bar ─────────────────────────────────────────────── */}
       <div className="bg-gradient-to-r from-[#0B1325] via-[#122449] to-[#1C3668] px-6 py-5 text-white flex flex-row items-center justify-between gap-4">
@@ -826,7 +894,7 @@ export default function EvidenceLocker() {
             </div>
           ) : filteredCreatives.length === 0 ? (
             <div className="py-16 text-center text-[#6B7280] text-xs font-semibold bg-[#F8FAFC] rounded-xl border border-dashed border-[#E5E7EB]">
-              No creatives found for the selected filters (Quarter: {quarterFilter} • Product: {productFilter}).
+              No creatives found for the selected filters (Quarter: {quarterFilter} • Product: {productFilter}{activeTab === 'compliance' && statusFilter ? ` • Status: ${statusFilter === 'compliant' ? 'Compliant' : statusFilter === 'non_compliant' ? 'Non-Compliant' : 'At Risk'}` : ''}).
             </div>
           ) : (
             <table className="w-full min-w-[720px] text-left text-xs border-separate border-spacing-0">
@@ -840,7 +908,7 @@ export default function EvidenceLocker() {
                       <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Badge</th>
                       <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Text</th>
                       <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Visual</th>
-                      <th className="px-3 py-2.5 border-b border-[#E5E7EB] rounded-tr-lg">Feedback</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB] rounded-tr-lg">Feedbacktype</th>
                     </>
                   ) : (
                     <>
@@ -857,7 +925,7 @@ export default function EvidenceLocker() {
                   const cardId = item.Analysis_ID ?? idx;
                   const isLoaded = imageLoaded[String(cardId)];
                   const hasImgError = imageErrors[String(cardId)];
-                  const isCompliant = item.compliance_status === 'Compliant';
+                  const isCompliant = statusBucket(item) === 'compliant';
                   const normUrl = normalizeAssetUrl(item.Asset_URL);
                   const score = complianceScore(item);
 
@@ -889,7 +957,7 @@ export default function EvidenceLocker() {
                       {activeTab === 'compliance' ? (
                         <>
                           <td className="px-3 py-2 whitespace-nowrap">
-                            <span className={`font-black ${score >= 90 ? 'text-[#10B981]' : score >= 75 ? 'text-[#F59E0B]' : 'text-[#EF4444]'}`}>
+                            <span className={`font-black ${scoreColorClass(score)}`}>
                               {score}%
                             </span>
                           </td>
@@ -898,8 +966,8 @@ export default function EvidenceLocker() {
                           <td className="px-3 py-2"><FlagMark pass={textPass(item)} /></td>
                           <td className="px-3 py-2"><FlagMark pass={visualPass(item)} /></td>
                           <td className="px-3 py-2 text-[#111827] max-w-[280px]">
-                            <span className="line-clamp-2" title={complianceFeedback(item)}>
-                              {complianceFeedback(item)}
+                            <span className="line-clamp-2" title={item.FeedbackType || complianceFeedback(item)}>
+                              {item.FeedbackType || '—'}
                             </span>
                           </td>
                         </>
@@ -912,10 +980,18 @@ export default function EvidenceLocker() {
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap">{displayOrDash(item.Offer_Type)}</td>
                           <td className="px-3 py-2 max-w-[240px]">
-                            <span className="line-clamp-2">{displayOrDash(item.Product !== 'Unknown' ? item.Product : item.Content)}</span>
+                            <span className="line-clamp-2">{displayOrDash(item.Content)}</span>
                           </td>
                           <td className="px-3 py-2 font-bold">
-                            {isMandatePass(item.CTA_Flag) ? 'Y' : 'N'}
+                            {isMandatePass(item.CTA_Flag) ? (
+                              'Y'
+                            ) : highlightMissingCta(item) ? (
+                              <span className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded bg-[#FEE2E2] text-[#B91C1C] font-extrabold">
+                                N
+                              </span>
+                            ) : (
+                              'N'
+                            )}
                           </td>
                         </>
                       )}
@@ -928,48 +1004,71 @@ export default function EvidenceLocker() {
         </div>
 
         {/* ── Status Legend Panel (Right side) ─────────────────────────── */}
+        {activeTab === 'compliance' && (
         <aside className="w-full lg:w-72 shrink-0 bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl p-4 flex flex-col gap-3 self-start">
           <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#111827] border-b border-[#E5E7EB] pb-2">
             Status Definitions
           </h3>
 
-          <div className="space-y-3 text-xs leading-relaxed">
-            <div className="flex items-start gap-2">
+          <div className="space-y-2 text-xs leading-relaxed">
+            <button
+              type="button"
+              onClick={() => toggleStatusFilter('compliant')}
+              aria-pressed={statusFilter === 'compliant'}
+              className={`w-full text-left flex items-start gap-2 rounded-lg p-2 cursor-pointer transition-colors ${
+                statusFilter === 'compliant' ? 'bg-emerald-50 ring-1 ring-[#10B981]/40' : 'hover:bg-white'
+              }`}
+            >
               <span className="text-base shrink-0 leading-none">✅</span>
               <div>
                 <strong className="text-[#10B981] block font-bold">Compliant</strong>
                 <p className="text-[#6B7280] text-[11px] mt-0.5">
-                  Score is 90% or higher and required brand standards are met.
+                  Score is 90% or higher.
                 </p>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-start gap-2">
+            <button
+              type="button"
+              onClick={() => toggleStatusFilter('non_compliant')}
+              aria-pressed={statusFilter === 'non_compliant'}
+              className={`w-full text-left flex items-start gap-2 rounded-lg p-2 cursor-pointer transition-colors ${
+                statusFilter === 'non_compliant' ? 'bg-rose-50 ring-1 ring-[#EF4444]/40' : 'hover:bg-white'
+              }`}
+            >
               <span className="text-base shrink-0 leading-none">🔴</span>
               <div>
                 <strong className="text-[#EF4444] block font-bold">Non-Compliant</strong>
                 <p className="text-[#6B7280] text-[11px] mt-0.5">
-                  Score is below 90% and the creative has usage-related issues.
+                  Score is between 80% and 90%.
                 </p>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-start gap-2">
+            <button
+              type="button"
+              onClick={() => toggleStatusFilter('at_risk')}
+              aria-pressed={statusFilter === 'at_risk'}
+              className={`w-full text-left flex items-start gap-2 rounded-lg p-2 cursor-pointer transition-colors ${
+                statusFilter === 'at_risk' ? 'bg-amber-50 ring-1 ring-[#F59E0B]/40' : 'hover:bg-white'
+              }`}
+            >
               <span className="text-base shrink-0 leading-none">🔶</span>
               <div>
                 <strong className="text-[#F59E0B] block font-bold">At Risk</strong>
                 <p className="text-[#6B7280] text-[11px] mt-0.5">
-                  Score is below 90% and the creative has missing or outdated brand elements.
+                  Score is less than 80%.
                 </p>
               </div>
-            </div>
+            </button>
           </div>
         </aside>
+        )}
 
       </div>
       {/* ── Creative Detail Modal ───────────────────────────────────────── */}
       {selectedCreative && (
-        <CreativeModal item={selectedCreative} onClose={handleCloseModal} />
+        <CreativeModal item={selectedCreative} onClose={handleCloseModal} mode={activeTab} />
       )}
     </section>
   );

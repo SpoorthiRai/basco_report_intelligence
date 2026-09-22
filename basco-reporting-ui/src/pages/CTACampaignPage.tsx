@@ -55,6 +55,7 @@ interface MisalignedCreative {
   CTA_Flag: string;
   Narrative_Style: string;
   Voice_Of_Attribute?: string;
+  Application_Of_Voice?: string;
   Retailer: string;
   Region: string;
   Country: string;
@@ -77,6 +78,7 @@ interface CTACampaignResponse {
   misaligned_evidence: MisalignedCreative[];
   filter_options: {
     quarters: string[];
+    regions?: string[];
     countries: string[];
     retailers: string[];
     products?: string[];
@@ -254,10 +256,11 @@ export default function CTACampaignPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [quarterFilter, setQuarterFilter] = useState<string>('All Quarters');
+  const [regionFilter, setRegionFilter] = useState<string>('All Regions');
   const [countryFilter, setCountryFilter] = useState<string>('All Countries');
   const [retailerFilter, setRetailerFilter] = useState<string>('All Retailers');
   const [objectiveFilter, setObjectiveFilter] = useState<string>('All');
-  const [driveObjective, setDriveObjective] = useState<string>('All');
+  const [driveObjective, setDriveObjective] = useState<string>('Conversion/Sales');
   const [ctaProductFilter, setCtaProductFilter] = useState<string>('All Products');
   const [selectedCreative, setSelectedCreative] = useState<MisalignedCreative | null>(null);
 
@@ -271,6 +274,9 @@ export default function CTACampaignPage() {
     const params = new URLSearchParams();
     if (quarterFilter && quarterFilter !== 'All' && quarterFilter !== 'All Quarters') {
       params.append('quarter', quarterFilter);
+    }
+    if (regionFilter && regionFilter !== 'All' && regionFilter !== 'All Regions') {
+      params.append('region', regionFilter);
     }
     if (countryFilter && countryFilter !== 'All' && countryFilter !== 'All Countries') {
       params.append('country', countryFilter);
@@ -307,7 +313,7 @@ export default function CTACampaignPage() {
     return () => {
       isMounted = false;
     };
-  }, [quarterFilter, countryFilter, retailerFilter, driveObjective, ctaProductFilter]);
+  }, [quarterFilter, regionFilter, countryFilter, retailerFilter, driveObjective, ctaProductFilter]);
 
   // Process Treemap data based on objective filter
   const rawPhrases = data?.top_cta_phrases || [];
@@ -374,6 +380,22 @@ export default function CTACampaignPage() {
             </select>
           </div>
 
+          {/* Region dropdown */}
+          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
+            <span className="text-[#6B7280] font-medium">Region:</span>
+            <select
+              value={regionFilter}
+              onChange={(e) => setRegionFilter(e.target.value)}
+              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
+            >
+              {(data?.filter_options?.regions || ['All Regions']).map((r) => (
+                <option key={r} value={r} className="bg-white text-[#111827]">
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Country dropdown */}
           <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
             <span className="text-[#6B7280] font-medium">Country:</span>
@@ -425,6 +447,37 @@ export default function CTACampaignPage() {
       {/* TOP ROW: Strategic Alignment + CTA Distribution KPI Strip   */}
       {/* ════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3.5 items-stretch">
+        {kpiTiles.slice(0, 4).map((tile) => (
+          <div
+            key={tile.label}
+            className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col h-full"
+          >
+            <div className="flex items-center justify-between min-h-[16px]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
+                {tile.label}
+              </span>
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: BUCKET_COLORS[tile.label] || '#64748B' }}
+              />
+            </div>
+            <div className="mt-3 flex items-baseline gap-1.5 leading-none">
+              <span
+                className="text-2xl font-black tracking-tight"
+                style={{ color: BUCKET_COLORS[tile.label] || '#111827' }}
+              >
+                {tile.pct}%
+              </span>
+              <span className="text-[10px] text-[#6B7280] font-semibold">
+                ({tile.count.toLocaleString()})
+              </span>
+            </div>
+            <span className="text-[10px] text-[#6B7280] font-medium mt-1.5 truncate">
+              Total Creatives
+            </span>
+          </div>
+        ))}
+
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col h-full">
           <div className="flex items-center justify-between min-h-[16px]">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
@@ -468,37 +521,6 @@ export default function CTACampaignPage() {
             {needsTrend.text}
           </span>
         </div>
-
-        {kpiTiles.slice(0, 4).map((tile) => (
-          <div
-            key={tile.label}
-            className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col h-full"
-          >
-            <div className="flex items-center justify-between min-h-[16px]">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
-                {tile.label}
-              </span>
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: BUCKET_COLORS[tile.label] || '#64748B' }}
-              />
-            </div>
-            <div className="mt-3 flex items-baseline gap-1.5 leading-none">
-              <span
-                className="text-2xl font-black tracking-tight"
-                style={{ color: BUCKET_COLORS[tile.label] || '#111827' }}
-              >
-                {tile.pct}%
-              </span>
-              <span className="text-[10px] text-[#6B7280] font-semibold">
-                ({tile.count.toLocaleString()})
-              </span>
-            </div>
-            <span className="text-[10px] text-[#6B7280] font-medium mt-1.5 truncate">
-              Total Creatives
-            </span>
-          </div>
-        ))}
       </div>
 
       {/* ════════════════════════════════════════════════════════════ */}
@@ -607,7 +629,7 @@ export default function CTACampaignPage() {
                     Most-Used Calls to Action
                   </h3>
                   <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                    Clean CTA buckets showing which action types appear most often.
+                    Clean CTA phrases showing which calls to action appear most often.
                   </p>
                 </div>
 
@@ -646,7 +668,7 @@ export default function CTACampaignPage() {
                   </div>
                 ) : treemapData.length === 0 ? (
                   <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[#6B7280]">
-                    No CTA buckets found for the selected filters.
+                    No Clean CTA phrases found for the selected filters.
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -688,7 +710,7 @@ export default function CTACampaignPage() {
                 Campaigns to Review
               </h3>
               <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                All campaign objectives and CTA types, with alignment and Intel Voice of Attribute.
+                All campaign objectives and CTA types, with alignment and Intel Voice of Application.
               </p>
             </div>
             <span className="text-[11px] font-bold text-[#64748B] bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1 rounded-lg shrink-0">
@@ -713,7 +735,7 @@ export default function CTACampaignPage() {
                     <th className="py-2.5 px-3">Campaign Objective</th>
                     <th className="py-2.5 px-3">CTA Type</th>
                     <th className="py-2.5 px-3">Alignment</th>
-                    <th className="py-2.5 px-3">Intel Voice of Attribute</th>
+                    <th className="py-2.5 px-3">Intel Voice of Application</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
@@ -778,8 +800,8 @@ export default function CTACampaignPage() {
                         </span>
                       </td>
                       <td className="py-2 px-3 align-top text-[#111827] text-[11px] max-w-[140px]">
-                        <span className="line-clamp-2" title={row.Voice_Of_Attribute || ''}>
-                          {row.Voice_Of_Attribute || '—'}
+                        <span className="line-clamp-2" title={row.Application_Of_Voice || row.Voice_Of_Attribute || ''}>
+                          {row.Application_Of_Voice || row.Voice_Of_Attribute || '—'}
                         </span>
                       </td>
                     </tr>
@@ -799,7 +821,7 @@ export default function CTACampaignPage() {
         title={`Creative Asset — ${selectedCreative?.Retailer || 'Unknown'}`}
         subtitle={`Objective: ${selectedCreative?.Objective} • Quarter: ${selectedCreative?.quarter_label || 'N/A'}`}
         details={[
-          { label: 'Parent Account', value: selectedCreative?.Retailer || 'Unknown' },
+          { label: 'Retailer', value: selectedCreative?.Retailer || 'Unknown' },
           {
             label: 'Objective',
             value: selectedCreative?.Objective || 'Conversion/Sales',
@@ -819,7 +841,7 @@ export default function CTACampaignPage() {
             badge: true,
             badgeColor: BUCKET_COLORS[selectedCreative?.cta_bucket || 'Missing CTA'] || '#F97316',
           },
-          { label: 'Intel Voice of Attribute', value: selectedCreative?.Voice_Of_Attribute || '—' },
+          { label: 'Intel Voice of Application', value: selectedCreative?.Application_Of_Voice || selectedCreative?.Voice_Of_Attribute || '—' },
           { label: 'Country', value: selectedCreative?.Country || 'Unknown' },
           { label: 'Region', value: selectedCreative?.Region || 'Unknown' },
         ]}

@@ -1,12 +1,9 @@
-// src/api/reports.ts
 // Reporting API call functions. Token is attached automatically by the Axios client.
 
 import client from './client'
 import type {
-  CtaMixRow,
   LeagueTableRow,
   MarketMaturityRow,
-  VisualAdoptionRow,
 } from '../types'
 
 export async function getLeagueTable(
@@ -59,14 +56,4 @@ export async function getMarketMaturity(
     return { data }
   }
   return data || { data: [] }
-}
-
-export async function getVisualAdoption(): Promise<VisualAdoptionRow[]> {
-  const { data } = await client.get<VisualAdoptionRow[]>('/api/reports/visual-adoption/')
-  return data
-}
-
-export async function getCtaMix(): Promise<CtaMixRow[]> {
-  const { data } = await client.get<CtaMixRow[]>('/api/reports/cta-mix/')
-  return data
 }

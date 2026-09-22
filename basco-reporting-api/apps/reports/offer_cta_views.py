@@ -1,12 +1,23 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from .permissions import IsAnyReportingRole
 from core.db import get_warehouse_connection
 from .views import sort_quarters_desc, apply_user_scope
 from .offer_cta_queries import (
     OFFER_CTA_QUERY,
     OFFER_EVIDENCE_QUERY
 )
+
+_SKIP_RETAILERS = frozenset({
+    "", "na", "n/a", "null", "none", "unknown", "unmapped",
+})
+
+
+def _is_placeholder_retailer(value) -> bool:
+    if value is None:
+        return True
+    return str(value).strip().lower() in _SKIP_RETAILERS
 
 
 def classify_product_family(content_str):
@@ -52,15 +63,17 @@ def classify_product_family(content_str):
 OFFER_TYPE_ORDER = [
     'Affordability', 'Multiple Offer', 'Discount',
     'Bundle Offer', 'Cashback Offer', 'Price',
-    'Limited-Time', 'No Offer'
+    'Limited-Time',
 ]
+_SKIP_OFFER_TYPES = frozenset({'No Offer', 'None', '', 'NA', 'Unknown'})
 
 
 class OfferCTAView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAnyReportingRole]
 
     def get(self, request):
         quarter_filter = request.query_params.get('quarter', None)
+        region_filter = request.query_params.get('region', None)  # APJ / EMEA / LATAM / CANADA
         country_filter = request.query_params.get('country', None)
         retailer_filter = request.query_params.get('retailer', None)
 
@@ -90,6 +103,10 @@ class OfferCTAView(APIView):
             r['quarter_label'] for r in rows
             if r.get('quarter_label')
         ))
+        all_regions = sorted(set(
+            r['Region'] for r in rows
+            if r.get('Region') and str(r.get('Region')).strip() not in ('Unknown', 'None', '', 'NA', 'Unmapped')
+        ))
         all_countries = sorted(set(
             r['Country'] for r in rows
             if r.get('Country') and r['Country'] != 'Unknown'
@@ -105,6 +122,11 @@ class OfferCTAView(APIView):
                 dataset[:] = [
                     r for r in dataset
                     if r.get('quarter_label') == quarter_filter
+                ]
+            if region_filter and region_filter not in ('All', 'All Regions'):
+                dataset[:] = [
+                    r for r in dataset
+                    if r.get('Region') == region_filter
                 ]
             if country_filter and country_filter not in ('All', 'All Countries'):
                 dataset[:] = [
@@ -130,9 +152,9 @@ class OfferCTAView(APIView):
         # --- Offer Type × CTA stacked bar ---
         offer_type_map = {}
         for r in offer_rows:
-            ot = r.get('Offer_Type', 'No Offer')
-            if ot in ('None', '', 'NA'):
-                ot = 'No Offer'
+            ot = str(r.get('Offer_Type') or '').strip()
+            if ot in _SKIP_OFFER_TYPES:
+                continue
             if ot not in offer_type_map:
                 offer_type_map[ot] = {'has_cta': 0, 'no_cta': 0}
             if r.get('CTA_Flag') == 'Yes':
@@ -205,6 +227,8 @@ class OfferCTAView(APIView):
         seen1 = set()
         promo_missing_cta = []
         for r in ev_rows:
+            if _is_placeholder_retailer(r.get('Retailer')):
+                continue
             url = r.get('Asset_URL', '')
             ot = r.get('Offer_Type', 'No Offer')
             if ot in ('None', '', 'NA'):
@@ -232,6 +256,8 @@ class OfferCTAView(APIView):
         seen2 = set()
         all_offer_evidence = []
         for r in ev_rows:
+            if _is_placeholder_retailer(r.get('Retailer')):
+                continue
             url = r.get('Asset_URL', '')
             if url and url not in seen2:
                 seen2.add(url)
@@ -272,6 +298,7 @@ class OfferCTAView(APIView):
             'all_offer_evidence': all_offer_evidence[:100],
             'filter_options': {
                 'quarters': ['All Quarters'] + all_quarters,
+                'regions': ['All Regions'] + all_regions,
                 'countries': ['All Countries'] + all_countries,
                 'retailers': ['All Retailers'] + all_retailers,
                 'offer_types': ['All Offer Types'] + all_offer_types,

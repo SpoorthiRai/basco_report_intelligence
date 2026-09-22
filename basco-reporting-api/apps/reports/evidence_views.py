@@ -1,187 +1,182 @@
 import re
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from core.db import get_warehouse_connection
-from .views import sort_quarters_desc, apply_user_scope
-from .evidence_queries import build_evidence_locker_query, build_evidence_quarter_options_query
+from .permissions import IsAnyReportingRole
+from .evidence_queries import (
+    EVIDENCE_CREATIVES_QUERY,
+    EVIDENCE_FEEDBACK_QUERY,
+    EVIDENCE_QUARTER_OPTIONS_QUERY,
+)
+from .views import _rows_to_dicts, apply_user_scope, sort_quarters_desc
 
 
 PRODUCT_FAMILIES = [
-    'All Products',
-    'Gaming',
-    'Intel Core Ultra',
-    'Intel Core Processors',
-    'Intel Evo',
-    'Intel Graphics',
-    'Other / General',
-]
-
-GENERATIONS = [
-    'All Generations / Series',
-    'Series 3',
-    'Series 2',
-    'Series 1',
-    '14th Gen',
-    '13th Gen',
-    '12th Gen',
-    '11th Gen',
-    '10th Gen',
+    "All Products",
+    "Gaming",
+    "Intel Core Ultra",
+    "Intel Core Processors",
+    "Intel Evo",
+    "Intel Graphics",
+    "Other / General",
 ]
 
 
 def extract_product_families(content_str: str) -> list:
-    if not content_str or content_str in ('None', '', 'NA', 'Unknown'):
-        return ['Other / General']
+    if not content_str or content_str in ("None", "", "NA", "Unknown"):
+        return ["Other / General"]
     fams = []
     s = content_str.lower()
-    if 'gaming' in s or 'gamer' in s:
-        fams.append('Gaming')
-    if 'core ultra' in s:
-        fams.append('Intel Core Ultra')
-    if 'core processor' in s or 'intel processor' in s or 'processors' in s:
-        fams.append('Intel Core Processors')
-    if 'evo' in s:
-        fams.append('Intel Evo')
-    if 'arc' in s or 'iris' in s or 'graphic' in s:
-        fams.append('Intel Graphics')
+    if "gaming" in s or "gamer" in s:
+        fams.append("Gaming")
+    if "core ultra" in s:
+        fams.append("Intel Core Ultra")
+    if "core processor" in s or "intel processor" in s or "processors" in s:
+        fams.append("Intel Core Processors")
+    if "evo" in s:
+        fams.append("Intel Evo")
+    if "arc" in s or "iris" in s or "graphic" in s:
+        fams.append("Intel Graphics")
     if not fams:
-        fams.append('Other / General')
+        fams.append("Other / General")
     return fams
 
 
-def extract_generations(content_str: str) -> list:
-    if not content_str or content_str in ('None', '', 'NA', 'Unknown'):
-        return []
-    gens = []
-    s = content_str.lower()
-    if 'series 3' in s or 'series-3' in s or 'series3' in s:
-        gens.append('Series 3')
-    if 'series 2' in s or 'series-2' in s or 'series2' in s:
-        gens.append('Series 2')
-    if 'series 1' in s or 'series-1' in s or 'series1' in s:
-        gens.append('Series 1')
-    if '14th' in s:
-        gens.append('14th Gen')
-    if '13th' in s:
-        gens.append('13th Gen')
-    if '12th' in s:
-        gens.append('12th Gen')
-    if '11th' in s:
-        gens.append('11th Gen')
-    if '10th' in s:
-        gens.append('10th Gen')
-    return gens
-
-
 def _parse_quarter(quarter_str: str):
-    """
-    Parse a quarter string like 'Q3 2026' into (quarter_num, year) integers.
-    Always defaults to year 2026.
-    """
-    if not quarter_str or quarter_str.strip() in ('All', 'All Quarters'):
-        return None, 2026
-    m = re.match(r'Q(\d)\s+(\d{4})', quarter_str.strip())
+    if not quarter_str or quarter_str.strip() in ("All", "All Quarters"):
+        return None, None
+    m = re.match(r"Q(\d)\s+(\d{4})", quarter_str.strip(), re.I)
     if m:
-        return int(m.group(1)), int(m.group(2))
-    return None, 2026
+        return f"Q{m.group(1)}", int(m.group(2))
+    return None, None
+
+
+def _norm_tag(value) -> str:
+    return str(value or "").strip().lower()
+
+
+def _to_basco_pct(raw) -> float:
+    try:
+        n = float(raw)
+    except (TypeError, ValueError):
+        return 0.0
+    if n <= 0:
+        return 0.0
+    if n <= 1.5:
+        return round(n * 100.0, 1)
+    return round(n, 1)
+
+
+def _attach_feedback(rows: list[dict], feedback_rows: list[dict]) -> None:
+    grouped: dict[tuple, dict] = {}
+    for row in feedback_rows:
+        key = (_norm_tag(row.get("Creative")), str(row.get("Year") or ""), str(row.get("Quarter") or "").strip())
+        item = grouped.setdefault(key, {"reasons": [], "cats": [], "seen_reason": set(), "seen_cat": set()})
+        reason = str(row.get("Reason") or "").strip()
+        cat = str(row.get("CAT") or "").strip()
+        if reason and reason not in item["seen_reason"]:
+            item["seen_reason"].add(reason)
+            item["reasons"].append(reason)
+        if cat and cat not in item["seen_cat"]:
+            item["seen_cat"].add(cat)
+            item["cats"].append(cat)
+
+    for row in rows:
+        key = (_norm_tag(row.get("MD_Tag")), str(row.get("Year") or ""), str(row.get("Quarter") or "").strip())
+        fb = grouped.get(key, {"reasons": [], "cats": []})
+        row["FeedbackType"] = " | ".join(fb["cats"]) if fb["cats"] else ""
+        row["Feedbacktype"] = row["FeedbackType"]
+        row["Reason"] = " | ".join(fb["reasons"]) if fb["reasons"] else ""
 
 
 class EvidenceLockerView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAnyReportingRole]
 
     def get(self, request):
-        compliance_filter = request.query_params.get('compliance', None)
-        product_filter    = request.query_params.get('product', None)
-        generation_filter = request.query_params.get('generation', None)
-        country_filter    = request.query_params.get('country', None)
-        region_filter     = request.query_params.get('region', None)
-        quarter_filter    = request.query_params.get('quarter', None)
+        product_filter = request.query_params.get("product", None)
+        country_filter = request.query_params.get("country", None)
+        region_filter = request.query_params.get("region", None)
+        quarter_filter = request.query_params.get("quarter", None)
+        quarter_code, year = _parse_quarter(quarter_filter)
 
-        # Parse quarter into integers so we can push the filter into SQL
-        quarter_num, year = _parse_quarter(quarter_filter)
-
+        conn = None
         try:
-            conn   = get_warehouse_connection()
+            conn = get_warehouse_connection()
             cursor = conn.cursor()
-
-            # ── Main evidence query — date-filtered strictly at 2026 SQL level ──
-            sql = build_evidence_locker_query(year=year, quarter_num=quarter_num)
-            cursor.execute(sql)
-            columns  = [col[0] for col in cursor.description]
-            raw_rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-            cursor.execute(build_evidence_quarter_options_query(year=year))
-            quarter_option_rows = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
-
-            conn.close()
-
+            cursor.execute(EVIDENCE_CREATIVES_QUERY)
+            raw_rows = _rows_to_dicts(cursor)
+            cursor.execute(EVIDENCE_QUARTER_OPTIONS_QUERY)
+            quarter_option_rows = _rows_to_dicts(cursor)
+            cursor.execute(EVIDENCE_FEEDBACK_QUERY)
+            feedback_rows = _rows_to_dicts(cursor)
         except Exception as e:
-            return Response({'error': str(e)}, status=500)
+            return Response({"error": str(e)}, status=500)
+        finally:
+            if conn:
+                conn.close()
 
-        # ── Apply role-based & regional scoping ──
-        raw_rows = apply_user_scope(raw_rows, request.user, country_key='Country', region_key='Region', retailer_key='Parent_Account')
-
-        # Annotate each creative with broad product families & generations
-        for r in raw_rows:
-            r['product_families'] = extract_product_families(r.get('Content', ''))
-            r['generations'] = extract_generations(r.get('Content', ''))
-
-        countries = sorted(set(
-            r['Country'] for r in raw_rows
-            if r.get('Country') and r['Country'] not in ('None', '', None)
-        ))
-        regions = sorted(set(
-            r['Region'] for r in raw_rows
-            if r.get('Region') and str(r.get('Region')).strip() not in ('None', '', 'Unknown')
-        ))
-
-        quarters = sort_quarters_desc(set(
-            r.get('quarter_label') for r in quarter_option_rows
-            if r.get('quarter_label') and str(year) in str(r.get('quarter_label'))
-        ))
-
-        rows = raw_rows
-
-        # Remaining filters applied in Python (compliance, product family, region, country)
-        if compliance_filter and compliance_filter in ('Compliant', 'Non-Compliant'):
-            rows = [r for r in rows if r['compliance_status'] == compliance_filter]
-
-        if product_filter and product_filter not in ('All', 'All Products'):
-            rows = [r for r in rows if product_filter in r.get('product_families', [])]
-
-        if generation_filter and generation_filter not in ('All', 'All Generations / Series'):
-            rows = [r for r in rows if generation_filter in r.get('generations', [])]
-
-        if region_filter and region_filter not in ('All', 'All Regions'):
-            rows = [r for r in rows if str(r.get('Region') or '').strip().upper() == region_filter.strip().upper()]
-
-        if country_filter and country_filter not in ('All', 'All Countries'):
-            rows = [r for r in rows if r.get('Country') == country_filter]
-
-        total     = len(rows)
-        compliant = sum(1 for r in rows if r['compliance_status'] == 'Compliant')
-        non_comp  = sum(1 for r in rows if r['compliance_status'] == 'Non-Compliant')
-        quarter   = (
-            quarter_filter
-            if quarter_filter and quarter_filter not in ('All', 'All Quarters')
-            else (quarters[0] if quarters else 'Q3 2026')
+        raw_rows = apply_user_scope(
+            raw_rows,
+            request.user,
+            country_key="Country",
+            region_key="Region",
+            retailer_key="Child_Account",
         )
 
+        if quarter_code:
+            raw_rows = [
+                r for r in raw_rows
+                if str(r.get("Quarter") or "").strip().upper() == quarter_code.upper()
+                and (year is None or int(r.get("Year") or 0) == year)
+            ]
+            feedback_rows = [
+                r for r in feedback_rows
+                if str(r.get("Quarter") or "").strip().upper() == quarter_code.upper()
+                and (year is None or int(r.get("Year") or 0) == year)
+            ]
+
+        _attach_feedback(raw_rows, feedback_rows)
+
+        for r in raw_rows:
+            r["product_families"] = extract_product_families(r.get("Content") or "")
+            score = _to_basco_pct(r.get("BASCO_SCORE"))
+            r["basco_score"] = score
+
+        countries = sorted({
+            r["Country"] for r in raw_rows
+            if r.get("Country") and r["Country"] not in ("None", "", None)
+        })
+        regions = sorted({
+            r["Region"] for r in raw_rows
+            if r.get("Region") and str(r.get("Region")).strip() not in ("None", "", "Unknown")
+        })
+        quarters = sort_quarters_desc({
+            r.get("quarter_label") for r in quarter_option_rows
+            if r.get("quarter_label")
+        })
+
+        rows = raw_rows
+        if product_filter and product_filter not in ("All", "All Products"):
+            rows = [r for r in rows if product_filter in r.get("product_families", [])]
+        if region_filter and region_filter not in ("All", "All Regions"):
+            rows = [r for r in rows if str(r.get("Region") or "").strip().upper() == region_filter.strip().upper()]
+        if country_filter and country_filter not in ("All", "All Countries"):
+            rows = [r for r in rows if r.get("Country") == country_filter]
+
+        total = len(rows)
         return Response({
-            'quarter': quarter,
-            'summary': {
-                'total': total,
-                'compliant': compliant,
-                'non_compliant': non_comp,
+            "quarter": quarter_filter if quarter_filter else "All Quarters",
+            "summary": {
+                "total": total,
             },
-            'filter_options': {
-                'quarters': ['All Quarters'] + quarters,
-                'products': PRODUCT_FAMILIES,
-                'generations': GENERATIONS,
-                'regions': ['All Regions'] + regions,
-                'countries': ['All Countries'] + countries,
+            "filter_options": {
+                "quarters": ["All Quarters"] + quarters,
+                "products": PRODUCT_FAMILIES,
+                "regions": ["All Regions"] + regions,
+                "countries": ["All Countries"] + countries,
             },
-            'creatives': rows,
+            "creatives": rows,
         })

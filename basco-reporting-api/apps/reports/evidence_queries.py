@@ -1,60 +1,77 @@
-def build_evidence_locker_query(year: int = 2026, quarter_num: int = None) -> str:
-    """
-    Build the Evidence Locker SQL query using [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata].
-    Defaults to 2026 data.
-    """
-    target_year = int(year) if year else 2026
-    where_clauses = [
-        f"YEAR(SEND_DATE) = {target_year}",
-        "ASSET_URL IS NOT NULL"
-    ]
-    if quarter_num:
-        where_clauses.append(f"(QUARTER LIKE 'Q{int(quarter_num)}%' OR DATEPART(QUARTER, SEND_DATE) = {int(quarter_num)})")
+"""SQL for Retailer Creative Performance (evidence locker) against POP warehouse tables."""
 
-    where_sql = " AND ".join(where_clauses)
-
-    return f"""
+# 2026 creatives: hosted analysis + hist scoring, joined on MD_TAG / quarter
+EVIDENCE_CREATIVES_QUERY = """
 SELECT
-    ANALYSIS_ID AS Analysis_ID,
-    ASSET_URL AS Asset_URL,
-    'Compliant' AS compliance_status,
-    SENDER_ID AS sender_email,
-    COUNTRY AS Country,
-    REGION AS Region,
-    PARENT_ACCOUNT AS Parent_Account,
-    SUBJECT_LINE AS Subject,
-    SEND_DATE AS Received_Time,
-    REPLACE(QUARTER, '-', ' ') AS quarter_label,
-    ISNULL(CAMPAIGN_TYPE, 'Unknown') AS Campaign_Type,
-    ISNULL(CAMPAIGN_NAME, 'Unknown') AS Campaign_Name,
-    ISNULL(LAYOUT_CATEGORY, 'Unknown') AS Layout,
-    ISNULL(CONTENT, 'Unknown') AS Content,
-    ISNULL(PRODUCT, 'Unknown') AS Product,
-    ISNULL(OEM_PRESENCE_FLAG, 'No') AS OEM_Flag,
-    ISNULL(OEM_NAMES, 'None') AS OEM_Values,
-    ISNULL(INTEL_VISUAL_FLAG, 'No') AS Intel_Visual_Flag,
-    ISNULL(VISUAL_CONTENT_NAME, 'None') AS Visual_Content_Name,
-    ISNULL(INTEL_VISUAL_USAGE, 'None') AS Intel_Visual_Usage,
-    ISNULL(GENERAL_VISUAL_FLAG, 'No') AS General_Visual_Flag,
-    ISNULL(AI_MESSAGING_FLAG, 'No') AS AI_Messaging,
-    ISNULL(INSIDE_MESSAGING_FLAG, 'No') AS Inside_Messaging,
-    ISNULL(OFFER_FLAG, 'No') AS Offer_Flag,
-    ISNULL(OFFER_TYPE, 'No Offer') AS Offer_Type,
-    ISNULL(CTA_FLAG, 'No') AS CTA_Flag,
-    ISNULL(OBJECTIVE, 'Unknown') AS Objective
-FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
-WHERE {where_sql}
-ORDER BY SEND_DATE DESC, ANALYSIS_ID DESC
+    H.ID AS Analysis_ID,
+    H.MD_TAG AS MD_Tag,
+    COALESCE(H.Image_URL, R.MD_Tag_Image_URL) AS Asset_URL,
+    CONCAT(H.Quarter, ' ', H.Year) AS quarter_label,
+    H.Year AS Year,
+    H.Quarter AS Quarter,
+    R.REGION AS Region,
+    R.Country AS Country,
+    R.Retailer AS Retailer,
+    R.PARENT_ACCOUNT_V2 AS Parent_Account,
+    R.CHILD_ACCOUNT AS Child_Account,
+    R.Top_Account AS Top_Account,
+    R.Presence_Logo,
+    R.Logo,
+    R.Presence_Badge,
+    R.Badge,
+    R.Presence_Text,
+    R.Text_Mention,
+    R.Presence_Visual,
+    R.Key_Visuals,
+    R.BASCO_SCORE,
+    H.Campaign_Type,
+    H.Campaign_Name,
+    H.Layout,
+    H.Content,
+    H.Intel_Visual_Flag,
+    H.Visual_Content_Name,
+    H.Intel_Visual_Usage,
+    H.AI_Messaging,
+    H.Inside_Messaging,
+    H.CTA_Flag,
+    H.CTA,
+    H.Objective,
+    H.Offer_Flag,
+    H.Offer_Type,
+    H.Offer_Text,
+    H.OEM_Flag,
+    H.OEM_Values
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_HOSTED_MetadataAnalysis] H WITH (NOLOCK)
+LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Raw_HIST_FINAL] R WITH (NOLOCK)
+    ON H.MD_TAG = R.MD_Tag
+   AND H.Year = R.YEAR
+   AND H.Quarter = R.QUARTER
+WHERE H.Image_URL IS NOT NULL
+ORDER BY H.Year DESC, H.Quarter DESC, H.MD_TAG
 """
 
+EVIDENCE_QUARTER_OPTIONS_QUERY = """
+SELECT DISTINCT CONCAT(Quarter, ' ', Year) AS quarter_label
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_HOSTED_MetadataAnalysis] WITH (NOLOCK)
+WHERE Quarter IS NOT NULL
+  AND LTRIM(RTRIM(Quarter)) NOT IN ('', 'None', 'Unknown')
+"""
 
-def build_evidence_quarter_options_query(year: int = 2026) -> str:
-    """All 2026 Helpdesk quarters for the filter dropdown, independent of the selected quarter."""
-    target_year = int(year) if year else 2026
-    return f"""
-SELECT DISTINCT REPLACE(LTRIM(RTRIM(QUARTER)), '-', ' ') AS quarter_label
-FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
-WHERE YEAR(SEND_DATE) = {target_year}
-  AND QUARTER IS NOT NULL
-  AND LTRIM(RTRIM(QUARTER)) NOT IN ('', 'None', 'Unknown')
+# POP feedback reasons + category (CAT) for Compliance Gap
+EVIDENCE_FEEDBACK_QUERY = """
+SELECT DISTINCT
+    A.YEAR AS Year,
+    A.QUARTER AS Quarter,
+    CONCAT(A.QUARTER, ' ', A.YEAR) AS quarter_label,
+    A.Creative,
+    A.Reason,
+    C.FEEDBACK AS CAT,
+    D.FEEDBACK AS ELEMENT_CAT
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_TAGS_FEEDBACK_Q12024] A WITH (NOLOCK)
+LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_FEEDBACK_MASTER_HD_POP_OLD] C WITH (NOLOCK)
+    ON A.Reason = C.Reason
+LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_FEEDBACK_MASTER_BE_OLD] D WITH (NOLOCK)
+    ON A.Reason = D.Reason
+WHERE A.Reason IS NOT NULL
+  AND A.Reason NOT LIKE '%evaluated%'
 """

@@ -8,7 +8,6 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   LabelList,
@@ -60,6 +59,7 @@ interface OfferCTAResponse {
   all_offer_evidence: OfferEvidence[];
   filter_options: {
     quarters: string[];
+    regions: string[];
     countries: string[];
     retailers: string[];
     offer_types?: string[];
@@ -76,9 +76,12 @@ function isTransactionalOrUrgency(style?: string): boolean {
 }
 
 function highlightMessagingMismatch(row: OfferEvidence): boolean {
-  const ot = (row.Offer_Type || '').trim();
-  const hasOffer = Boolean(ot) && !['No Offer', 'None', 'NA', 'Unknown'].includes(ot);
-  return hasOffer && isEventDriven(row) && !isTransactionalOrUrgency(row.Messaging_Style);
+  return isEventDriven(row) && !isTransactionalOrUrgency(row.Messaging_Style);
+}
+
+function isPlaceholderRetailer(value?: string | null): boolean {
+  const t = (value ?? '').trim().toLowerCase();
+  return !t || ['na', 'n/a', 'null', 'none', 'unknown', 'unmapped'].includes(t);
 }
 
 // Heatmap cell color based on percentage intensity (3-color modern data scale)
@@ -91,7 +94,7 @@ function getHeatmapBgAndText(pct: number): { bg: string; text: string } {
 }
 
 const PANEL_Y_SCROLL =
-  'flex-1 min-h-0 w-full mt-3 overflow-y-scroll overflow-x-hidden border border-[#E5E7EB] rounded-xl custom-scrollbar [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar-track]:bg-[#F1F5F9] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#94A3B8]';
+  'flex-1 min-h-0 w-full mt-3 overflow-y-scroll overflow-x-hidden border border-[#E5E7EB] rounded-xl [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:#94A3B8_#F1F5F9] [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-[#F1F5F9] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#94A3B8]';
 
 function useElementHeight(ref: RefObject<HTMLElement | null>, ready: boolean) {
   const [height, setHeight] = useState<number | null>(null);
@@ -114,6 +117,7 @@ export default function OfferCTAPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [quarterFilter, setQuarterFilter] = useState<string>('All Quarters');
+  const [regionFilter, setRegionFilter] = useState<string>('All Regions');
   const [countryFilter, setCountryFilter] = useState<string>('All Countries');
   const [retailerFilter, setRetailerFilter] = useState<string>('All Retailers');
   const [offerProductFilter, setOfferProductFilter] = useState<string>('All Products');
@@ -132,6 +136,9 @@ export default function OfferCTAPage() {
     const params = new URLSearchParams();
     if (quarterFilter && quarterFilter !== 'All' && quarterFilter !== 'All Quarters') {
       params.append('quarter', quarterFilter);
+    }
+    if (regionFilter && regionFilter !== 'All' && regionFilter !== 'All Regions') {
+      params.append('region', regionFilter);
     }
     if (countryFilter && countryFilter !== 'All' && countryFilter !== 'All Countries') {
       params.append('country', countryFilter);
@@ -162,7 +169,7 @@ export default function OfferCTAPage() {
     return () => {
       isMounted = false;
     };
-  }, [quarterFilter, countryFilter, retailerFilter]);
+  }, [quarterFilter, regionFilter, countryFilter, retailerFilter]);
 
   const kpis = data?.kpis || {
     total_offer_creatives: 0,
@@ -170,7 +177,14 @@ export default function OfferCTAPage() {
     offer_missing_cta: 0,
     no_offer_creatives: 0,
   };
-  const offerBars = data?.offer_cta_bars || [];
+  const offerBars = (data?.offer_cta_bars || [])
+    .filter(
+      (b) => !['No Offer', 'None', 'NA', 'Unknown', ''].includes((b.offer_type || '').trim())
+    )
+    .map((b) => ({
+      ...b,
+      remainder: Math.max(0, Number((100 - (b.cta_pct || 0)).toFixed(1))),
+    }));
   const heatmapOfferTypes = data?.heatmap_offer_types || [];
   const productHeatmap = data?.product_heatmap || [];
   const promoMissingList = data?.promo_missing_cta || [];
@@ -196,6 +210,7 @@ export default function OfferCTAPage() {
         ];
 
   const filteredAllOfferList = allOfferList.filter((r) => {
+    if (isPlaceholderRetailer(r.Retailer)) return false;
     const productOk =
       offerProductFilter === 'All Products' ||
       (r.product && r.product.toLowerCase().includes(offerProductFilter.toLowerCase())) ||
@@ -206,6 +221,7 @@ export default function OfferCTAPage() {
   });
 
   const filteredAttentionList = promoMissingList.filter((r) => {
+    if (isPlaceholderRetailer(r.Retailer)) return false;
     const hasCta = r.cta_status === 'Has CTA' || r.CTA_Flag === 'Yes';
     return attentionCtaFilter === 'With CTA' ? hasCta : !hasCta;
   });
@@ -244,6 +260,22 @@ export default function OfferCTAPage() {
               {(data?.filter_options?.quarters || ['All']).map((q) => (
                 <option key={q} value={q} className="bg-white text-[#111827]">
                   {q}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Region dropdown */}
+          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
+            <span className="text-[#6B7280] font-medium">Region:</span>
+            <select
+              value={regionFilter}
+              onChange={(e) => setRegionFilter(e.target.value)}
+              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
+            >
+              {(data?.filter_options?.regions || ['All Regions']).map((r) => (
+                <option key={r} value={r} className="bg-white text-[#111827]">
+                  {r}
                 </option>
               ))}
             </select>
@@ -301,11 +333,11 @@ export default function OfferCTAPage() {
       {/* ════════════════════════════════════════════════════════════ */}
       {/* ROW 1: CTA PRESENCE (LEFT 58%) & PROMO MISSING (RIGHT 42%)   */}
       {/* ════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-1 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-1 gap-6 items-start">
         {/* ── LEFT (58% / lg:col-span-7): CTA Presence Across Offer Types */}
         <div
           ref={chartCardRef}
-          className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col"
+          className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col self-start"
         >
           <div>
             <div className="pb-3 border-b border-[#E5E7EB]">
@@ -333,24 +365,25 @@ export default function OfferCTAPage() {
                     data={offerBars}
                     margin={{ top: 25, right: 10, left: 10, bottom: 20 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                     <XAxis
                       dataKey="offer_type"
                       tick={{ fontSize: 11, fill: '#111827', fontWeight: 700 }}
                       interval={0}
+                      axisLine={{ stroke: '#94A3B8', strokeWidth: 1 }}
+                      tickLine={false}
                       angle={-15}
                       textAnchor="end"
                     />
-                    <YAxis hide domain={[0, 'dataMax + 50']} />
+                    <YAxis hide domain={[0, 100]} />
                     <Tooltip
-                      formatter={(val: any, name: any, item: any) => {
-                        const isHasCta = name === 'has_cta';
-                        const pct = isHasCta
-                          ? item?.payload?.cta_pct
-                          : Math.round((100 - (item?.payload?.cta_pct || 0)) * 10) / 10;
+                      formatter={(_val: any, name: any, item: any) => {
+                        if (name === 'remainder') return null;
+                        const pct = item?.payload?.cta_pct ?? 0;
+                        const count = item?.payload?.has_cta ?? 0;
+                        const total = item?.payload?.total ?? 0;
                         return [
-                          `${val} creatives (${pct}%)`,
-                          isHasCta ? '✓ Has CTA' : '✗ No CTA',
+                          `${pct}% with CTA (${count} of ${total})`,
+                          'Has CTA',
                         ];
                       }}
                       labelFormatter={(label: any) => `Offer Type: ${label}`}
@@ -361,27 +394,18 @@ export default function OfferCTAPage() {
                         boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                       }}
                     />
-                    {/* Bottom Stack: Has CTA (Blue #1E429F) */}
                     <Bar
-                      dataKey="has_cta"
-                      stackId="offerStack"
+                      dataKey="cta_pct"
+                      name="Has CTA"
+                      stackId="scale"
                       fill="#1E429F"
                       radius={[0, 0, 4, 4]}
                       barSize={36}
-                    >
-                      <LabelList
-                        dataKey="has_cta"
-                        position="center"
-                        fill="#ffffff"
-                        fontSize={11}
-                        fontWeight="bold"
-                        formatter={(v: any) => (v > 15 ? `${v}` : '')}
-                      />
-                    </Bar>
-                    {/* Top Stack: No CTA (Grey #CBD5E1) */}
+                    />
                     <Bar
-                      dataKey="no_cta"
-                      stackId="offerStack"
+                      dataKey="remainder"
+                      name="remainder"
+                      stackId="scale"
                       fill="#CBD5E1"
                       radius={[4, 4, 0, 0]}
                       barSize={36}
@@ -443,7 +467,7 @@ export default function OfferCTAPage() {
         <div
           id="promo-missing-cta-table"
           className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col overflow-hidden"
-          style={attentionHeight ? { height: attentionHeight } : undefined}
+          style={{ height: attentionHeight || 520 }}
         >
           <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB] flex-wrap shrink-0">
             <div>
@@ -499,16 +523,15 @@ export default function OfferCTAPage() {
                 <thead className="bg-[#F8FAFC] border-b border-[#E5E7EB] text-[#6B7280] font-bold sticky top-0 z-10">
                   <tr>
                     <th className="py-2.5 px-3">Creative</th>
-                    <th className="py-2.5 px-3">Parent Account</th>
+                    <th className="py-2.5 px-3">Retailer</th>
                     <th className="py-2.5 px-3">Offer Type</th>
-                    <th className="py-2.5 px-3">CTA Status</th>
+                    <th className="py-2.5 px-3">Campaign Type</th>
                     <th className="py-2.5 px-3">Messaging Style</th>
                     <th className="py-2.5 px-3">Product</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]">
                   {filteredAttentionList.map((row, idx) => {
-                    const hasCta = row.cta_status === 'Has CTA' || row.CTA_Flag === 'Yes';
                     const mismatch = highlightMessagingMismatch(row);
                     return (
                     <tr
@@ -522,7 +545,7 @@ export default function OfferCTAPage() {
                       }
                       title={
                         mismatch
-                          ? 'Event-Driven creative with an offer, but messaging is not transactional or urgency-driven'
+                          ? 'Event Driven campaign whose messaging is not transactional or urgency-driven'
                           : undefined
                       }
                     >
@@ -556,12 +579,12 @@ export default function OfferCTAPage() {
                       <td className="py-2 px-3 align-middle">
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
-                            hasCta
-                              ? 'bg-[#10B981]/10 text-[#10B981]'
-                              : 'bg-[#EF4444]/10 text-[#EF4444]'
+                            mismatch
+                              ? 'bg-[#F59E0B]/15 text-[#B45309]'
+                              : 'bg-[#F8FAFC] text-[#6B7280] border border-[#E5E7EB]'
                           }`}
                         >
-                          {hasCta ? 'Has CTA' : 'No CTA'}
+                          {row.Campaign_Type || 'Unknown'}
                         </span>
                       </td>
                       <td className="py-2 px-3 align-middle">
@@ -589,11 +612,11 @@ export default function OfferCTAPage() {
       {/* ════════════════════════════════════════════════════════════ */}
       {/* ROW 2: PRODUCT HEATMAP (LEFT 58%) & ALL OFFER (RIGHT 42%)    */}
       {/* ════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* ── LEFT (58% / lg:col-span-7): Product x Offer Type Heatmap */}
         <div
           ref={heatmapCardRef}
-          className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col"
+          className="lg:col-span-7 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col self-start"
         >
           <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-[#E5E7EB]">
             <div>
@@ -685,7 +708,7 @@ export default function OfferCTAPage() {
         <div
           id="all-offer-evidence-table"
           className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col overflow-hidden"
-          style={exploreHeight ? { height: exploreHeight } : undefined}
+          style={{ height: exploreHeight || 520 }}
         >
           <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB] flex-wrap shrink-0">
             <div>
@@ -745,7 +768,7 @@ export default function OfferCTAPage() {
                 <thead className="bg-[#F8FAFC] border-b border-[#E5E7EB] text-[#6B7280] font-bold sticky top-0 z-10">
                   <tr>
                     <th className="py-2.5 px-3">Creative</th>
-                    <th className="py-2.5 px-3">Parent Account</th>
+                    <th className="py-2.5 px-3">Retailer</th>
                     <th className="py-2.5 px-3">Product</th>
                     <th className="py-2.5 px-3">Offer Type</th>
                   </tr>
@@ -803,7 +826,7 @@ export default function OfferCTAPage() {
         title={`Creative Asset — ${selectedCreative?.Retailer || 'Unknown'}`}
         subtitle={`Offer: ${selectedCreative?.Offer_Type} • Product: ${selectedCreative?.product || 'Unknown'}`}
         details={[
-          { label: 'Parent Account', value: selectedCreative?.Retailer || 'Unknown' },
+          { label: 'Retailer', value: selectedCreative?.Retailer || 'Unknown' },
           {
             label: 'Offer Type',
             value: selectedCreative?.Offer_Type || 'No Offer',

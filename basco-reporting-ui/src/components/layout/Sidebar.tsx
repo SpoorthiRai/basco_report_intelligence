@@ -109,13 +109,13 @@ interface NavItemDef {
 }
 
 const navItems: NavItemDef[] = [
-  { label: 'Overview',               to: '/dashboard',       Icon: DashboardIcon },
-  { label: 'Retailer Performance',   to: '/league-table',    Icon: LeagueTableIcon },
-  { label: 'Market Priorities',      to: '/market-maturity', Icon: MarketMaturityIcon },
-  { label: 'Brand & Visual Adoption', to: '/visual-adoption', Icon: VisualAdoptionIcon },
-  { label: 'Product Momentum',       to: '/product-mix',     Icon: ProductMixIcon },
-  { label: 'Campaign Effectiveness', to: '/cta-campaign',    Icon: CTACampaignIcon },
-  { label: 'Promotional Effectiveness', to: '/offer-cta',     Icon: OfferCTAIcon },
+  { label: 'Overview',                    to: '/dashboard',       Icon: DashboardIcon },
+  { label: 'Market Priorities',           to: '/market-maturity', Icon: MarketMaturityIcon },
+  { label: 'Retailer Performance',        to: '/league-table',    Icon: LeagueTableIcon },
+  { label: 'Product Momentum',            to: '/product-mix',     Icon: ProductMixIcon },
+  { label: 'Campaign Effectiveness',      to: '/cta-campaign',    Icon: CTACampaignIcon },
+  { label: 'Promotional Effectiveness',   to: '/offer-cta',       Icon: OfferCTAIcon },
+  { label: 'Brand & Visual Adoption',     to: '/visual-adoption', Icon: VisualAdoptionIcon },
 ]
 
 const linkBase =

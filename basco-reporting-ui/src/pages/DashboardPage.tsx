@@ -31,6 +31,10 @@ const EMPTY_CARDS = {
 };
 
 const EMPTY_HEALTH = {
+  good_performer: 0,
+  bad_performer: 0,
+  good_performer_pct: 0,
+  bad_performer_pct: 0,
   healthy: 0,
   strong: 0,
   watch: 0,
@@ -66,6 +70,9 @@ const EMPTY_MODULES = {
       size_pct: 0,
       placement_pct: 0,
       missing_pct: 0,
+      usage_pct: 0,
+      outdated_pct: 0,
+      recommended_pct: 0,
       dominant: 'Missing',
       insight: 'Most execution gaps come from missing required elements',
     },
@@ -85,7 +92,18 @@ const EMPTY_MODULES = {
     queries_received: 0,
     final_approval_pct: 0,
     intel_specific_creatives: 0,
-    campaign_mix: { igd: 0, igd_pct: 0, intel_days: 0, intel_days_pct: 0, other: 0, other_pct: 0 },
+    campaign_mix: {
+      intel_days: 0,
+      intel_days_pct: 0,
+      intel_gamer_days: 0,
+      intel_gamer_days_pct: 0,
+      igd: 0,
+      igd_pct: 0,
+      back_to_school: 0,
+      back_to_school_pct: 0,
+      other: 0,
+      other_pct: 0,
+    },
     retailers_outside_loop: 0,
     insight: 'Helpdesk adoption is growing, but 0 retailers are still outside the support loop',
   },
@@ -103,7 +121,7 @@ const EMPTY_MODULES = {
       core_processor_pct: 0,
     },
     misaligned_gaming: 0,
-    insight: 'Intel voice of attribute is critical, and 0 gaming creatives are misaligned',
+    insight: 'Intel voice of application is critical — 0% of creatives are Light or Neutral, and 0 gaming creatives are misaligned',
   },
   promotion_led: {
     promo_without_cta_pct: 0,
@@ -120,6 +138,8 @@ const EMPTY_MODULES = {
       no_cta_pct: 0,
       learn: 0,
       learn_pct: 0,
+      other: 0,
+      other_pct: 0,
     },
     weak_promo_count: 0,
     weak_retailer_count: 0,
@@ -296,7 +316,7 @@ export default function DashboardPage() {
 
           {/* Card 2: Creatives at Risk */}
           <Link
-            to="/visual-adoption"
+            to="/league-table"
             className="group bg-white hover:bg-blue-50/50 rounded-2xl border border-[#E5E7EB] shadow-xs p-4.5 transition-all hover:shadow-md hover:border-[#1E429F]/40 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
@@ -516,20 +536,29 @@ export default function DashboardPage() {
                     Retailer Health
                   </span>
                   <span className="text-[10px] text-[#6B7280] font-bold">
-                    <span className="text-[#10B981]">Healthy ({coverageHealth.healthy})</span> · <span className="text-[#F59E0B]">Watch ({coverageHealth.watch})</span> · <span className="text-[#EF4444]">Critical ({coverageHealth.critical})</span>
+                    <span className="text-[#10B981]">Good performer ({coverageHealth.good_performer ?? coverageHealth.healthy})</span>
+                    {' · '}
+                    <span className="text-[#EF4444]">Bad performer ({coverageHealth.bad_performer ?? coverageHealth.critical})</span>
                   </span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${coverageHealth.healthy_pct}%` }} title={`Healthy (>=85%): ${coverageHealth.healthy} retailers`} />
-                  <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${coverageHealth.watch_pct}%` }} title={`Watch (80-84.9%): ${coverageHealth.watch} retailers`} />
-                  <div className="bg-[#EF4444] h-full rounded-r-full transition-all duration-500" style={{ width: `${coverageHealth.critical_pct}%` }} title={`Critical (<80%): ${coverageHealth.critical} retailers`} />
+                  <div
+                    className="bg-[#10B981] h-full rounded-l-full transition-all duration-500"
+                    style={{ width: `${coverageHealth.good_performer_pct ?? coverageHealth.healthy_pct}%` }}
+                    title={`Good performer (Score > 90%): ${coverageHealth.good_performer ?? coverageHealth.healthy} retailers`}
+                  />
+                  <div
+                    className="bg-[#EF4444] h-full rounded-r-full transition-all duration-500"
+                    style={{ width: `${coverageHealth.bad_performer_pct ?? coverageHealth.critical_pct}%` }}
+                    title={`Bad performer (Score <= 90%): ${coverageHealth.bad_performer ?? coverageHealth.critical} retailers`}
+                  />
                 </div>
               </div>
             </div>
 
             <div className="mt-2 pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between">
               <span className="text-[10px] text-[#6B7280] font-medium">
-                {fmtCompactUsd(coverage.fmv_loss)} FMV risk is concentrated across critical accounts
+                {fmtCompactUsd(coverage.fmv_loss)} FMV is concentrated across bad performer accounts
               </span>
               <Link
                 to="/market-maturity"
@@ -591,14 +620,27 @@ export default function DashboardPage() {
                     <span className="w-2 h-2 rounded-full bg-[#1E429F]" />
                     Largest Gap
                   </span>
-                  <span className="text-[10px] text-[#6B7280] font-bold">
-                    <span className="text-[#10B981]">Size ({gaps.largest_gap.size_pct}%)</span> · <span className="text-[#F59E0B]">Placement ({gaps.largest_gap.placement_pct}%)</span> · <span className="text-[#EF4444]">Missing ({gaps.largest_gap.missing_pct}%)</span>
+                  <span className="text-[10px] text-[#6B7280] font-bold flex flex-wrap justify-end gap-x-1.5 gap-y-0.5 max-w-[70%] text-right">
+                    <span className="text-[#10B981]">Size ({gaps.largest_gap.size_pct}%)</span>
+                    <span>·</span>
+                    <span className="text-[#F59E0B]">Placement ({gaps.largest_gap.placement_pct}%)</span>
+                    <span>·</span>
+                    <span className="text-[#EF4444]">Missing ({gaps.largest_gap.missing_pct}%)</span>
+                    <span>·</span>
+                    <span className="text-[#1E429F]">Usage ({gaps.largest_gap.usage_pct ?? 0}%)</span>
+                    <span>·</span>
+                    <span className="text-[#64748B]">Outdated ({gaps.largest_gap.outdated_pct ?? 0}%)</span>
+                    <span>·</span>
+                    <span className="text-[#0D9488]">Recommended ({gaps.largest_gap.recommended_pct ?? 0}%)</span>
                   </span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${gaps.largest_gap.size_pct}%` }} title={`Size (Key Visuals): ${gaps.largest_gap.size_pct}%`} />
-                  <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${gaps.largest_gap.placement_pct}%` }} title={`Placement (Logo + Badge): ${gaps.largest_gap.placement_pct}%`} />
-                  <div className="bg-[#EF4444] h-full rounded-r-full transition-all duration-500" style={{ width: `${gaps.largest_gap.missing_pct}%` }} title={`Missing (Text Mention): ${gaps.largest_gap.missing_pct}%`} />
+                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${gaps.largest_gap.size_pct}%` }} title={`Size: ${gaps.largest_gap.size_pct}%`} />
+                  <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${gaps.largest_gap.placement_pct}%` }} title={`Placement: ${gaps.largest_gap.placement_pct}%`} />
+                  <div className="bg-[#EF4444] h-full transition-all duration-500" style={{ width: `${gaps.largest_gap.missing_pct}%` }} title={`Missing: ${gaps.largest_gap.missing_pct}%`} />
+                  <div className="bg-[#1E429F] h-full transition-all duration-500" style={{ width: `${gaps.largest_gap.usage_pct ?? 0}%` }} title={`Usage: ${gaps.largest_gap.usage_pct ?? 0}%`} />
+                  <div className="bg-[#64748B] h-full transition-all duration-500" style={{ width: `${gaps.largest_gap.outdated_pct ?? 0}%` }} title={`Outdated: ${gaps.largest_gap.outdated_pct ?? 0}%`} />
+                  <div className="bg-[#0D9488] h-full rounded-r-full transition-all duration-500" style={{ width: `${gaps.largest_gap.recommended_pct ?? 0}%` }} title={`Recommended: ${gaps.largest_gap.recommended_pct ?? 0}%`} />
                 </div>
               </div>
             </div>
@@ -667,13 +709,20 @@ export default function DashboardPage() {
                     <span className="w-2 h-2 rounded-full bg-[#0D9488]" />
                     Intel-specific campaigns ratio
                   </span>
-                  <span className="text-[10px] text-[#6B7280] font-bold">
-                    <span className="text-[#10B981]">IGD ({helpdesk.campaign_mix.igd_pct}%)</span> · <span className="text-[#F59E0B]">Intel Days ({helpdesk.campaign_mix.intel_days_pct}%)</span> · <span className="text-[#6B7280]">Other ({helpdesk.campaign_mix.other_pct}%)</span>
+                  <span className="text-[10px] text-[#6B7280] font-bold text-right">
+                    <span className="text-[#10B981]">Intel Gamer Days ({helpdesk.campaign_mix.intel_gamer_days_pct ?? helpdesk.campaign_mix.igd_pct}%)</span>
+                    {' · '}
+                    <span className="text-[#F59E0B]">Intel Days ({helpdesk.campaign_mix.intel_days_pct}%)</span>
+                    {' · '}
+                    <span className="text-[#3B82F6]">Back to School ({helpdesk.campaign_mix.back_to_school_pct ?? 0}%)</span>
+                    {' · '}
+                    <span className="text-[#6B7280]">Other ({helpdesk.campaign_mix.other_pct}%)</span>
                   </span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.igd_pct}%` }} title={`IGD: ${helpdesk.campaign_mix.igd}`} />
+                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.intel_gamer_days_pct ?? helpdesk.campaign_mix.igd_pct}%` }} title={`Intel Gamer Days: ${helpdesk.campaign_mix.intel_gamer_days ?? helpdesk.campaign_mix.igd}`} />
                   <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.intel_days_pct}%` }} title={`Intel Days: ${helpdesk.campaign_mix.intel_days}`} />
+                  <div className="bg-[#3B82F6] h-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.back_to_school_pct ?? 0}%` }} title={`Back to School: ${helpdesk.campaign_mix.back_to_school ?? 0}`} />
                   <div className="bg-[#64748B] h-full rounded-r-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.other_pct}%` }} title={`Other: ${helpdesk.campaign_mix.other}`} />
                 </div>
               </div>
@@ -814,14 +863,20 @@ export default function DashboardPage() {
                     Promotional Readiness
                   </span>
                   <span className="text-[10px] text-[#6B7280] font-bold text-right">
-                    <span className="text-[#10B981]">Buy/Shop ({promo.cta_mix.buy_shop_pct}%)</span> · <span className="text-[#F59E0B]">Urgency ({promo.cta_mix.urgency_pct}%)</span> · <span className="text-[#EF4444]">No CTA ({promo.cta_mix.no_cta_pct}%)</span> · <span className="text-[#6366F1]">Learn ({promo.cta_mix.learn_pct}%)</span>
+                    <span className="text-[#10B981]">Buy/Shop ({promo.cta_mix.buy_shop_pct}%)</span>
+                    {' · '}
+                    <span className="text-[#F59E0B]">Urgency ({promo.cta_mix.urgency_pct}%)</span>
+                    {' · '}
+                    <span className="text-[#6366F1]">Learn ({promo.cta_mix.learn_pct}%)</span>
+                    {' · '}
+                    <span className="text-[#64748B]">Others ({promo.cta_mix.other_pct ?? 0}%)</span>
                   </span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
                   <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${promo.cta_mix.buy_shop_pct}%` }} title={`Buy/Shop: ${promo.cta_mix.buy_shop}`} />
                   <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${promo.cta_mix.urgency_pct}%` }} title={`Urgency: ${promo.cta_mix.urgency}`} />
-                  <div className="bg-[#EF4444] h-full transition-all duration-500" style={{ width: `${promo.cta_mix.no_cta_pct}%` }} title={`No CTA: ${promo.cta_mix.no_cta}`} />
-                  <div className="bg-[#6366F1] h-full rounded-r-full transition-all duration-500" style={{ width: `${promo.cta_mix.learn_pct}%` }} title={`Learn: ${promo.cta_mix.learn}`} />
+                  <div className="bg-[#6366F1] h-full transition-all duration-500" style={{ width: `${promo.cta_mix.learn_pct}%` }} title={`Learn: ${promo.cta_mix.learn}`} />
+                  <div className="bg-[#64748B] h-full rounded-r-full transition-all duration-500" style={{ width: `${promo.cta_mix.other_pct ?? 0}%` }} title={`Others: ${promo.cta_mix.other ?? 0}`} />
                 </div>
               </div>
             </div>

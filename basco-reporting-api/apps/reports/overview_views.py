@@ -10,11 +10,6 @@ from core.db import get_warehouse_connection
 from .permissions import IsAnyReportingRole
 from .queries import LEAGUE_TABLE_QUERY, MARKET_MATURITY_QUERY
 from .visual_adoption_queries import VISUAL_ADOPTION_MAIN_QUERY
-from .visual_adoption_views import (
-    is_any_intel_layout,
-    is_custom_intel_layout,
-    is_intel_layout_only,
-)
 from .views import (
     apply_user_scope,
     enrich_league_rows,
@@ -25,16 +20,22 @@ from .views import (
 from .kpi import (
     compute_league_kpis,
     compute_market_kpis,
-    compute_visual_kpis,
-    compute_execution_gaps,
+    compute_pop_execution_gaps,
     compute_helpdesk_kpis,
     compute_creative_effectiveness,
     compute_promotion_led,
-    compute_pop_pms_adoption,
     compute_intel_visual_adoption,
+    compute_top_compliance_issue_element_cat,
+    compute_creatives_at_risk_hist,
 )
 from .offer_cta_queries import OFFER_CTA_QUERY
 from .cta_campaign_queries import CTA_CAMPAIGN_QUERY
+from .overview_queries import (
+    OVERVIEW_FEEDBACK_QUERY,
+    OVERVIEW_HELPDESK_MASTER_QUERY,
+    OVERVIEW_HIST_QUERY,
+    OVERVIEW_HOSTED_QUERY,
+)
 
 
 def _is_all_period(value: str) -> bool:
@@ -152,7 +153,11 @@ class OverviewView(APIView):
 
             cursor.execute(LEAGUE_TABLE_QUERY)
             league_rows = enrich_league_rows(
-                apply_user_scope(_rows_to_dicts(cursor), request.user)
+                apply_user_scope(
+                    _rows_to_dicts(cursor),
+                    request.user,
+                    retailer_key="child_account",
+                )
             )
 
             cursor.execute(VISUAL_ADOPTION_MAIN_QUERY)
@@ -189,6 +194,42 @@ class OverviewView(APIView):
                 region_key="Region",
                 retailer_key="Retailer",
             )
+
+            cursor.execute(OVERVIEW_HIST_QUERY)
+            hist_rows = apply_user_scope(
+                _rows_to_dicts(cursor),
+                request.user,
+                country_key="Country",
+                region_key="Region",
+                retailer_key="Child_Account",
+            )
+
+            cursor.execute(OVERVIEW_HOSTED_QUERY)
+            hosted_rows = apply_user_scope(
+                _rows_to_dicts(cursor),
+                request.user,
+                country_key="Country",
+                region_key="Region",
+                retailer_key="Child_Account",
+            )
+
+            cursor.execute(OVERVIEW_FEEDBACK_QUERY)
+            feedback_rows = apply_user_scope(
+                _rows_to_dicts(cursor),
+                request.user,
+                country_key="Country",
+                region_key="Region",
+                retailer_key="Child_Account",
+            )
+
+            cursor.execute(OVERVIEW_HELPDESK_MASTER_QUERY)
+            helpdesk_rows = apply_user_scope(
+                _rows_to_dicts(cursor),
+                request.user,
+                country_key="Country",
+                region_key="Region",
+                retailer_key="Child_Account",
+            )
         except Exception as e:
             return Response({"detail": "Database error.", "error": str(e)}, status=500)
         finally:
@@ -213,39 +254,30 @@ class OverviewView(APIView):
         market_f = _apply_overview_filters(market_rows, quarter, region)
         offer_f = _apply_overview_filters(offer_rows, quarter, region)
         cta_f = _apply_overview_filters(cta_rows, quarter, region)
+        hist_f = _apply_overview_filters(hist_rows, quarter, region)
+        hosted_f = _apply_overview_filters(hosted_rows, quarter, region)
+        feedback_f = _apply_overview_filters(feedback_rows, quarter, region)
+        helpdesk_f = _apply_overview_filters(helpdesk_rows, quarter, region)
+        league_history = _apply_overview_filters(league_rows, "All Quarters", region)
+        helpdesk_history = _apply_overview_filters(helpdesk_rows, "All Quarters", region)
+        compare_quarter = latest_pop_quarter if _is_all_period(quarter) else normalize_quarter_label(quarter)
 
         retailer_kpis = compute_league_kpis(league_f)
-
-        total_creatives = sum(r.get("creative_count", 1) for r in visual_f)
-        intel_only = sum(
-            r.get("creative_count", 1)
-            for r in visual_f
-            if is_intel_layout_only(r.get("Layout_Category"))
-        )
-        custom = sum(
-            r.get("creative_count", 1)
-            for r in visual_f
-            if is_custom_intel_layout(r.get("Layout_Category"))
-        )
-        intel_any = sum(
-            r.get("creative_count", 1)
-            for r in visual_f
-            if is_any_intel_layout(r.get("Layout_Category"), r.get("Intel_Visual_Flag"))
-        )
-        visual_kpis = compute_visual_kpis(total_creatives, intel_only, custom, intel_any)
         market_kpis = compute_market_kpis(_aggregate_market(market_f, "All Quarters"))
-        execution_gaps = compute_execution_gaps(league_f)
-        execution_gaps["promo_without_cta"] = len([
-            r for r in offer_f
-            if r.get("Offer_Flag") == "Yes" and r.get("CTA_Flag") == "No"
-        ])
-        helpdesk = compute_helpdesk_kpis(league_f, visual_f)
+        execution_gaps = compute_pop_execution_gaps(hist_f, hosted_f, feedback_f)
+        at_risk = compute_creatives_at_risk_hist(hist_f)
+        top_compliance_issue = compute_top_compliance_issue_element_cat(feedback_f)
+        helpdesk = compute_helpdesk_kpis(
+            league_f,
+            visual_f,
+            helpdesk_f,
+            league_history=league_history,
+            helpdesk_history=helpdesk_history,
+            compare_quarter=compare_quarter,
+        )
         creative_effectiveness = compute_creative_effectiveness(cta_f)
         promotion_led = compute_promotion_led(offer_f)
-        intel_visual = compute_intel_visual_adoption(
-            visual_f,
-            compute_pop_pms_adoption(league_f),
-        )
+        intel_visual = compute_intel_visual_adoption(visual_f, hosted_f)
 
         return Response({
             "quarter": quarter,
@@ -257,14 +289,14 @@ class OverviewView(APIView):
                     "delta_pts": retailer_kpis["basco_delta_pts"],
                 },
                 "creatives_at_risk": {
-                    "count": visual_kpis["creatives_at_risk"],
-                    "total": visual_kpis["total_creatives"],
+                    "count": at_risk["count"],
+                    "total": at_risk["total"],
                 },
                 "retailers_below_target": {
                     "count": retailer_kpis["retailers_below_target"],
                     "top_accounts": retailer_kpis["below_target_top_accounts"],
                 },
-                "top_compliance_issue": retailer_kpis["top_compliance_issue"],
+                "top_compliance_issue": top_compliance_issue,
                 "fmv_loss": {
                     "value": retailer_kpis["fmv_loss"],
                     "retailer_count": retailer_kpis["total_retailers"],

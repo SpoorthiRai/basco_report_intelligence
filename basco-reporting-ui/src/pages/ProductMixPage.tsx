@@ -50,7 +50,9 @@ interface ProductMixResponse {
   target_series: string;
   series_options: string[];
   retailer_queries?: { retailer: string; queries: number }[];
-  compliance_guidance?: { label: string; weight: number; pct: number }[];
+  compliance_guidance?: { label: string; weight?: number; count?: number; pct: number }[];
+  compliance_guidance_by_element?: Record<string, { label: string; count: number; pct: number }[]>;
+  brand_elements?: string[];
   filter_options: {
     quarters: string[];
     regions?: string[];
@@ -99,12 +101,9 @@ function GenerationXAxisTick({ x, y, payload }: { x?: number; y?: number; payloa
   );
 }
 
-const GUIDANCE_COLORS: Record<string, string> = {
-  'Missing Text Mention': '#1E429F',
-  'Badge Size': '#0284C7',
-  'Missing Logo': '#4338CA',
-  'Missing Key Visuals': '#7C3AED',
-};
+const GUIDANCE_SLICE_COLORS = ['#1E429F', '#0284C7', '#4338CA', '#7C3AED', '#0D9488', '#D97706', '#DB2777', '#64748B'];
+
+const BRAND_ELEMENT_BUTTONS = ['Text', 'Visual', 'Badge', 'Logo'];
 
 function getCodenameSubtitle(series: string): string {
   const s = series.toLowerCase();
@@ -133,6 +132,7 @@ export default function ProductMixPage() {
   const [familyFilter, setFamilyFilter] = useState<string>('Intel Core Ultra');
   const [targetSeriesFilter, setTargetSeriesFilter] = useState<string>('Core Ultra Series 3');
   const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
+  const [brandElement, setBrandElement] = useState<string>('');
 
   const toggleFamilySelection = (fam: string) => {
     setSelectedFamilies((prev) =>
@@ -365,7 +365,7 @@ export default function ProductMixPage() {
               Retailer-wise Queries
             </h3>
             <p className="text-xs text-[#6B7280] mt-0.5">
-              Helpdesk query count by parent account (till date for the selected filters).
+              Helpdesk query count by retailer (child account) for the selected filters.
             </p>
           </div>
           <div className="w-full flex-1 min-h-[320px] mt-3">
@@ -411,24 +411,48 @@ export default function ProductMixPage() {
               Creative Compliance Guidance
             </h3>
             <p className="text-xs text-[#6B7280] mt-0.5">
-              Share of missing brand guidance across Logo, Badge, Text Mention, and Key Visuals.
+              Select a brand element to see ELEMENT_FEEDBACK_CATEGORY counts from Helpdesk feedback.
             </p>
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {(data?.brand_elements || BRAND_ELEMENT_BUTTONS).map((item) => {
+                const selected = brandElement === item;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setBrandElement((prev) => (prev === item ? '' : item))}
+                    aria-pressed={selected}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      selected
+                        ? 'bg-[#1E429F] text-white shadow-xs'
+                        : 'bg-[#F8FAFC] text-[#6B7280] border border-[#E5E7EB] hover:text-[#111827] hover:bg-slate-100'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="w-full flex-1 min-h-[280px] mt-3">
             {loading && !data ? (
               <div className="w-full h-full bg-[#F8FAFC] rounded-xl animate-pulse flex items-center justify-center">
                 <span className="text-xs font-semibold text-[#6B7280]">Loading compliance mix...</span>
               </div>
-            ) : (data?.compliance_guidance || []).every((g) => !g.pct) ? (
+            ) : !brandElement ? (
+              <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[#6B7280] text-center px-4">
+                Select Text, Visual, Badge, or Logo to view category counts.
+              </div>
+            ) : (data?.compliance_guidance_by_element?.[brandElement] || []).length === 0 ? (
               <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[#6B7280]">
-                No compliance gap mix found for the selected filters.
+                No {brandElement.toLowerCase()} feedback found for the selected filters.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={(data?.compliance_guidance || []).filter((g) => g.pct > 0)}
-                    dataKey="pct"
+                    data={data?.compliance_guidance_by_element?.[brandElement] || []}
+                    dataKey="count"
                     nameKey="label"
                     cx="50%"
                     cy="46%"
@@ -436,22 +460,22 @@ export default function ProductMixPage() {
                     outerRadius={92}
                     paddingAngle={2}
                   >
-                    {(data?.compliance_guidance || []).filter((g) => g.pct > 0).map((g) => (
-                      <Cell key={g.label} fill={GUIDANCE_COLORS[g.label] || '#94A3B8'} />
+                    {(data?.compliance_guidance_by_element?.[brandElement] || []).map((g, idx) => (
+                      <Cell key={g.label} fill={GUIDANCE_SLICE_COLORS[idx % GUIDANCE_SLICE_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(val: any, name: any) => [`${val}%`, name]}
+                    formatter={(val: any, name: any) => [`${val}`, name]}
                     contentStyle={{ borderRadius: '0.5rem', fontSize: '12px', borderColor: '#E5E7EB' }}
                   />
                   <Legend
                     verticalAlign="bottom"
                     wrapperStyle={{ fontSize: 10, paddingTop: 4 }}
                     formatter={(value: string) => {
-                      const item = (data?.compliance_guidance || []).find((g) => g.label === value);
+                      const item = (data?.compliance_guidance_by_element?.[brandElement] || []).find((g) => g.label === value);
                       return (
                         <span className="text-[10px] font-medium text-[#111827] leading-tight">
-                          {`${value} (${item?.pct ?? 0}%)`}
+                          {`${value} (${item?.count ?? 0})`}
                         </span>
                       );
                     }}

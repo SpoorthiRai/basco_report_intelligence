@@ -8,17 +8,30 @@ from .visual_adoption_queries import (
     VISUAL_ADOPTION_MAIN_QUERY,
     PMS_VISUALS_QUERY,
     VISUAL_USAGE_EVIDENCE_QUERY,
+    POP_VISUAL_ADOPTION_MAIN_QUERY,
+    POP_PMS_VISUALS_QUERY,
+    POP_VISUAL_USAGE_EVIDENCE_QUERY,
 )
-from .kpi import classify_pms_usage, compute_visual_kpis, to_basco_pct
+from .kpi import classify_pms_usage, compute_visual_kpis
+from .layout import (
+    is_custom_intel_layout,
+    is_intel_layout_only,
+)
 from .permissions import IsAnyReportingRole
-from .queries import LEAGUE_TABLE_QUERY
 from .offer_cta_views import classify_product_family
 from .views import apply_user_scope, sort_quarters_desc
 
 _TITLE_ACRONYMS = {
     'igd', 'pms', 'ai', 'cta', 'pop', 'oem', 'cpu', 'gpu', 'kv', 'uhd', 'arc', 'evo', 'aihd',
+    'smb', 'oem',
 }
 _TITLE_SMALL = {'of', 'the', 'and', 'in', 'on', 'for', 'to', 'a', 'an', 'vs'}
+_VISUAL_WORDS = (
+    'intel', 'gaming', 'gamer', 'days', 'core', 'ultra', 'series',
+    'copilot', 'hero', 'premium', 'everyday', 'student', 'benefits',
+    'performance', 'work', 'smb', 'banner', 'lifestyle', 'campaign',
+    'visual', 'master', 'product', 'image', 'edition', 'copilothero',
+)
 
 
 def clean_visual_label(name) -> str:
@@ -28,23 +41,84 @@ def clean_visual_label(name) -> str:
     token = raw.split('/')[-1]
     token = re.sub(r'\.(png|jpg|jpeg|webp|gif|svg)$', '', token, flags=re.I)
     token = token.replace('&amp;', '&')
+    token = re.sub(r'([a-z])([A-Z])', r'\1 \2', token)
+    token = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1 \2', token)
     token = re.sub(r'[_\-]+', ' ', token)
+    token = re.sub(r'(?i)\bv(\d+)', r' V\1 ', token)
+    token = re.sub(r'([A-Za-z])(\d)', r'\1 \2', token)
+    token = re.sub(r'(\d)([A-Za-z])', r'\1 \2', token)
     token = re.sub(r'\s+', ' ', token).strip()
-    words = token.split(' ')
-    out = []
-    for i, word in enumerate(words):
-        low = word.lower()
-        if low in _TITLE_ACRONYMS:
-            out.append(low.upper())
-        elif low == 'intel':
-            out.append('Intel')
-        elif i > 0 and low in _TITLE_SMALL:
-            out.append(low)
-        elif word.isupper() and len(word) <= 4:
-            out.append(word)
+
+    known = tuple(sorted(_VISUAL_WORDS, key=len, reverse=True))
+
+    def greedy_parts(chunk: str) -> list[str]:
+        compact = re.sub(r'[^a-z0-9]+', '', chunk.lower())
+        if not compact:
+            return []
+        parts = []
+        i = 0
+        while i < len(compact):
+            if compact[i].isdigit():
+                j = i
+                while j < len(compact) and compact[j].isdigit():
+                    j += 1
+                parts.append(compact[i:j])
+                i = j
+                continue
+            hit = next((w for w in known if compact.startswith(w, i)), None)
+            if hit:
+                if hit == 'copilothero':
+                    parts.extend(['copilot', 'hero'])
+                else:
+                    parts.append(hit)
+                i += len(hit)
+                continue
+            j = i + 1
+            while j < len(compact) and not compact[j].isdigit() and not any(compact.startswith(w, j) for w in known):
+                j += 1
+            parts.append(compact[i:j])
+            i = j
+        merged = []
+        k = 0
+        while k < len(parts):
+            if k + 1 < len(parts) and parts[k] == 'co' and parts[k + 1] == 'pilot':
+                merged.append('copilot')
+                k += 2
+                continue
+            merged.append(parts[k])
+            k += 1
+        return merged
+
+    formatted = []
+    for word in token.split(' '):
+        if re.fullmatch(r'V\d+', word, flags=re.I):
+            formatted.append('V' + word[1:])
+            continue
+        if word.isdigit():
+            formatted.append(word)
+            continue
+        for part in greedy_parts(word):
+            if re.fullmatch(r'v\d+', part):
+                formatted.append('V' + part[1:])
+            elif part in _TITLE_ACRONYMS:
+                formatted.append(part.upper())
+            elif part == 'intel':
+                formatted.append('Intel')
+            elif part == 'copilot':
+                formatted.append('Copilot')
+            elif formatted and part in _TITLE_SMALL:
+                formatted.append(part)
+            else:
+                formatted.append(part[:1].upper() + part[1:] if part else part)
+    cleaned = []
+    for part in formatted:
+        if cleaned and cleaned[-1] == 'V' and part.isdigit():
+            cleaned[-1] = 'V' + part
+        elif cleaned and cleaned[-1] == 'Co' and part.lower() == 'pilot':
+            cleaned[-1] = 'Copilot'
         else:
-            out.append(word[:1].upper() + word[1:].lower() if word else word)
-    return ' '.join(out) or raw
+            cleaned.append(part)
+    return ' '.join(cleaned) or raw
 
 
 def flag_yn(value) -> str:
@@ -62,35 +136,27 @@ def split_visual_tokens(names) -> list:
     ]
 
 
-def is_intel_layout_only(layout_str) -> bool:
-    """
-    Returns True ONLY for 'Intel Layouts' (standard Intel layouts, not custom).
-    """
-    if not layout_str:
-        return False
-    l = str(layout_str).lower().strip()
-    return ('intel' in l and 'layout' in l) and ('custom' not in l)
+_PLACEHOLDER_LABELS = frozenset({
+    '', 'na', 'n/a', 'null', 'none', 'unknown', 'unmapped',
+})
 
 
-def is_custom_intel_layout(layout_str) -> bool:
-    """
-    Returns True for 'Custom-Intel Layouts' (customized Intel layouts).
-    """
-    if not layout_str:
-        return False
-    l = str(layout_str).lower().strip()
-    return ('custom' in l and 'intel' in l)
+def is_placeholder_label(value) -> bool:
+    if value is None:
+        return True
+    return str(value).strip().lower() in _PLACEHOLDER_LABELS
 
 
-def is_any_intel_layout(layout_str, intel_flag=None) -> bool:
-    """
-    Returns True for either 'Intel Layouts' or 'Custom-Intel Layouts' or Intel_Visual_Flag = 'Yes'.
-    """
-    return (
-        is_intel_layout_only(layout_str) 
-        or is_custom_intel_layout(layout_str) 
-        or (str(intel_flag).lower().strip() == 'yes' if intel_flag else False)
-    )
+def child_account_label(row: dict) -> str:
+    name = str(row.get('Child_Account') or row.get('CHILD_ACCOUNT') or '').strip()
+    if is_placeholder_label(name):
+        return ''
+    return name
+
+
+def is_partial_or_complete_usage(usage) -> bool:
+    bucket = classify_pms_usage(usage)
+    return bucket in ('Completely Used', 'Partially Used')
 
 
 class VisualAdoptionView(APIView):
@@ -110,25 +176,30 @@ class VisualAdoptionView(APIView):
             conn = get_warehouse_connection()
             cursor = conn.cursor()
 
-            # ── 1. Fetch main creative data ──
-            cursor.execute(VISUAL_ADOPTION_MAIN_QUERY)
-            cols = [c[0] for c in cursor.description]
-            raw_rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
-
-            # ── 2. Fetch master visuals list from metadata ──
-            cursor.execute(PMS_VISUALS_QUERY)
-            pms_cols = [c[0] for c in cursor.description]
-            raw_pms = [dict(zip(pms_cols, r)) for r in cursor.fetchall()]
-
-            cursor.execute(VISUAL_USAGE_EVIDENCE_QUERY)
-            ev_cols = [c[0] for c in cursor.description]
-            raw_evidence = [dict(zip(ev_cols, r)) for r in cursor.fetchall()]
-
-            pop_rows = []
             if source_filter == 'pop':
-                cursor.execute(LEAGUE_TABLE_QUERY)
-                pop_cols = [c[0] for c in cursor.description]
-                pop_rows = [dict(zip(pop_cols, r)) for r in cursor.fetchall()]
+                cursor.execute(POP_VISUAL_ADOPTION_MAIN_QUERY)
+                cols = [c[0] for c in cursor.description]
+                raw_rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
+
+                cursor.execute(POP_PMS_VISUALS_QUERY)
+                pms_cols = [c[0] for c in cursor.description]
+                raw_pms = [dict(zip(pms_cols, r)) for r in cursor.fetchall()]
+
+                cursor.execute(POP_VISUAL_USAGE_EVIDENCE_QUERY)
+                ev_cols = [c[0] for c in cursor.description]
+                raw_evidence = [dict(zip(ev_cols, r)) for r in cursor.fetchall()]
+            else:
+                cursor.execute(VISUAL_ADOPTION_MAIN_QUERY)
+                cols = [c[0] for c in cursor.description]
+                raw_rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
+
+                cursor.execute(PMS_VISUALS_QUERY)
+                pms_cols = [c[0] for c in cursor.description]
+                raw_pms = [dict(zip(pms_cols, r)) for r in cursor.fetchall()]
+
+                cursor.execute(VISUAL_USAGE_EVIDENCE_QUERY)
+                ev_cols = [c[0] for c in cursor.description]
+                raw_evidence = [dict(zip(ev_cols, r)) for r in cursor.fetchall()]
 
             conn.close()
 
@@ -140,9 +211,6 @@ class VisualAdoptionView(APIView):
         evidence_rows = apply_user_scope(
             raw_evidence, request.user, country_key='Country', region_key='Region', retailer_key='Retailer'
         )
-        pop_rows = apply_user_scope(
-            pop_rows, request.user, country_key='country', region_key='region', retailer_key='parent_account'
-        )
 
         # ── 4. Derived Master Dropdown Options (scoped to user data) ──
         master_quarters = sort_quarters_desc(list(set(r.get('quarter_label') for r in rows if r.get('quarter_label'))))
@@ -153,8 +221,9 @@ class VisualAdoptionView(APIView):
         master_countries = sorted(list(set(r.get('Country') for r in rows if r.get('Country') and r['Country'] not in ('', 'Unknown', 'None'))))
         master_visual_styles = sorted(list(set(r.get('Visual_Style') for r in rows if r.get('Visual_Style') and r['Visual_Style'] not in ('', 'None', 'NA', 'Unknown'))))
         master_retailers = sorted(list(set(
-            r.get('Retailer') for r in evidence_rows
-            if r.get('Retailer') and r.get('Retailer') not in ('', 'Unknown', 'Unmapped', 'None', 'NA', 'Intel Creative', 'Red Baron')
+            child_account_label(r)
+            for r in evidence_rows
+            if child_account_label(r)
         )))
 
         # ── 5. Build Master Visual Catalog from Metadata (VISUAL_CONTENT_URL & VISUAL_CONTENT_NAME) ──
@@ -266,21 +335,13 @@ class VisualAdoptionView(APIView):
             if is_custom_intel_layout(r.get('Layout_Category'))
         )
 
-        # Total Intel + Custom Intel Layouts
-        total_intel_layouts = sum(
-            r.get('creative_count', 1) for r in filtered_rows
-            if is_any_intel_layout(r.get('Layout_Category'), r.get('Intel_Visual_Flag'))
-        )
+        layout_intel_or_custom = intel_layouts_count + custom_intel_count
 
-        # Card 3: Master Intel Visual Adoption % = (count(Intel Layouts) + count(Custom-Intel Layouts)) / total creatives * 100
-        adoption_pct = round(total_intel_layouts / total_creatives * 100, 1) if total_creatives > 0 else 0
-
-        # Retailer-wise adoption breakdown for horizontal chart
-        # Using the same LAYOUT_CATEGORY reference: (count(Intel Layouts) + count(Custom-Intel Layouts)) / total
+        # Retailer-wise adoption breakdown for horizontal chart (child accounts)
         ret_map = {}
         for r in filtered_rows:
-            ret = r.get('Retailer')
-            if not ret or ret in ('', 'Unknown', 'Unmapped', 'None', 'NA', 'Intel Creative', 'Red Baron'):
+            ret = child_account_label(r)
+            if not ret:
                 continue
             if ret not in ret_map:
                 ret_map[ret] = {'total': 0, 'intel': 0, 'intel_only': 0, 'custom': 0}
@@ -290,7 +351,7 @@ class VisualAdoptionView(APIView):
                 ret_map[ret]['intel_only'] += cnt
             if is_custom_intel_layout(r.get('Layout_Category')):
                 ret_map[ret]['custom'] += cnt
-            if is_any_intel_layout(r.get('Layout_Category'), r.get('Intel_Visual_Flag')):
+            if is_intel_layout_only(r.get('Layout_Category')) or is_custom_intel_layout(r.get('Layout_Category')):
                 ret_map[ret]['intel'] += cnt
 
         retailer_adoption = sorted([
@@ -307,57 +368,10 @@ class VisualAdoptionView(APIView):
 
         visual_kpis = compute_visual_kpis(
             total_creatives,
-            intel_layouts_count,
+            layout_intel_or_custom,
             custom_intel_count,
-            total_intel_layouts,
+            layout_intel_or_custom,
         )
-
-        if source_filter == 'pop':
-            filtered_pop = pop_rows
-            if quarter_filter and quarter_filter not in ('All', 'All Quarters'):
-                filtered_pop = [r for r in filtered_pop if r.get('quarter') == quarter_filter]
-            if region_filter and region_filter not in ('All', 'All Regions'):
-                wanted_region = region_filter.strip().upper()
-                filtered_pop = [
-                    r for r in filtered_pop
-                    if str(r.get('region') or '').strip().upper() == wanted_region
-                ]
-            if country_filter and country_filter not in ('All', 'All Countries'):
-                filtered_pop = [
-                    r for r in filtered_pop
-                    if r.get('country') == country_filter
-                ]
-
-            pop_map = {}
-            for r in filtered_pop:
-                ret = r.get('parent_account') or r.get('retailer')
-                if not ret or ret in ('', 'Unknown', 'Unmapped', 'None', 'NA', 'Intel Creative', 'Red Baron'):
-                    continue
-                try:
-                    art = float(r.get('artwork') or r.get('queries') or 0)
-                except (TypeError, ValueError):
-                    art = 0
-                kv = to_basco_pct(r.get('key_visuals'))
-                if ret not in pop_map:
-                    pop_map[ret] = {'total': 0.0, 'intel': 0.0}
-                pop_map[ret]['total'] += art
-                pop_map[ret]['intel'] += art * kv / 100.0
-
-            retailer_adoption = sorted([
-                {
-                    'retailer': ret,
-                    'total_creatives': int(round(stats['total'])),
-                    'intel_visual_creatives': int(round(stats['intel'])),
-                    'intel_layouts_count': int(round(stats['intel'])),
-                    'custom_intel_count': 0,
-                    'adoption_pct': round(stats['intel'] / stats['total'] * 100, 1) if stats['total'] > 0 else 0,
-                }
-                for ret, stats in pop_map.items()
-            ], key=lambda x: (x['adoption_pct'], x['intel_visual_creatives']), reverse=True)
-
-            pop_total = int(round(sum(s['total'] for s in pop_map.values())))
-            pop_used = int(round(sum(s['intel'] for s in pop_map.values())))
-            visual_kpis = compute_visual_kpis(pop_total, pop_used, 0, pop_used)
 
         # ── 7. Expand pipe/semicolon-separated visuals for visual cards ──
         expanded_rows = []
@@ -407,8 +421,10 @@ class VisualAdoptionView(APIView):
 
             ret_visual_map = {}
             for r in visual_rows:
-                ret = r.get('Retailer', 'Unknown')
-                if not ret or ret in ('', 'Unknown', 'Unmapped', 'None', 'NA', 'Intel Creative', 'Red Baron'):
+                if not is_partial_or_complete_usage(r.get('Intel_Visual_Usage')):
+                    continue
+                ret = child_account_label(r)
+                if not ret:
                     continue
                 ret_visual_map[ret] = (
                     ret_visual_map.get(ret, 0) 
@@ -438,25 +454,30 @@ class VisualAdoptionView(APIView):
                 asset = r.get('Asset_URL')
                 if not asset or asset in seen_assets:
                     continue
+                retailer = child_account_label(r)
+                campaign = str(r.get('Campaign') or '').strip()
+                if not retailer or is_placeholder_label(campaign):
+                    continue
                 seen_assets.add(asset)
                 bucket = classify_pms_usage(r.get('Intel_Visual_Usage'), r.get('Layout_Category'))
                 if bucket == 'Completely Used':
-                    usage_label = 'Completely'
+                    usage_label = 'Completely used'
                 elif bucket == 'Partially Used':
-                    usage_label = 'Partial'
+                    usage_label = 'Partially used'
                 else:
-                    usage_label = 'Other'
+                    usage_label = str(r.get('Intel_Visual_Usage') or '').strip() or 'Other'
                 families = classify_product_family(r.get('Products'))
                 usage_table.append({
                     'master_visual_url': visual_catalog.get(selected_visual) or r.get('Visual_Content_URL') or '',
                     'master_visual_name': clean_visual_label(selected_visual),
                     'actual_creative_url': asset,
-                    'retailer': r.get('Retailer') or 'Unknown',
-                    'campaign': clean_visual_label(r.get('Campaign')),
+                    'retailer': retailer,
+                    'campaign': campaign,
                     'products': ', '.join(families[:3]) if families else 'Unknown',
                     'offer': flag_yn(r.get('Offer_Flag')),
                     'cta': flag_yn(r.get('CTA_Flag')),
                     'usage': usage_label,
+                    'intel_visual_usage': usage_label,
                     'quarter_label': r.get('quarter_label') or '',
                     'Region': r.get('Region') or '',
                     'Country': r.get('Country') or '',

@@ -13,7 +13,7 @@ Rules for this file:
 # Returns per-retailer compliance summary for 2026 from BASCO_POP_Input_Data_Trend
 LEAGUE_TABLE_QUERY = """
 SELECT
-    Account AS retailer,
+    COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account) AS retailer,
     Country AS country,
     Region AS region,
     CONCAT(Quarter, ' ', Year) AS quarter,
@@ -27,7 +27,7 @@ SELECT
     ROUND(CAST(ISNULL(Attribution_Gain, 0) AS FLOAT), 0) AS attr_gain,
     ISNULL(Top_Account, 'NO') AS topAccount,
     COALESCE(PARENT_ACCOUNT_V2, Account) AS parent_account,
-    COALESCE(CHILD_ACCOUNT, Account) AS child_account,
+    COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account) AS child_account,
     ROUND(CAST(ISNULL(Logo, 0) * 100.0 AS FLOAT), 1) AS logo,
     ROUND(CAST(ISNULL(Badge, 0) * 100.0 AS FLOAT), 1) AS badge,
     ROUND(CAST(ISNULL(Text_Mention, 0) * 100.0 AS FLOAT), 1) AS text_mention,
@@ -51,7 +51,7 @@ SELECT
     SUM(ISNULL(FMV, Artwork * 35000)) AS fmv,
     SUM(ISNULL(Attribution_Loss, 0)) AS attr_loss,
     SUM(ISNULL(Attribution_Gain, 0)) AS attr_gain,
-    COUNT(DISTINCT Account) AS retailer_count
+    COUNT(DISTINCT COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account)) AS retailer_count
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
 WHERE Year = 2026
   AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
@@ -59,12 +59,13 @@ GROUP BY Country, Region, Quarter, Year
 ORDER BY Quarter DESC, avg_basco_score ASC
 """
 
-# Returns POP parent accounts by country/quarter for Helpdesk joins
+# Returns POP child accounts by country/quarter for Helpdesk joins
 POP_PARENT_COUNTRY_QUERY = """
 SELECT DISTINCT
     Country AS country,
     Region AS region,
     CONCAT(Quarter, ' ', Year) AS quarter_label,
+    COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account) AS child_account,
     COALESCE(PARENT_ACCOUNT_V2, Account) AS parent_account
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
 WHERE Year = 2026
@@ -72,71 +73,23 @@ WHERE Year = 2026
   AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
 """
 
-# Returns Helpdesk query/artwork counts by country from BASCO_AIHD_Metadata
-HELPDESK_COUNTRY_USAGE_QUERY = """
-SELECT
-    LTRIM(RTRIM(COUNTRY)) AS country,
-    LTRIM(RTRIM(REGION)) AS region,
-    REPLACE(QUARTER, '-', ' ') AS quarter_label,
-    COUNT(*) AS helpdesk_artworks,
-    COUNT(DISTINCT THREAD_ID) AS helpdesk_queries
-FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
-WHERE COUNTRY IS NOT NULL
-  AND LTRIM(RTRIM(COUNTRY)) NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA')
-GROUP BY
-    LTRIM(RTRIM(COUNTRY)),
-    LTRIM(RTRIM(REGION)),
-    QUARTER
-"""
-HELPDESK_PARENT_USAGE_QUERY = """
-SELECT
-    PARENT_ACCOUNT AS parent_account,
-    REPLACE(QUARTER, '-', ' ') AS quarter_label,
-    COUNTRY AS country,
-    REGION AS region,
-    COUNT(*) AS helpdesk_artworks,
-    COUNT(DISTINCT THREAD_ID) AS helpdesk_queries
-FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
-WHERE PARENT_ACCOUNT IS NOT NULL
-  AND PARENT_ACCOUNT NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
-GROUP BY
-    PARENT_ACCOUNT,
-    QUARTER,
-    COUNTRY,
-    REGION
-"""
-
 # Returns Helpdesk query/artwork counts from BASCO_HELPDESK_MASTER_MERGE for Market Maturity bubbles
 HELPDESK_MASTER_MERGE_PARENT_USAGE_QUERY = """
 SELECT
-    LTRIM(RTRIM(PARENT_ACCOUNT)) AS parent_account,
+    LTRIM(RTRIM(CHILD_ACCOUNT)) AS child_account,
+    LTRIM(RTRIM(CHILD_ACCOUNT)) AS parent_account,
     REPLACE(LTRIM(RTRIM(QUARTER)), '-', ' ') AS quarter_label,
     LTRIM(RTRIM(COUNTRY)) AS country,
     LTRIM(RTRIM(REGION)) AS region,
     SUM(ISNULL(NO_OF_ARTWORKS, 0)) AS helpdesk_artworks,
-    COUNT(DISTINCT THREAD_ID) AS helpdesk_queries
+    COUNT(SUBJECT_LINE) AS helpdesk_queries
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_HELPDESK_MASTER_MERGE] WITH (NOLOCK)
 WHERE YEAR = 2026
-  AND PARENT_ACCOUNT IS NOT NULL
-  AND LTRIM(RTRIM(PARENT_ACCOUNT)) NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
+  AND CHILD_ACCOUNT IS NOT NULL
+  AND LTRIM(RTRIM(CHILD_ACCOUNT)) NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
 GROUP BY
-    LTRIM(RTRIM(PARENT_ACCOUNT)),
+    LTRIM(RTRIM(CHILD_ACCOUNT)),
     LTRIM(RTRIM(QUARTER)),
     LTRIM(RTRIM(COUNTRY)),
     LTRIM(RTRIM(REGION))
-"""
-
-# Returns campaign type and CTA objective breakdown across all completed creatives
-CTA_MIX_QUERY = """
-    SELECT
-        ISNULL(CAMPAIGN_TYPE, 'Unknown') AS campaign_type,
-        ISNULL(OBJECTIVE, 'Unknown') AS cta_type,
-        COUNT(*) AS count
-    FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
-    WHERE CAMPAIGN_TYPE IS NOT NULL
-      AND CAMPAIGN_TYPE NOT IN ('None', '', 'NA')
-    GROUP BY
-        CAMPAIGN_TYPE,
-        OBJECTIVE
-    ORDER BY count DESC
 """

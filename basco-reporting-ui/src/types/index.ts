@@ -50,22 +50,3 @@ export interface MarketMaturityRow {
   helpdesk_artworks?: number
 }
 
-export interface MarketMaturityResponse {
-  data: MarketMaturityRow[]
-  filter_options?: {
-    quarters: string[]
-  }
-}
-
-
-export interface VisualAdoptionRow {
-  retailer_name: string
-  visual_type: string
-  usage_count: number
-}
-
-export interface CtaMixRow {
-  campaign_type: string
-  cta_type: string
-  count: number
-}
