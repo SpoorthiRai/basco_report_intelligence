@@ -65,6 +65,34 @@ function medianLoss(values: number[]): number {
   return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+function regionKey(region?: string): string {
+  return (region || "").trim().toUpperCase();
+}
+
+function thresholdsByRegion(
+  rows: Array<{ region?: string; attr_loss?: number }>,
+  fromApi?: Record<string, number>,
+): Record<string, number> {
+  if (fromApi && Object.keys(fromApi).length) {
+    const map: Record<string, number> = {};
+    for (const [key, value] of Object.entries(fromApi)) {
+      map[regionKey(key)] = Number(value) || 0;
+    }
+    return map;
+  }
+  const buckets: Record<string, number[]> = {};
+  for (const row of rows) {
+    const key = regionKey(row.region);
+    if (!key) continue;
+    (buckets[key] ||= []).push(Number(row.attr_loss || 0));
+  }
+  const map: Record<string, number> = {};
+  for (const [key, vals] of Object.entries(buckets)) {
+    map[key] = medianLoss(vals);
+  }
+  return map;
+}
+
 function SortIndicator({
   col,
   active,
@@ -286,6 +314,13 @@ const CustomTooltip = ({ active, payload }: any) => {
           </div>
 
           <div className="flex justify-between items-center py-0.5">
+            <span className="text-slate-400">No. of Creatives:</span>
+            <span className="font-semibold text-white">
+              {Number(item.total_jobs ?? 0).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center py-0.5">
             <span className="text-slate-400">Attribution Loss:</span>
             <span className="font-semibold text-rose-400">
               ${Number(item.attr_loss ?? 0).toLocaleString()}
@@ -295,7 +330,7 @@ const CustomTooltip = ({ active, payload }: any) => {
           <div className="flex justify-between items-center py-0.5">
             <span className="text-slate-400">Total FMV:</span>
             <span className="font-semibold text-cyan-400">
-              ${Number(item.fmv ?? 0).toLocaleString()}
+              {item.fmv == null ? "—" : `$${Number(item.fmv).toLocaleString()}`}
             </span>
           </div>
 
@@ -317,13 +352,6 @@ const CustomTooltip = ({ active, payload }: any) => {
             <span className="text-slate-400">Helpdesk Queries:</span>
             <span className="font-semibold text-white">
               {Number(item.helpdesk_queries ?? 0).toLocaleString()}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center py-0.5">
-            <span className="text-slate-400">No. of Creatives:</span>
-            <span className="font-semibold text-white">
-              {Number(item.total_jobs ?? 0).toLocaleString()}
             </span>
           </div>
         </div>
@@ -403,12 +431,19 @@ export default function MarketMaturityPage() {
   // ── Parent accounts from backend ──────────────────────────────────────────
   const parentAccountList: ParentAccountRow[] = useMemo(() => {
     const raw = (leagueResponse?.parent_accounts || []) as unknown as ParentAccountRow[];
-    const benchmark = medianLoss(raw.map((a) => Number(a.attr_loss || 0)));
-    return raw.map((a) => ({
-      ...a,
-      quadrant: classifyMaturity(Number(a.basco_score || 0), Number(a.attr_loss || 0), benchmark),
-    }));
-  }, [leagueResponse]);
+    const regionThresholds = thresholdsByRegion(
+      [],
+      (leagueResponse as { region_thresholds?: Record<string, number> } | undefined)?.region_thresholds
+        || apiResponse?.region_thresholds,
+    );
+    return raw.map((a) => {
+      const bench = regionThresholds[regionKey(a.region)] ?? 0;
+      return {
+        ...a,
+        quadrant: classifyMaturity(Number(a.basco_score || 0), Number(a.attr_loss || 0), bench),
+      };
+    });
+  }, [apiResponse, leagueResponse]);
 
   // ── Compute Country Aggregates based on live backend data ────────────────────
   const currentFmvData = useMemo(() => {
@@ -432,7 +467,7 @@ export default function MarketMaturityPage() {
           region: r.region,
           basco_score: r.avg_basco_score,
           total_jobs: r.total_jobs || 0,
-          fmv: r.fmv ?? 0,
+          fmv: r.fmv == null ? null : r.fmv,
           attr_loss: r.attr_loss ?? 0,
           helpdesk_queries: Number(r.helpdesk_queries ?? 0),
           helpdesk_artworks: Number(r.helpdesk_artworks ?? 0),
@@ -444,32 +479,40 @@ export default function MarketMaturityPage() {
     return [];
   }, [apiResponse, leagueResponse]);
 
-  const attributionLossThreshold = useMemo(
-    () => medianLoss(currentFmvData.map((d) => d.attr_loss)),
-    [currentFmvData]
+  const countryRegionThresholds = useMemo(
+    () => thresholdsByRegion(currentFmvData, apiResponse?.region_thresholds),
+    [apiResponse, currentFmvData],
   );
 
+  const isAllRegions =
+    !selectedRegion || selectedRegion === "All" || selectedRegion === "All Regions";
+  const selectedRegionThreshold = isAllRegions
+    ? 0
+    : countryRegionThresholds[regionKey(selectedRegion)] ?? 0;
+
   const attributionLossThresholdLabel = useMemo(
-    () => fmtCompactUsd(attributionLossThreshold),
-    [attributionLossThreshold]
+    () => fmtCompactUsd(selectedRegionThreshold),
+    [selectedRegionThreshold]
   );
 
   // ── Calculate dynamic bubbles and radii ───────────────────────────────────────
   const currentDataset = useMemo(() => {
-    const maxVal = Math.max(...currentFmvData.map((d) => d.fmv), 1);
+    const maxVal = Math.max(...currentFmvData.map((d) => Number(d.fmv || 0)), 1);
     return currentFmvData.map((d) => {
-      const threshold = attributionLossThreshold;
+      const threshold = countryRegionThresholds[regionKey(d.region)] ?? 0;
       const lossVsPct = threshold > 0 ? (d.attr_loss / threshold) * 100 : null;
+      const fmv = d.fmv == null ? null : Number(d.fmv);
       return {
         ...d,
+        fmv,
         x: d.basco_score,
         y: d.attr_loss,
-        radius: Math.max(7, Math.min(26, Math.round((d.fmv / maxVal) * 26))),
+        radius: Math.max(7, Math.min(26, Math.round(((fmv || 0) / maxVal) * 26))),
         attribution_loss_threshold: threshold,
         loss_vs_threshold_pct: lossVsPct,
       };
     });
-  }, [currentFmvData, attributionLossThreshold]);
+  }, [currentFmvData, countryRegionThresholds]);
 
   const avgCohortScore = apiResponse?.kpis?.avg_score ?? 0;
 
@@ -478,9 +521,13 @@ export default function MarketMaturityPage() {
     return {
       label: "Attribution Loss ($)",
       formatter: (v: number) => `$${(v / 1000).toFixed(0)}K`,
-      domain: [0, (max: number) => Math.ceil((max * 1.15) / 50000) * 50000 || 300000],
+      domain: [
+        0,
+        (max: number) =>
+          Math.ceil((Math.max(max, selectedRegionThreshold) * 1.15) / 50000) * 50000 || 300000,
+      ],
     };
-  }, []);
+  }, [selectedRegionThreshold]);
 
   // Dynamic Quadrant Breakdown with Country & Account Lists
   const quadrantStats = useMemo(() => {
@@ -490,7 +537,7 @@ export default function MarketMaturityPage() {
     const healthyCountries: string[] = [];
 
     currentDataset.forEach((d) => {
-      const quadrant = classifyMaturity(d.basco_score, d.attr_loss, attributionLossThreshold);
+      const quadrant = classifyMaturity(d.basco_score, d.attr_loss, d.attribution_loss_threshold ?? 0);
       if (quadrant === "Priority Action") criticalCountries.push(d.country);
       else if (quadrant === "High-Value Opportunity") highRiskCountries.push(d.country);
       else if (quadrant === "Build Momentum") emergingCountries.push(d.country);
@@ -512,7 +559,7 @@ export default function MarketMaturityPage() {
       emergingAccounts,
       healthyAccounts,
     };
-  }, [currentDataset, parentAccountList, attributionLossThreshold]);
+  }, [currentDataset, parentAccountList]);
 
   const availableCountries = useMemo(() => {
     const countries = Array.from(
@@ -607,6 +654,18 @@ export default function MarketMaturityPage() {
   const footNote = useMemo(() => {
     return `FMV data sourced from Intel POP records. ${currentDataset.length} countries and ${parentAccountList.length} retailers represented for ${selectedQuarter}.`;
   }, [currentDataset.length, parentAccountList.length, selectedQuarter]);
+
+  const regionThresholdFootnote = useMemo(() => {
+    const source =
+      apiResponse?.region_thresholds && Object.keys(apiResponse.region_thresholds).length
+        ? apiResponse.region_thresholds
+        : countryRegionThresholds;
+    const parts = Object.entries(source)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([region, value]) => `${region} ${fmtCompactUsd(Number(value) || 0)}`);
+    if (!parts.length) return "Attribution loss threshold by region: —";
+    return `Attribution loss threshold by region: ${parts.join(" • ")}`;
+  }, [apiResponse, countryRegionThresholds]);
 
   return (
     <div className="space-y-4 pb-6">
@@ -749,7 +808,10 @@ export default function MarketMaturityPage() {
               Market Performance &amp; Opportunity Map
             </span>
             <span className="text-[11px] text-[#6B7280] font-medium">
-              Bubble size represents market value (FMV). Horizontal line is the median attribution loss benchmark.
+              Bubble size represents market value (FMV).
+              {!isAllRegions
+                ? " Horizontal line is this region's median attribution loss."
+                : " Select a region to see its attribution loss threshold."}
             </span>
           </div>
 
@@ -917,9 +979,9 @@ export default function MarketMaturityPage() {
                   animationDuration={600}
                 />
 
-                {attributionLossThreshold > 0 && (
+                {!isAllRegions && selectedRegionThreshold > 0 && (
                   <ReferenceLine
-                    y={attributionLossThreshold}
+                    y={selectedRegionThreshold}
                     stroke="#64748B"
                     strokeDasharray="5 4"
                     strokeWidth={1.75}
@@ -1139,7 +1201,7 @@ export default function MarketMaturityPage() {
         <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-400 gap-1.5">
           <span>{footNote}</span>
           <span className="font-semibold text-slate-500">
-            Target BASCO: Strong ≥ 90% & Loss &lt; Benchmark • Watch ≥ 85% & Loss ≥ Benchmark • Lower Priority &gt; 76% & Loss &lt; Benchmark • Action Needed &lt; 76% & Loss ≥ Benchmark • Period: {selectedQuarter}
+            {regionThresholdFootnote} • Period: {selectedQuarter}
           </span>
         </div>
       </div>

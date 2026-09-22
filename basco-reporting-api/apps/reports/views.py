@@ -23,12 +23,14 @@ from .kpi import (
     compute_market_kpis,
     group_parent_accounts,
     normalize_parent,
+    region_thresholds_for_period,
 )
 from .queries import (
     HELPDESK_MASTER_MERGE_PARENT_USAGE_QUERY,
     LEAGUE_TABLE_QUERY,
     MARKET_MATURITY_QUERY,
     POP_PARENT_COUNTRY_QUERY,
+    REGION_ATTR_LOSS_THRESHOLD_QUERY,
 )
 
 # ---------------------------------------------------------------------------
@@ -213,6 +215,12 @@ class LeagueTableView(APIView):
                 retailer_key="child_account",
             )
 
+            cursor.execute(REGION_ATTR_LOSS_THRESHOLD_QUERY)
+            region_thresholds = region_thresholds_for_period(
+                _rows_to_dicts(cursor),
+                quarter_filter,
+            )
+
             # Role-based & regional scoping
             rows = apply_user_scope(rows, request.user, country_key='country', region_key='region', retailer_key='child_account')
 
@@ -247,9 +255,10 @@ class LeagueTableView(APIView):
                 'data': filtered_rows,
                 'kpis': compute_league_kpis(filtered_rows),
                 'parent_accounts': attach_helpdesk_usage(
-                    group_parent_accounts(filtered_rows),
+                    group_parent_accounts(filtered_rows, region_thresholds),
                     helpdesk_filtered,
                 ),
+                'region_thresholds': region_thresholds,
                 'filter_options': {
                     'quarters': ['All Quarters'] + all_quarters,
                     'countries': ['All Countries'] + all_countries,
@@ -313,6 +322,9 @@ class MarketMaturityView(APIView):
                 retailer_key="child_account",
             )
 
+            cursor.execute(REGION_ATTR_LOSS_THRESHOLD_QUERY)
+            threshold_rows = _rows_to_dicts(cursor)
+
             # Apply user role & regional scoping
             raw_rows = apply_user_scope(raw_rows, request.user, country_key='country', region_key='region')
 
@@ -329,13 +341,14 @@ class MarketMaturityView(APIView):
                 matching_rows = [r for r in raw_rows if r.get("quarter_label") == quarter_param]
                 country_rows = []
                 for r in matching_rows:
+                    fmv_raw = r.get("fmv")
                     country_rows.append({
                         "country": r.get("country"),
                         "region": r.get("region"),
                         "total_jobs": r.get("total_jobs") or 0,
                         "avg_basco_score": float(r.get("avg_basco_score") or 0.0),
                         "total_violations": int(r.get("total_violations") or 0),
-                        "fmv": int(r.get("fmv") or 0),
+                        "fmv": int(fmv_raw) if fmv_raw not in (None, "") else None,
                         "attr_loss": int(r.get("attr_loss") or 0),
                     })
             else:
@@ -349,35 +362,40 @@ class MarketMaturityView(APIView):
                             "region": r.get("region"),
                             "total_jobs": 0,
                             "total_violations": 0,
-                            "weighted_score": 0.0,
-                            "fmv": 0,
+                            "score_sum": 0.0,
+                            "row_count": 0,
+                            "fmv": None,
                             "attr_loss": 0,
                         }
                     item = agg_map[key]
                     jobs = r.get("total_jobs") or 0
-                    score = float(r.get("avg_basco_score") or 0.0)
                     violations = int(r.get("total_violations") or 0)
 
                     item["total_jobs"] += jobs
                     item["total_violations"] += violations
-                    item["weighted_score"] += score * jobs
-                    item["fmv"] += int(r.get("fmv") or 0)
+                    item["score_sum"] += float(r.get("score_sum") or 0)
+                    item["row_count"] += int(r.get("row_count") or 0)
+                    fmv_raw = r.get("fmv")
+                    if fmv_raw not in (None, ""):
+                        item["fmv"] = int(item["fmv"] or 0) + int(fmv_raw)
                     item["attr_loss"] += int(r.get("attr_loss") or 0)
 
                 country_rows = []
                 for (country, region), item in agg_map.items():
-                    jobs = item["total_jobs"]
-                    avg_score = round(item["weighted_score"] / jobs, 1) if jobs > 0 else 0.0
+                    n = item["row_count"]
+                    avg_score = round(item["score_sum"] / n * 100.0, 1) if n > 0 else 0.0
 
                     country_rows.append({
                         "country": country,
                         "region": region,
-                        "total_jobs": jobs,
+                        "total_jobs": item["total_jobs"],
                         "avg_basco_score": avg_score,
                         "total_violations": item["total_violations"],
                         "fmv": item["fmv"],
                         "attr_loss": item["attr_loss"],
                     })
+
+            region_thresholds = region_thresholds_for_period(threshold_rows, quarter_param)
 
             if region_param and region_param not in ("All", "All Regions"):
                 wanted = region_param.strip().upper()
@@ -414,6 +432,7 @@ class MarketMaturityView(APIView):
                 {
                     "data": country_rows,
                     "kpis": compute_market_kpis(country_rows),
+                    "region_thresholds": region_thresholds,
                     "filter_options": {
                         "quarters": ["All Quarters"] + all_quarters,
                         "regions": ["All"] + all_regions,

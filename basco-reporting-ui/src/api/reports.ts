@@ -13,6 +13,7 @@ export async function getLeagueTable(
   data: LeagueTableRow[]
   kpis?: Record<string, unknown>
   parent_accounts?: Array<Record<string, unknown>>
+  region_thresholds?: Record<string, number>
   filter_options?: { quarters: string[]; countries: string[]; regions: string[] }
 }> {
   const params = new URLSearchParams()
@@ -32,6 +33,7 @@ export async function getLeagueTable(
     kpis: data?.kpis,
     parent_accounts: Array.isArray(data?.parent_accounts) ? data.parent_accounts : [],
     filter_options: data?.filter_options,
+    region_thresholds: data?.region_thresholds,
   }
 }
 
@@ -41,6 +43,7 @@ export async function getMarketMaturity(
 ): Promise<{
   data: MarketMaturityRow[]
   kpis?: { markets_count: number; avg_score: number; markets_at_risk: number; markets_on_track: number }
+  region_thresholds?: Record<string, number>
   filter_options?: { quarters: string[]; regions?: string[] }
 }> {
   const params = new URLSearchParams()

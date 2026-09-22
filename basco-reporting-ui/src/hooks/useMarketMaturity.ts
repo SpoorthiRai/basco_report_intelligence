@@ -3,7 +3,7 @@ import { getMarketMaturity } from '../api/reports'
 
 export function useMarketMaturity(quarter?: string, region?: string) {
   return useQuery({
-    queryKey: ['market-maturity-v5', quarter || 'All Quarters', region || 'All'],
+    queryKey: ['market-maturity-v7', quarter || 'All Quarters', region || 'All'],
     queryFn: () => getMarketMaturity(quarter, region),
     staleTime: 0,
     refetchOnMount: 'always',

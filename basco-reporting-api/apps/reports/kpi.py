@@ -91,6 +91,22 @@ def median_attr_loss(values) -> float:
     return (vals[mid - 1] + vals[mid]) / 2.0
 
 
+def region_thresholds_for_period(threshold_rows: list[dict], quarter_param: str = "") -> dict[str, int]:
+    """Map region -> row-level median Attribution_Loss for the selected quarter (or All Quarters)."""
+    wanted = (quarter_param or "").strip()
+    if not wanted or wanted in ("All", "All Quarters"):
+        wanted = "All Quarters"
+    out: dict[str, int] = {}
+    for row in threshold_rows or []:
+        if str(row.get("quarter_label") or "").strip() != wanted:
+            continue
+        region = str(row.get("region") or "").strip()
+        if not region:
+            continue
+        out[region] = int(row.get("attribution_loss_threshold") or 0)
+    return out
+
+
 def parent_quadrant(avg_score: float, attr_loss: float, benchmark: float = 0.0) -> str:
     """
     Strong: score >= 90 and loss < benchmark
@@ -109,7 +125,7 @@ def parent_quadrant(avg_score: float, attr_loss: float, benchmark: float = 0.0) 
     return "Priority Action"
 
 
-def group_parent_accounts(rows: list[dict]) -> list[dict]:
+def group_parent_accounts(rows: list[dict], region_thresholds: dict | None = None) -> list[dict]:
     grouped: dict[tuple, dict] = {}
     for row in rows:
         name = _parent_name(row)
@@ -154,11 +170,13 @@ def group_parent_accounts(rows: list[dict]) -> list[dict]:
                 grouped[key]["topAccount"] = True
 
     result = []
-    benchmark = median_attr_loss(item["attr_loss"] for item in grouped.values())
+    lookup = {str(k).strip().upper(): v for k, v in (region_thresholds or {}).items()}
     for item in grouped.values():
         n = item["score_n"]
         avg = round(item["score_sum"] / n, 1) if n else 0.0
         loss = int(item["attr_loss"])
+        region = str(item["region"] or "").strip()
+        bench = lookup.get(region.upper(), 0.0)
         result.append({
             "parent_account": item["parent_account"],
             "child_account": item["child_account"],
@@ -170,7 +188,7 @@ def group_parent_accounts(rows: list[dict]) -> list[dict]:
             "fmv": int(item["fmv"]),
             "attr_loss": loss,
             "topAccount": item["topAccount"],
-            "quadrant": parent_quadrant(avg, loss, benchmark),
+            "quadrant": parent_quadrant(avg, loss, bench),
         })
     return result
 

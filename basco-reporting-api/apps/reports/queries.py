@@ -22,7 +22,7 @@ SELECT
     Artwork AS artwork,
     ROUND(CAST(Score * 100.0 AS FLOAT), 1) AS basco,
     0 AS violations,
-    ROUND(CAST(ISNULL(FMV, Artwork * 35000) AS FLOAT), 0) AS fmv,
+    ROUND(CAST(FMV AS FLOAT), 0) AS fmv,
     ROUND(CAST(ISNULL(Attribution_Loss, 0) AS FLOAT), 0) AS attr_loss,
     ROUND(CAST(ISNULL(Attribution_Gain, 0) AS FLOAT), 0) AS attr_gain,
     ISNULL(Top_Account, 'NO') AS topAccount,
@@ -46,9 +46,11 @@ SELECT
     Region AS region,
     CONCAT(Quarter, ' ', Year) AS quarter_label,
     SUM(Artwork) AS total_jobs,
-    ROUND(CAST(SUM(Score * Artwork) * 100.0 / NULLIF(SUM(Artwork), 0) AS FLOAT), 1) AS avg_basco_score,
+    ROUND(CAST(AVG(CAST(Score AS FLOAT)) * 100.0 AS FLOAT), 1) AS avg_basco_score,
+    COUNT(*) AS row_count,
+    SUM(CAST(Score AS FLOAT)) AS score_sum,
     0 AS total_violations,
-    SUM(ISNULL(FMV, Artwork * 35000)) AS fmv,
+    SUM(FMV) AS fmv,
     SUM(ISNULL(Attribution_Loss, 0)) AS attr_loss,
     SUM(ISNULL(Attribution_Gain, 0)) AS attr_gain,
     COUNT(DISTINCT COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account)) AS retailer_count
@@ -57,6 +59,35 @@ WHERE Year = 2026
   AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
 GROUP BY Country, Region, Quarter, Year
 ORDER BY Quarter DESC, avg_basco_score ASC
+"""
+
+# Returns row-level median Attribution_Loss by region for each 2026 quarter and for All Quarters
+REGION_ATTR_LOSS_THRESHOLD_QUERY = """
+SELECT DISTINCT
+    LTRIM(RTRIM(Region)) AS region,
+    CONCAT(Quarter, ' ', Year) AS quarter_label,
+    CAST(
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ISNULL(Attribution_Loss, 0))
+            OVER (PARTITION BY LTRIM(RTRIM(Region)), Quarter, Year)
+        AS INT
+    ) AS attribution_loss_threshold
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
+WHERE Year = 2026
+  AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
+  AND LTRIM(RTRIM(Region)) <> ''
+UNION
+SELECT DISTINCT
+    LTRIM(RTRIM(Region)) AS region,
+    'All Quarters' AS quarter_label,
+    CAST(
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ISNULL(Attribution_Loss, 0))
+            OVER (PARTITION BY LTRIM(RTRIM(Region)), Year)
+        AS INT
+    ) AS attribution_loss_threshold
+FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
+WHERE Year = 2026
+  AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
+  AND LTRIM(RTRIM(Region)) <> ''
 """
 
 # Returns POP child accounts by country/quarter for Helpdesk joins
