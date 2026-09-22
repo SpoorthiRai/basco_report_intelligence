@@ -17,9 +17,11 @@ from .views import _rows_to_dicts, apply_user_scope, sort_quarters_desc
 PRODUCT_FAMILIES = [
     "All Products",
     "Gaming",
+    "Gaming Core Ultra",
     "Intel Core Ultra",
     "Intel Core Processors",
     "Intel Evo",
+    "Intel Evo Edition",
     "Intel Graphics",
     "Other / General",
 ]
@@ -30,13 +32,19 @@ def extract_product_families(content_str: str) -> list:
         return ["Other / General"]
     fams = []
     s = content_str.lower()
-    if "gaming" in s or "gamer" in s:
+    has_gaming = "gaming" in s or "gamer" in s
+    has_core_ultra = "core ultra" in s
+    if has_gaming and has_core_ultra:
+        fams.append("Gaming Core Ultra")
+    elif has_gaming:
         fams.append("Gaming")
-    if "core ultra" in s:
+    elif has_core_ultra:
         fams.append("Intel Core Ultra")
     if "core processor" in s or "intel processor" in s or "processors" in s:
         fams.append("Intel Core Processors")
-    if "evo" in s:
+    if "evo edition" in s:
+        fams.append("Intel Evo Edition")
+    elif "evo" in s:
         fams.append("Intel Evo")
     if "arc" in s or "iris" in s or "graphic" in s:
         fams.append("Intel Graphics")
@@ -88,7 +96,6 @@ def _attach_feedback(rows: list[dict], feedback_rows: list[dict]) -> None:
         key = (_norm_tag(row.get("MD_Tag")), str(row.get("Year") or ""), str(row.get("Quarter") or "").strip())
         fb = grouped.get(key, {"reasons": [], "cats": []})
         row["FeedbackType"] = " | ".join(fb["cats"]) if fb["cats"] else ""
-        row["Feedbacktype"] = row["FeedbackType"]
         row["Reason"] = " | ".join(fb["reasons"]) if fb["reasons"] else ""
 
 
@@ -142,8 +149,8 @@ class EvidenceLockerView(APIView):
 
         for r in raw_rows:
             r["product_families"] = extract_product_families(r.get("Content") or "")
-            score = _to_basco_pct(r.get("BASCO_SCORE"))
-            r["basco_score"] = score
+            raw_score = r.get("BASCO_SCORE")
+            r["basco_score"] = None if raw_score in (None, "") else _to_basco_pct(raw_score)
 
         countries = sorted({
             r["Country"] for r in raw_rows
