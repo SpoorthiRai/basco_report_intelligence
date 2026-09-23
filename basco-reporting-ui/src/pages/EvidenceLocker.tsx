@@ -48,8 +48,8 @@ interface CreativeItem {
   Text_Mention?: number | string
   Presence_Visual?: string
   Key_Visuals?: number | string
-  BRAND_SCORE?: number
-  brand_score?: number
+  BRAND_SCORE?: number | string | null
+  brand_score?: number | null
   FeedbackType?: string
   Reason?: string
 }
@@ -104,6 +104,31 @@ function isNullValue(value: unknown): boolean {
 function displayValue(value?: string | null): string {
   if (isNullValue(value)) return 'NA'
   return String(value).trim()
+}
+
+function displayFeedbackType(value?: string | null): string {
+  if (isNullValue(value)) return ''
+  return String(value)
+    .split('|')
+    .map((part) => {
+      const words = part.trim().replace(/_/g, ' ').split(/\s+/).filter(Boolean)
+      return words
+        .map((word) => {
+          if (word.includes('/')) {
+            return word
+              .split('/')
+              .map((p) => (p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p))
+              .join('/')
+          }
+          const lower = word.toLowerCase()
+          if (['of', 'and', 'or', 'to', 'a', 'an'].includes(lower)) return lower
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        })
+        .join(' ')
+        .replace(/^./, (c) => c.toUpperCase())
+    })
+    .filter(Boolean)
+    .join(' | ')
 }
 
 function isMandatePass(value?: string | null): boolean {
@@ -922,7 +947,7 @@ export default function EvidenceLocker() {
                       <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Badge</th>
                       <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Text</th>
                       <th className="px-3 py-2.5 border-b border-[#E5E7EB]">Visual</th>
-                      <th className="px-3 py-2.5 border-b border-[#E5E7EB] rounded-tr-lg">Feedbacktype</th>
+                      <th className="px-3 py-2.5 border-b border-[#E5E7EB] rounded-tr-lg">Feedback type</th>
                     </>
                   ) : (
                     <>
@@ -983,8 +1008,8 @@ export default function EvidenceLocker() {
                             <td key={label} className="px-3 py-2"><FlagMark status={status} /></td>
                           ))}
                           <td className="px-3 py-2 text-[#111827] max-w-[280px]">
-                            <span className="line-clamp-2" title={displayValue(item.FeedbackType)}>
-                              {displayValue(item.FeedbackType)}
+                            <span className="line-clamp-2" title={displayFeedbackType(item.FeedbackType) || undefined}>
+                              {displayFeedbackType(item.FeedbackType)}
                             </span>
                           </td>
                         </>

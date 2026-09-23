@@ -76,6 +76,11 @@ def _to_brand_pct(raw) -> float | None:
         return None
 
 
+def _feedback_missing(value) -> bool:
+    text = str(value or "").strip().lower()
+    return text in ("", "none", "null", "na", "n/a")
+
+
 def _attach_feedback(rows: list[dict], feedback_rows: list[dict]) -> None:
     grouped: dict[tuple, dict] = {}
     for row in feedback_rows:
@@ -89,7 +94,7 @@ def _attach_feedback(rows: list[dict], feedback_rows: list[dict]) -> None:
         if reason and reason not in item["seen_reason"]:
             item["seen_reason"].add(reason)
             item["reasons"].append(reason)
-        if cat and cat not in item["seen_cat"]:
+        if cat and cat not in item["seen_cat"] and not _feedback_missing(cat):
             item["seen_cat"].add(cat)
             item["cats"].append(cat)
 
@@ -98,6 +103,22 @@ def _attach_feedback(rows: list[dict], feedback_rows: list[dict]) -> None:
         fb = grouped.get(key, {"reasons": [], "cats": []})
         row["FeedbackType"] = " | ".join(fb["cats"]) if fb["cats"] else ""
         row["Reason"] = " | ".join(fb["reasons"]) if fb["reasons"] else ""
+
+
+def _apply_perfect_score_feedback_default(rows: list[dict]) -> None:
+    """Perfect brand score (1 / 100%) with no feedback → Creative Looks Good."""
+    for row in rows:
+        score = row.get("brand_score")
+        if score is None:
+            continue
+        try:
+            pct = float(score)
+        except (TypeError, ValueError):
+            continue
+        if pct < 100:
+            continue
+        if _feedback_missing(row.get("FeedbackType")):
+            row["FeedbackType"] = "Creative Looks Good"
 
 
 class EvidenceLockerView(APIView):
@@ -152,6 +173,7 @@ class EvidenceLockerView(APIView):
             r["product_families"] = extract_product_families(r.get("Content") or "")
             raw_score = r.get("BRAND_SCORE")
             r["brand_score"] = _to_brand_pct(raw_score)
+        _apply_perfect_score_feedback_default(raw_rows)
 
         countries = sorted({
             r["Country"] for r in raw_rows
