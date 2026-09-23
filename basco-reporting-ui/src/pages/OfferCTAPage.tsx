@@ -81,7 +81,7 @@ function highlightMessagingMismatch(row: OfferEvidence): boolean {
 
 function isPlaceholderRetailer(value?: string | null): boolean {
   const t = (value ?? '').trim().toLowerCase();
-  return !t || ['na', 'n/a', 'null', 'none', 'unknown', 'unmapped'].includes(t);
+  return !t || ['na', 'n/a', 'null', 'none', 'unknown', 'unmapped', 'intel creative', 'red baron'].includes(t);
 }
 
 // Heatmap cell color based on percentage intensity (3-color modern data scale)

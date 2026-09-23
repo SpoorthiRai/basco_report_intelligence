@@ -34,7 +34,8 @@ SELECT
     ROUND(CAST(ISNULL(Key_Visuals, 0) * 100.0 AS FLOAT), 1) AS key_visuals
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
 WHERE Year = 2026
-  AND Account NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
+  AND LTRIM(RTRIM(COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account)))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
   AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
 ORDER BY Quarter DESC, basco ASC
 """
@@ -57,6 +58,8 @@ SELECT
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
 WHERE Year = 2026
   AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
+  AND LTRIM(RTRIM(COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account)))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 GROUP BY Country, Region, Quarter, Year
 ORDER BY Quarter DESC, avg_basco_score ASC
 """
@@ -74,6 +77,8 @@ SELECT DISTINCT
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
 WHERE Year = 2026
   AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
+  AND LTRIM(RTRIM(COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account)))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
   AND LTRIM(RTRIM(Region)) <> ''
 UNION
 SELECT DISTINCT
@@ -87,6 +92,8 @@ SELECT DISTINCT
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
 WHERE Year = 2026
   AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
+  AND LTRIM(RTRIM(COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account)))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
   AND LTRIM(RTRIM(Region)) <> ''
 """
 
@@ -100,7 +107,8 @@ SELECT DISTINCT
     COALESCE(PARENT_ACCOUNT_V2, Account) AS parent_account
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Input_Data_Trend] WITH (NOLOCK)
 WHERE Year = 2026
-  AND Account NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
+  AND LTRIM(RTRIM(COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Account)))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
   AND Country NOT IN ('Unknown', 'Unmapped', 'None', '')
 """
 
@@ -117,7 +125,7 @@ SELECT
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_HELPDESK_MASTER_MERGE] WITH (NOLOCK)
 WHERE YEAR = 2026
   AND CHILD_ACCOUNT IS NOT NULL
-  AND LTRIM(RTRIM(CHILD_ACCOUNT)) NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
+  AND LTRIM(RTRIM(CHILD_ACCOUNT)) NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 GROUP BY
     LTRIM(RTRIM(CHILD_ACCOUNT)),
     LTRIM(RTRIM(QUARTER)),

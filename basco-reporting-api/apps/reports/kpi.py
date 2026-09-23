@@ -51,7 +51,64 @@ def is_top_account(row: dict) -> bool:
     )
 
 
-_SKIP_ACCOUNTS = frozenset({"", "Unknown", "Unmapped", "None", "NA", "Intel Creative", "Red Baron"})
+_SKIP_ACCOUNT_NAMES = frozenset({
+    "",
+    "unknown",
+    "unmapped",
+    "none",
+    "na",
+    "n/a",
+    "null",
+    "intel creative",
+    "red baron",
+})
+_SKIP_ACCOUNTS = _SKIP_ACCOUNT_NAMES
+_RETAILER_NAME_KEYS = (
+    "child_account",
+    "Child_Account",
+    "CHILD_ACCOUNT",
+    "retailer",
+    "Retailer",
+    "Account",
+)
+
+
+def is_skipped_account(name) -> bool:
+    raw = str(name or "").strip().lower()
+    if raw in _SKIP_ACCOUNT_NAMES:
+        return True
+    norm = normalize_parent(name)
+    return bool(norm) and norm in {normalize_parent(n) for n in _SKIP_ACCOUNT_NAMES if n}
+
+
+def row_retailer_name(row: dict) -> str:
+    for key in _RETAILER_NAME_KEYS:
+        text = str(row.get(key) or "").strip()
+        if text:
+            return text
+    return ""
+
+
+def drop_skipped_retailer_rows(rows: list[dict] | None, extra_keys: tuple[str, ...] = ()) -> list[dict]:
+    """Drop retailer-level rows whose account is Unknown / Unmapped / None / NA / Null / Intel Creative / Red Baron."""
+    if not rows:
+        return []
+    keys = _RETAILER_NAME_KEYS + extra_keys
+    cleaned = []
+    for row in rows:
+        if not any(key in row for key in keys):
+            cleaned.append(row)
+            continue
+        name = ""
+        for key in keys:
+            text = str(row.get(key) or "").strip()
+            if text:
+                name = text
+                break
+        if name and is_skipped_account(name):
+            continue
+        cleaned.append(row)
+    return cleaned
 
 
 def _account_name(row: dict) -> str:
@@ -61,7 +118,7 @@ def _account_name(row: dict) -> str:
 
 
 def unique_retailer_count(rows: list[dict]) -> int:
-    return len({name for row in rows if (name := _account_name(row)) and name not in _SKIP_ACCOUNTS})
+    return len({name for row in rows if (name := _account_name(row)) and not is_skipped_account(name)})
 
 
 def _parent_name(row: dict) -> str:
@@ -72,7 +129,7 @@ def _parent_name(row: dict) -> str:
         or row.get("Retailer")
         or ""
     ).strip()
-    if name in ("", "Unknown", "Unmapped", "None"):
+    if is_skipped_account(name):
         return ""
     return name
 
@@ -199,7 +256,7 @@ def attach_helpdesk_usage(parents: list[dict], helpdesk_rows: list[dict]) -> lis
     by_child: dict[str, dict] = {}
     for row in helpdesk_rows:
         name = str(row.get("child_account") or row.get("Retailer") or "").strip()
-        if not name or name in _SKIP_ACCOUNTS:
+        if not name or is_skipped_account(name):
             continue
         key = normalize_parent(name)
         if not key:
@@ -348,7 +405,7 @@ def attach_country_helpdesk(
     hd_by_country: dict[str, dict] = {}
     for row in helpdesk_rows:
         parent = _row_parent(row)
-        if parent and parent not in _SKIP_ACCOUNTS:
+        if parent and not is_skipped_account(parent):
             key = normalize_parent(parent)
             if key:
                 item = hd_by_parent.setdefault(key, {"queries": 0, "artworks": 0})
@@ -369,7 +426,7 @@ def attach_country_helpdesk(
     seen_pairs: set[tuple[str, str]] = set()
     for row in pop_parent_rows:
         parent = _row_parent(row)
-        if not parent or parent in _SKIP_ACCOUNTS:
+        if not parent or is_skipped_account(parent):
             continue
         parent_key = normalize_parent(parent)
         country_key = normalize_country(_row_country(row))
@@ -461,11 +518,11 @@ def _top_compliance_issue(rows: list[dict]) -> dict:
 
 
 def _account_health_buckets(rows: list[dict]) -> dict:
-    """Distinct child-account health: Good performer (Score > 90) vs Bad performer (Score <= 90)."""
+    """Distinct child-account health: Good performer (Score >= 90) vs Bad performer (Score < 90)."""
     grouped: dict[str, dict] = {}
     for row in rows:
         name = _account_name(row)
-        if not name or name in _SKIP_ACCOUNTS:
+        if not name or is_skipped_account(name):
             continue
         score = to_basco_pct(row.get("basco", row.get("basco_score")))
         if name not in grouped:
@@ -477,7 +534,7 @@ def _account_health_buckets(rows: list[dict]) -> dict:
     bad = 0
     for item in grouped.values():
         avg = item["score_sum"] / item["n"] if item["n"] else 0.0
-        if avg > BASCO_TARGET:
+        if avg >= BASCO_TARGET:
             good += 1
         else:
             bad += 1
@@ -815,22 +872,22 @@ def compute_visual_kpis(total_creatives: int, intel_layouts: int, custom_layouts
     }
 
 
-_SKIP_CAMPAIGN_TYPES = frozenset({"", "na", "none", "unknown", "null"})
-
-
 def classify_campaign_bucket(campaign_type):
-    """Map AIHD CAMPAIGN_TYPE. NA / blank / Unknown are excluded (None)."""
+    """Match CAMPAIGN_TYPE exactly as stored in BASCO_AIHD_Metadata."""
     text = str(campaign_type or "").strip()
-    compact = text.lower().replace(" ", "").replace("-", "").replace("_", "")
-    if compact in _SKIP_CAMPAIGN_TYPES:
-        return None
-    if "intelgamer" in compact or compact == "igd" or compact.endswith("igd"):
+    if text == "Intel Gamer Days":
         return "Intel Gamer Days"
-    if "intelday" in compact:
+    if text == "Intel Days":
         return "Intel Days"
-    if "backtoschool" in compact or compact == "bts":
+    if text == "Back to School":
         return "Back to School"
-    return "Other"
+    if text == "Event Driven":
+        return "Event Driven"
+    if text == "Product Launch":
+        return "Product Launch"
+    if text == "Other":
+        return "Other"
+    return None
 
 
 def previous_quarter_label(label: str) -> str:
@@ -870,7 +927,7 @@ def _pop_children_for_quarter(league_rows: list[dict], quarter: str) -> set[str]
         if _row_quarter_label(row).upper() != wanted:
             continue
         key = _helpdesk_child_key(row)
-        if key and key not in {normalize_parent(n) for n in _SKIP_ACCOUNTS}:
+        if key and not is_skipped_account(key):
             names.add(key)
     return names
 
@@ -882,7 +939,7 @@ def _hd_children_for_quarter(helpdesk_rows: list[dict], quarter: str) -> set[str
         if _row_quarter_label(row).upper() != wanted:
             continue
         key = _helpdesk_child_key(row)
-        if key and key not in {normalize_parent(n) for n in _SKIP_ACCOUNTS}:
+        if key and not is_skipped_account(key):
             names.add(key)
     return names
 
@@ -908,6 +965,8 @@ def compute_helpdesk_kpis(
     intel_days = 0
     intel_gamer_days = 0
     back_to_school = 0
+    event_driven = 0
+    product_launch = 0
     other = 0
     for row in visual_rows:
         count = int(row.get("creative_count") or 1)
@@ -918,24 +977,33 @@ def compute_helpdesk_kpis(
             intel_gamer_days += count
         elif bucket == "Back to School":
             back_to_school += count
+        elif bucket == "Event Driven":
+            event_driven += count
+        elif bucket == "Product Launch":
+            product_launch += count
         elif bucket == "Other":
             other += count
 
-    mix_total = intel_days + intel_gamer_days + back_to_school + other
+    mix_total = intel_days + intel_gamer_days + back_to_school + event_driven + product_launch + other
     denom = mix_total or 1
     intel_days_pct = round(intel_days / denom * 100)
     intel_gamer_days_pct = round(intel_gamer_days / denom * 100)
     back_to_school_pct = round(back_to_school / denom * 100)
-    other_pct = max(0, 100 - intel_days_pct - intel_gamer_days_pct - back_to_school_pct)
+    event_driven_pct = round(event_driven / denom * 100)
+    product_launch_pct = round(product_launch / denom * 100)
+    other_pct = max(
+        0,
+        100 - intel_days_pct - intel_gamer_days_pct - back_to_school_pct - event_driven_pct - product_launch_pct,
+    )
     intel_specific = intel_days + intel_gamer_days + back_to_school
 
     pop_now = _pop_children_for_quarter(league_history, compare_quarter) if compare_quarter else {
         key for row in league_history
-        if (key := _helpdesk_child_key(row)) and key not in {normalize_parent(n) for n in _SKIP_ACCOUNTS}
+        if (key := _helpdesk_child_key(row)) and not is_skipped_account(key)
     }
     hd_now = _hd_children_for_quarter(helpdesk_history, compare_quarter) if compare_quarter else {
         key for row in helpdesk_history
-        if (key := _helpdesk_child_key(row)) and key not in {normalize_parent(n) for n in _SKIP_ACCOUNTS}
+        if (key := _helpdesk_child_key(row)) and not is_skipped_account(key)
     }
     outside = len(pop_now - hd_now)
     adopted_now = len(pop_now & hd_now)
@@ -968,10 +1036,12 @@ def compute_helpdesk_kpis(
             "intel_days_pct": intel_days_pct,
             "intel_gamer_days": intel_gamer_days,
             "intel_gamer_days_pct": intel_gamer_days_pct,
-            "igd": intel_gamer_days,
-            "igd_pct": intel_gamer_days_pct,
             "back_to_school": back_to_school,
             "back_to_school_pct": back_to_school_pct,
+            "event_driven": event_driven,
+            "event_driven_pct": event_driven_pct,
+            "product_launch": product_launch,
+            "product_launch_pct": product_launch_pct,
             "other": other,
             "other_pct": other_pct,
         },
@@ -1094,7 +1164,7 @@ def compute_promotion_led(offer_rows: list[dict]) -> dict:
 
     def _child_key(row: dict) -> str:
         name = str(row.get("Child_Account") or row.get("CHILD_ACCOUNT") or "").strip()
-        if not name or name in _SKIP_ACCOUNTS:
+        if not name or is_skipped_account(name):
             return ""
         return normalize_parent(name) or name
 

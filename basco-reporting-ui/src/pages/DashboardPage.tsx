@@ -97,10 +97,12 @@ const EMPTY_MODULES = {
       intel_days_pct: 0,
       intel_gamer_days: 0,
       intel_gamer_days_pct: 0,
-      igd: 0,
-      igd_pct: 0,
       back_to_school: 0,
       back_to_school_pct: 0,
+      event_driven: 0,
+      event_driven_pct: 0,
+      product_launch: 0,
+      product_launch_pct: 0,
       other: 0,
       other_pct: 0,
     },
@@ -545,12 +547,12 @@ export default function DashboardPage() {
                   <div
                     className="bg-[#10B981] h-full rounded-l-full transition-all duration-500"
                     style={{ width: `${coverageHealth.good_performer_pct ?? coverageHealth.healthy_pct}%` }}
-                    title={`Good performer (Score > 90%): ${coverageHealth.good_performer ?? coverageHealth.healthy} retailers`}
+                    title={`Good performer (Score ≥ 90%): ${coverageHealth.good_performer ?? coverageHealth.healthy} retailers`}
                   />
                   <div
                     className="bg-[#EF4444] h-full rounded-r-full transition-all duration-500"
                     style={{ width: `${coverageHealth.bad_performer_pct ?? coverageHealth.critical_pct}%` }}
-                    title={`Bad performer (Score <= 90%): ${coverageHealth.bad_performer ?? coverageHealth.critical} retailers`}
+                    title={`Bad performer (Score < 90%): ${coverageHealth.bad_performer ?? coverageHealth.critical} retailers`}
                   />
                 </div>
               </div>
@@ -709,20 +711,26 @@ export default function DashboardPage() {
                     <span className="w-2 h-2 rounded-full bg-[#0D9488]" />
                     Intel-specific campaigns ratio
                   </span>
-                  <span className="text-[10px] text-[#6B7280] font-bold text-right">
-                    <span className="text-[#10B981]">Intel Gamer Days ({helpdesk.campaign_mix.intel_gamer_days_pct ?? helpdesk.campaign_mix.igd_pct}%)</span>
+                  <span className="text-[10px] text-[#6B7280] font-bold text-right leading-4">
+                    <span className="text-[#10B981]">Intel Gamer Days ({helpdesk.campaign_mix.intel_gamer_days_pct}%)</span>
                     {' · '}
                     <span className="text-[#F59E0B]">Intel Days ({helpdesk.campaign_mix.intel_days_pct}%)</span>
                     {' · '}
                     <span className="text-[#3B82F6]">Back to School ({helpdesk.campaign_mix.back_to_school_pct ?? 0}%)</span>
                     {' · '}
+                    <span className="text-[#8B5CF6]">Event Driven ({helpdesk.campaign_mix.event_driven_pct ?? 0}%)</span>
+                    {' · '}
+                    <span className="text-[#EC4899]">Product Launch ({helpdesk.campaign_mix.product_launch_pct ?? 0}%)</span>
+                    {' · '}
                     <span className="text-[#6B7280]">Other ({helpdesk.campaign_mix.other_pct}%)</span>
                   </span>
                 </div>
                 <div className="w-full bg-[#CBD5E1] h-2 rounded-full overflow-hidden flex gap-0.5">
-                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.intel_gamer_days_pct ?? helpdesk.campaign_mix.igd_pct}%` }} title={`Intel Gamer Days: ${helpdesk.campaign_mix.intel_gamer_days ?? helpdesk.campaign_mix.igd}`} />
+                  <div className="bg-[#10B981] h-full rounded-l-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.intel_gamer_days_pct}%` }} title={`Intel Gamer Days: ${helpdesk.campaign_mix.intel_gamer_days}`} />
                   <div className="bg-[#F59E0B] h-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.intel_days_pct}%` }} title={`Intel Days: ${helpdesk.campaign_mix.intel_days}`} />
                   <div className="bg-[#3B82F6] h-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.back_to_school_pct ?? 0}%` }} title={`Back to School: ${helpdesk.campaign_mix.back_to_school ?? 0}`} />
+                  <div className="bg-[#8B5CF6] h-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.event_driven_pct ?? 0}%` }} title={`Event Driven: ${helpdesk.campaign_mix.event_driven ?? 0}`} />
+                  <div className="bg-[#EC4899] h-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.product_launch_pct ?? 0}%` }} title={`Product Launch: ${helpdesk.campaign_mix.product_launch ?? 0}`} />
                   <div className="bg-[#64748B] h-full rounded-r-full transition-all duration-500" style={{ width: `${helpdesk.campaign_mix.other_pct}%` }} title={`Other: ${helpdesk.campaign_mix.other}`} />
                 </div>
               </div>

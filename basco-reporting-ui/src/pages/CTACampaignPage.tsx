@@ -2,7 +2,7 @@
 // CTA X Campaign Objective
 // 4-Panel layout: KPI tiles, Retailer stacked bar, Misaligned evidence table, Alignment summary, and Top CTA Phrases Treemap
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import {
   BarChart,
@@ -12,7 +12,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Treemap,
 } from 'recharts';
 
 import api from '../api/client';
@@ -33,7 +32,7 @@ interface RetailerCTA {
   'Missing CTA'?: number;
   'No CTA'?: number;
   'Urgency CTA': number;
-  'Other CTA': number;
+  'Other CTA'?: number;
 }
 
 interface TopCTAPhrase {
@@ -85,7 +84,7 @@ interface CTACampaignResponse {
   };
 }
 
-const STACK_BUCKETS = ['Missing CTA', 'Buy/Shop CTA', 'Urgency CTA', 'Learn CTA', 'Other CTA'];
+const STACK_BUCKETS = ['Missing CTA', 'Buy/Shop CTA', 'Urgency CTA', 'Learn CTA'];
 
 const BUCKET_COLORS: Record<string, string> = {
   'Missing CTA': '#64748B',
@@ -95,6 +94,12 @@ const BUCKET_COLORS: Record<string, string> = {
   'Learn CTA': '#0EA5E9',
   'Other CTA': '#CBD5E1',
 };
+
+function displayCtaType(bucket?: string | null): string {
+  const value = (bucket || 'Missing CTA').trim();
+  if (value === 'Missing CTA' || value === 'No CTA') return 'Missing CTA';
+  return value;
+}
 
 const TREEMAP_PALETTE = [
   '#1E429F',
@@ -115,140 +120,102 @@ function qoqCaption(delta: number | null | undefined, label?: string): { text: s
   };
 }
 
-// Custom Treemap Cell Content with high-contrast, razor-sharp typography
-const CustomizedTreemapContent = (props: any) => {
-  const { x, y, width, height, index } = props;
-  const phrase = props.phrase || props.payload?.phrase || props.name || '';
-  const size = props.size ?? props.payload?.size ?? props.value ?? 0;
-  const color = BUCKET_COLORS[phrase] || TREEMAP_PALETTE[index % TREEMAP_PALETTE.length];
+type TreemapNode = { phrase: string; name?: string; size: number };
 
-  if (!width || !height || width < 14 || height < 14) return null;
+function layoutTreemap(
+  nodes: TreemapNode[],
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): Array<TreemapNode & { x: number; y: number; width: number; height: number }> {
+  if (!nodes.length || width <= 0 || height <= 0) return [];
+  if (nodes.length === 1) {
+    return [{ ...nodes[0], x, y, width, height }];
+  }
+  const total = nodes.reduce((sum, node) => sum + node.size, 0) || 1;
+  let acc = 0;
+  let splitAt = 1;
+  for (let i = 0; i < nodes.length; i += 1) {
+    acc += nodes[i].size;
+    splitAt = i + 1;
+    if (acc >= total / 2) break;
+  }
+  const left = nodes.slice(0, splitAt);
+  const right = nodes.slice(splitAt);
+  const leftShare = left.reduce((sum, node) => sum + node.size, 0) / total;
+  if (width >= height) {
+    const leftWidth = Math.round(width * leftShare);
+    return [
+      ...layoutTreemap(left, x, y, leftWidth, height),
+      ...layoutTreemap(right, x + leftWidth, y, width - leftWidth, height),
+    ];
+  }
+  const leftHeight = Math.round(height * leftShare);
+  return [
+    ...layoutTreemap(left, x, y, width, leftHeight),
+    ...layoutTreemap(right, x, y + leftHeight, width, height - leftHeight),
+  ];
+}
 
-  const pad = 2;
-  const rw = Math.max(0, width - pad * 2);
-  const rh = Math.max(0, height - pad * 2);
+function HtmlTreemap({ data }: { data: TreemapNode[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
 
-  // Determine display capability based on cell dimensions
-  const canShowBoth = rw >= 64 && rh >= 44;
-  const canShowPhraseOnly = rw >= 50 && rh >= 28;
-  const isNarrow = rw < 50 || rh < 28;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setBox({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
-  // Calculate clean max characters to prevent clipped ellipses
-  const maxChars = Math.max(4, Math.floor((rw - 10) / 7.2));
-  const displayPhrase = phrase.length > maxChars ? `${phrase.slice(0, Math.max(2, maxChars - 1))}…` : phrase;
+  const cells = useMemo(
+    () => layoutTreemap(data, 0, 0, box.w, box.h),
+    [data, box.w, box.h]
+  );
 
   return (
-    <g className="transition-opacity hover:opacity-90 cursor-pointer">
-      {/* Tile Rectangle */}
-      <rect
-        x={x + pad}
-        y={y + pad}
-        width={rw}
-        height={rh}
-        fill={color}
-        stroke="#ffffff"
-        strokeWidth={2}
-        rx={6}
-        ry={6}
-      />
-      <title>{`"${phrase}": ${size} creative${size !== 1 ? 's' : ''}`}</title>
-
-      {/* Content Rendering */}
-      {canShowBoth ? (
-        <>
-          {/* Phrase Title */}
-          <text
-            x={x + width / 2}
-            y={y + height / 2 - 9}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="#ffffff"
-            fontSize={rw > 100 ? 12 : 11}
-            fontWeight="600"
+    <div ref={ref} className="relative w-full h-full">
+      {cells.map((cell, index) => {
+        const gap = 3;
+        const w = Math.max(0, cell.width - gap);
+        const h = Math.max(0, cell.height - gap);
+        if (w < 8 || h < 8) return null;
+        const color = TREEMAP_PALETTE[index % TREEMAP_PALETTE.length];
+        const showPhrase = w >= 56 && h >= 28;
+        const showCount = h >= 20;
+        return (
+          <div
+            key={`${cell.phrase}-${index}`}
+            title={`"${cell.phrase}": ${cell.size} creative${cell.size !== 1 ? 's' : ''}`}
+            className="absolute flex flex-col items-center justify-center overflow-hidden rounded-md px-1.5 text-center text-white"
             style={{
-              pointerEvents: 'none',
-              userSelect: 'none',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
+              left: cell.x + gap / 2,
+              top: cell.y + gap / 2,
+              width: w,
+              height: h,
+              backgroundColor: color,
             }}
           >
-            {displayPhrase}
-          </text>
-          {/* Creative Count */}
-          <text
-            x={x + width / 2}
-            y={y + height / 2 + 10}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="#ffffff"
-            fillOpacity={0.95}
-            fontSize={13}
-            fontWeight="800"
-            style={{
-              pointerEvents: 'none',
-              userSelect: 'none',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-            }}
-          >
-            {size}
-          </text>
-        </>
-      ) : canShowPhraseOnly ? (
-        <>
-          <text
-            x={x + width / 2}
-            y={y + height / 2 - 6}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="#ffffff"
-            fontSize={10}
-            fontWeight="600"
-            style={{
-              pointerEvents: 'none',
-              userSelect: 'none',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-            }}
-          >
-            {displayPhrase}
-          </text>
-          <text
-            x={x + width / 2}
-            y={y + height / 2 + 7}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="#ffffff"
-            fontSize={11}
-            fontWeight="800"
-            style={{
-              pointerEvents: 'none',
-              userSelect: 'none',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-            }}
-          >
-            {size}
-          </text>
-        </>
-      ) : isNarrow ? (
-        /* In small tiles: show only the bold number cleanly with zero truncated word mess */
-        <text
-          x={x + width / 2}
-          y={y + height / 2}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="#ffffff"
-          fontSize={12}
-          fontWeight="800"
-          style={{
-            pointerEvents: 'none',
-            userSelect: 'none',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-          }}
-        >
-          {size}
-        </text>
-      ) : null}
-    </g>
+            {showPhrase && (
+              <span className="w-full truncate text-[12px] font-bold leading-tight [font-smooth:always] [-webkit-font-smoothing:antialiased]">
+                {cell.phrase}
+              </span>
+            )}
+            {showCount && (
+              <span className="text-[13px] font-extrabold leading-tight [font-smooth:always] [-webkit-font-smoothing:antialiased]">
+                {cell.size}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
-};
+}
 
 export default function CTACampaignPage() {
   const [data, setData] = useState<CTACampaignResponse | null>(null);
@@ -595,7 +562,7 @@ export default function CTACampaignPage() {
                         <Bar
                           key={bucket}
                           dataKey={bucket}
-                          name={bucket}
+                          name={displayCtaType(bucket)}
                           stackId="ctaStack"
                           fill={BUCKET_COLORS[bucket]}
                           barSize={12}
@@ -615,7 +582,7 @@ export default function CTACampaignPage() {
                     className="w-2.5 h-2.5 rounded-xs shrink-0"
                     style={{ backgroundColor: BUCKET_COLORS[bucket] }}
                   />
-                  <span className="text-[#6B7280] font-semibold">{bucket}</span>
+                  <span className="text-[#6B7280] font-semibold">{displayCtaType(bucket)}</span>
                 </div>
               ))}
             </div>
@@ -671,28 +638,7 @@ export default function CTACampaignPage() {
                     No Clean CTA phrases found for the selected filters.
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <Treemap
-                      data={treemapData}
-                      dataKey="size"
-                      aspectRatio={4 / 3}
-                      stroke="#fff"
-                      content={<CustomizedTreemapContent />}
-                    >
-                      <Tooltip
-                        formatter={(value: any, _name: any, item: any) => [
-                          `${value} creatives`,
-                          item?.payload?.phrase || item?.name,
-                        ]}
-                        contentStyle={{
-                          borderRadius: '0.5rem',
-                          fontSize: '12px',
-                          borderColor: '#E5E7EB',
-                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                        }}
-                      />
-                    </Treemap>
-                  </ResponsiveContainer>
+                  <HtmlTreemap data={treemapData} />
                 )}
               </div>
           </div>
@@ -782,10 +728,10 @@ export default function CTACampaignPage() {
                         <span
                           className="px-2 py-0.5 rounded text-[10px] font-bold text-white whitespace-nowrap inline-block"
                           style={{
-                            backgroundColor: BUCKET_COLORS[row.cta_bucket || 'Missing CTA'] || '#1E429F',
+                            backgroundColor: BUCKET_COLORS[displayCtaType(row.cta_bucket)] || '#1E429F',
                           }}
                         >
-                          {row.cta_bucket || 'Missing CTA'}
+                          {displayCtaType(row.cta_bucket)}
                         </span>
                       </td>
                       <td className="py-2 px-3 align-top">
@@ -837,9 +783,9 @@ export default function CTACampaignPage() {
           { label: 'CTA Text', value: selectedCreative?.CTA_Text || 'None' },
           {
             label: 'CTA Type',
-            value: selectedCreative?.cta_bucket || 'Missing CTA',
+            value: displayCtaType(selectedCreative?.cta_bucket),
             badge: true,
-            badgeColor: BUCKET_COLORS[selectedCreative?.cta_bucket || 'Missing CTA'] || '#F97316',
+            badgeColor: BUCKET_COLORS[displayCtaType(selectedCreative?.cta_bucket)] || '#F97316',
           },
           { label: 'Intel Voice of Application', value: selectedCreative?.Application_Of_Voice || selectedCreative?.Voice_Of_Attribute || '—' },
           { label: 'Country', value: selectedCreative?.Country || 'Unknown' },

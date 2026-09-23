@@ -12,7 +12,7 @@ FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_HELPDESK_MASTER_MERGE] WITH (NOLOCK)
 WHERE YEAR = 2026
   AND CHILD_ACCOUNT IS NOT NULL
   AND LTRIM(RTRIM(CHILD_ACCOUNT))
-      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Intel Creative', 'Red Baron')
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 """
 
 OVERVIEW_HIST_QUERY = """
@@ -28,6 +28,12 @@ SELECT
     MD_Tag,
     BASCO_SCORE
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Raw_HIST_FINAL] WITH (NOLOCK)
+WHERE LTRIM(RTRIM(COALESCE(NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), ''), Retailer)))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
+   OR (
+        NULLIF(LTRIM(RTRIM(CHILD_ACCOUNT)), '') IS NULL
+        AND NULLIF(LTRIM(RTRIM(Retailer)), '') IS NULL
+      )
 """
 
 OVERVIEW_HOSTED_QUERY = """
@@ -52,6 +58,11 @@ LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Raw_HIST_FINAL] R WITH (NOLOCK
    AND H.Year = R.YEAR
    AND H.Quarter = R.QUARTER
 WHERE H.Image_URL IS NOT NULL
+  AND (
+        R.CHILD_ACCOUNT IS NULL
+        OR LTRIM(RTRIM(R.CHILD_ACCOUNT))
+           NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
+      )
 """
 
 OVERVIEW_FEEDBACK_QUERY = """
@@ -78,4 +89,9 @@ LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Raw_HIST_FINAL] R WITH (NOLOCK
    AND A.QUARTER = R.QUARTER
 WHERE A.Reason IS NOT NULL
   AND A.Reason NOT LIKE '%evaluated%'
+  AND (
+        R.CHILD_ACCOUNT IS NULL
+        OR LTRIM(RTRIM(R.CHILD_ACCOUNT))
+           NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
+      )
 """

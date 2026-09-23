@@ -11,6 +11,7 @@ from .offer_cta_queries import (
 
 _SKIP_RETAILERS = frozenset({
     "", "na", "n/a", "null", "none", "unknown", "unmapped",
+    "intel creative", "red baron",
 })
 
 
@@ -113,7 +114,7 @@ class OfferCTAView(APIView):
         ))
         all_retailers = sorted(set(
             r['Retailer'] for r in rows
-            if r.get('Retailer') and r['Retailer'] != 'Unknown'
+            if r.get('Retailer') and not _is_placeholder_retailer(r.get('Retailer'))
         ))
 
         # Apply filters

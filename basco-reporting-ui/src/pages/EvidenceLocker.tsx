@@ -9,6 +9,8 @@ import api from '../api/client';
 interface CreativeItem {
   Analysis_ID: number | string
   Asset_URL: string
+  Hist_Image_URL?: string
+  Hosted_Image_URL?: string
   MD_Tag?: string
   compliance_status?: 'Compliant' | 'Non-Compliant'
   Country?: string
@@ -46,8 +48,8 @@ interface CreativeItem {
   Text_Mention?: number | string
   Presence_Visual?: string
   Key_Visuals?: number | string
-  BASCO_SCORE?: number
-  basco_score?: number
+  BRAND_SCORE?: number
+  brand_score?: number
   FeedbackType?: string
   Reason?: string
 }
@@ -70,6 +72,13 @@ interface EvidenceLockerResponse {
 }
 
 // ── Normalize asset URLs for browser compatibility ────────────────────────────
+function creativeImageUrl(item: CreativeItem, mode: 'compliance' | 'execution' = 'compliance'): string {
+  if (mode === 'compliance') {
+    return normalizeAssetUrl(item.Hist_Image_URL);
+  }
+  return normalizeAssetUrl(item.Asset_URL || item.Hosted_Image_URL);
+}
+
 function normalizeAssetUrl(url?: string | null): string {
   if (!url) return '';
   let clean = url.trim();
@@ -139,11 +148,13 @@ function complianceFlags(item: CreativeItem): Array<{ label: string; status: Tri
 }
 
 function complianceScore(item: CreativeItem): number | null {
-  const raw = item.basco_score ?? item.BASCO_SCORE
-  if (raw == null || !Number.isFinite(Number(raw))) return null
-  const n = Number(raw)
-  if (item.basco_score != null) return n
-  return n <= 1.5 ? Math.round(n * 1000) / 10 : n
+  if (item.brand_score != null && Number.isFinite(Number(item.brand_score))) {
+    return Number(item.brand_score)
+  }
+  if (item.BRAND_SCORE == null || item.BRAND_SCORE === '') return null
+  const n = Number(item.BRAND_SCORE)
+  if (!Number.isFinite(n)) return null
+  return Math.round(n * 1000) / 10
 }
 
 function statusBucket(item: CreativeItem): StatusBucket | null {
@@ -454,7 +465,7 @@ function CreativeModal({
 }) {
   const bucket = mode === 'compliance' ? statusBucket(item) : null;
   const isCompliant = bucket === 'compliant';
-  const normUrl = normalizeAssetUrl(item.Asset_URL);
+  const normUrl = creativeImageUrl(item, mode);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError] = useState(false);
 
@@ -929,7 +940,7 @@ export default function EvidenceLocker() {
                   const isLoaded = imageLoaded[String(cardId)];
                   const hasImgError = imageErrors[String(cardId)];
                   const isCompliant = statusBucket(item) === 'compliant';
-                  const normUrl = normalizeAssetUrl(item.Asset_URL);
+                  const normUrl = creativeImageUrl(item, activeTab);
                   const score = complianceScore(item);
 
                   return (

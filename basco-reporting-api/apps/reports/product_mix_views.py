@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from core.db import get_warehouse_connection
 from .product_mix_queries import HELPDESK_FEEDBACK_MERGE_QUERY, PRODUCT_MIX_QUERY
 from .queries import HELPDESK_MASTER_MERGE_PARENT_USAGE_QUERY, LEAGUE_TABLE_QUERY
-from .kpi import is_top_account, normalize_parent
+from .kpi import is_skipped_account, is_top_account, normalize_parent
 from .permissions import IsAnyReportingRole
 from .views import apply_user_scope, sort_quarters_desc
 
@@ -68,6 +68,15 @@ def classify_token(token):
     suffix = ''
     if '-' in t:
         suffix = t.split('-', 1)[1].strip()
+        suffix = suffix.replace('Series 2|3', 'Series 2 / Series 3')
+        suffix = suffix.replace('Series 1|Series 2|Series 3', 'Series 1 / 2 / 3')
+        suffix = suffix.replace('Series 1|Series 2', 'Series 1 / Series 2')
+        suffix = suffix.replace('12th Gen|13th Gen|14th Gen', '12th / 13th / 14th Gen')
+        suffix = suffix.replace('14th Gen|13th Gen', '13th Gen / 14th Gen')
+        suffix = suffix.replace('13th Gen|14th Gen', '13th Gen / 14th Gen')
+        suffix = suffix.replace('14th Gen|12th Gen', '12th Gen / 14th Gen')
+        suffix = suffix.replace('12th Gen|14th Gen', '12th Gen / 14th Gen')
+        suffix = suffix.replace('|', ' / ')
 
     if 'Series' in suffix:
         gen_label = suffix
@@ -188,103 +197,12 @@ def _is_blank_product(value) -> bool:
 
 
 def product_families_for_row(row) -> list[str]:
-    """Product Visibility uses PRODUCT unless it is Multiple Products / blank."""
+    """Family comes only from PRODUCT. Null / blank product rows are ignored."""
     product = str(row.get("Product") or "").strip()
-    if product and not _is_blank_product(product):
-        family, _ = classify_token(product)
-        return [family]
-    return [classify_token(token)[0] for token in expand_content_tokens(row.get("Content"))]
-
-
-VISIBILITY_FAMILY_ORDER = [
-    'Core Processor',
-    'Core Ultra',
-    'Gaming',
-    'Gaming Core Ultra',
-    'Evo Edition',
-    'Other',
-]
-
-
-def visibility_family(family: str) -> str:
-    """Collapse Helpdesk families into the Product Visibility chart buckets."""
-    if family == 'Gaming Core Ultra':
-        return 'Gaming Core Ultra'
-    if family == 'Gaming':
-        return 'Gaming'
-    if family == 'Intel Core Ultra':
-        return 'Core Ultra'
-    if family in ('Intel Core Processors', 'Intel Processors'):
-        return 'Core Processor'
-    if family in ('Intel Evo Edition', 'Intel Evo'):
-        return 'Evo Edition'
-    return 'Other'
-
-
-def classify_token(token):
-    """
-    Takes a raw Content token like 'Intel Core Ultra-Series 3'
-    and returns (family, series_or_gen).
-    Order of checks matters — most specific first.
-    """
-    t = token.strip()
-
-    # --- Family classification (most specific first) ---
-    if 'Gaming Core Ultra' in t:
-        family = 'Gaming Core Ultra'
-    elif 'Gaming' in t:
-        family = 'Gaming'
-    elif 'Intel Core Ultra' in t:
-        family = 'Intel Core Ultra'
-    elif 'Intel Core Processors' in t:
-        family = 'Intel Core Processors'
-    elif 'Intel Processors' in t:
-        family = 'Intel Processors'
-    elif 'Intel Evo Edition' in t:
-        family = 'Intel Evo Edition'
-    elif 'Intel Evo' in t:
-        family = 'Intel Evo'
-    elif 'Intel Arc' in t:
-        family = 'Intel Arc Graphics'
-    elif 'Intel Iris' in t:
-        family = 'Intel Iris Graphics'
-    else:
-        family = 'Other'
-
-    # --- Series/Gen extraction from suffix after '-' ---
-    suffix = ''
-    if '-' in t:
-        suffix = t.split('-', 1)[1].strip()
-        # Clean multi-series/gen values for clean presentation
-        suffix = suffix.replace('Series 2|3', 'Series 2 / Series 3')
-        suffix = suffix.replace('Series 1|Series 2|Series 3', 'Series 1 / 2 / 3')
-        suffix = suffix.replace('Series 1|Series 2', 'Series 1 / Series 2')
-        suffix = suffix.replace('12th Gen|13th Gen|14th Gen', '12th / 13th / 14th Gen')
-        suffix = suffix.replace('14th Gen|13th Gen', '13th Gen / 14th Gen')
-        suffix = suffix.replace('13th Gen|14th Gen', '13th Gen / 14th Gen')
-        suffix = suffix.replace('14th Gen|12th Gen', '12th Gen / 14th Gen')
-        suffix = suffix.replace('12th Gen|14th Gen', '12th Gen / 14th Gen')
-        suffix = suffix.replace('|', ' / ')
-
-    # Classify suffix into Series or Generation bucket
-    if 'Series' in suffix:
-        gen_label = suffix  # e.g. "Series 3", "Series 2", "Series 1"
-    elif 'Gen' in suffix:
-        gen_label = suffix  # e.g. "14th Gen", "13th Gen"
-    elif suffix:
-        gen_label = suffix
-    else:
-        # Meaningful labels for umbrella / brand-level creatives without sub-tier suffix
-        if 'Ultra' in family:
-            gen_label = 'Series/Gen not specified'
-        elif 'Processor' in family or 'Gaming' in family:
-            gen_label = 'Series/Gen not specified'
-        elif 'Evo' in family or 'Graphics' in family:
-            gen_label = 'Standard'
-        else:
-            gen_label = 'Series/Gen not specified'
-
-    return family, gen_label
+    if not product or _is_blank_product(product):
+        return []
+    family, _ = classify_token(product)
+    return [family]
 
 
 class ProductMixView(APIView):
@@ -357,11 +275,11 @@ class ProductMixView(APIView):
 
         raw_retailers = set(
             r.get('Retailer') for r in all_raw_rows
-            if r.get('Retailer') and str(r.get('Retailer')).strip() not in ('Unknown', 'None', '', 'Unmapped', 'NA', 'Intel Creative', 'Red Baron')
+            if r.get('Retailer') and not is_skipped_account(r.get('Retailer'))
         )
         for r in pop_rows:
             name = r.get('child_account') or r.get('retailer')
-            if name and str(name).strip() not in ('Unknown', 'None', '', 'Unmapped', 'NA', 'Intel Creative', 'Red Baron'):
+            if name and not is_skipped_account(name):
                 raw_retailers.add(name)
         master_retailers = sorted(raw_retailers)
 
@@ -407,23 +325,26 @@ class ProductMixView(APIView):
             rows = [r for r in rows if normalize_parent(r.get('Retailer')) in top_parents]
         elif top_account_filter in ('no', 'false', '0'):
             rows = [r for r in rows if normalize_parent(r.get('Retailer')) not in top_parents]
+        rows = [r for r in rows if not is_skipped_account(r.get('Retailer'))]
+        rows = [
+            r for r in rows
+            if str(r.get('Product') or '').strip() and not _is_blank_product(r.get('Product'))
+        ]
 
         # --- Expand rows ---
-        # CONTENT: split ';' products, then pipe-separated series/gen after the hyphen.
-        # GEN: if present, split pipes so '13th Gen|14th Gen' becomes two labels (no cartesian).
+        # PRODUCT is the family source. GEN supplies series/gen when present;
+        # otherwise series/gen is read from the PRODUCT value itself.
         expanded = []
         all_series_set = set()
         for row in rows:
-            tokens = expand_content_tokens(row.get('Content'))
-            if not tokens and row.get('Product'):
-                tokens = [str(row.get('Product'))]
             families = product_families_for_row(row)
-            gen_from_col = expand_gen_labels(row.get('Gen'))
+            if not families:
+                continue
             product_name = str(row.get('Product') or '').strip()
-            use_gen_col = bool(gen_from_col) and product_name and not _is_blank_product(product_name)
+            gen_from_col = expand_gen_labels(row.get('Gen'))
 
-            if use_gen_col:
-                for family in (families or ['Other']):
+            if gen_from_col:
+                for family in families:
                     for label in gen_from_col:
                         if label not in ('Standard', 'Series/Gen not specified') and not str(label).startswith('Unspecified'):
                             all_series_set.add(label)
@@ -433,27 +354,26 @@ class ProductMixView(APIView):
                             'region': row['Region'],
                             'country': row['Country'],
                             'quarter': row['quarter_label'],
-                            'raw_token': row.get('Content'),
+                            'raw_token': product_name,
                             'family': family,
                             'gen_label': label,
                             'product': row.get('Product'),
                         })
             else:
-                for token in tokens:
-                    family, gen_label = classify_token(token)
-                    if gen_label and not str(gen_label).startswith('Unspecified') and gen_label not in ('Standard', 'Series/Gen not specified'):
-                        all_series_set.add(gen_label)
-                    expanded.append({
-                        'thread_id': row['Email_Thread_ID'],
-                        'retailer': row['Retailer'],
-                        'region': row['Region'],
-                        'country': row['Country'],
-                        'quarter': row['quarter_label'],
-                        'raw_token': token,
-                        'family': family,
-                        'gen_label': gen_label,
-                        'product': row.get('Product'),
-                    })
+                family, gen_label = classify_token(product_name)
+                if gen_label and not str(gen_label).startswith('Unspecified') and gen_label not in ('Standard', 'Series/Gen not specified'):
+                    all_series_set.add(gen_label)
+                expanded.append({
+                    'thread_id': row['Email_Thread_ID'],
+                    'retailer': row['Retailer'],
+                    'region': row['Region'],
+                    'country': row['Country'],
+                    'quarter': row['quarter_label'],
+                    'raw_token': product_name,
+                    'family': family,
+                    'gen_label': gen_label,
+                    'product': row.get('Product'),
+                })
 
         # -------------------------------------------------------
         # PANEL 1 — Selected Series/Gen adoption by Region
@@ -474,8 +394,7 @@ class ProductMixView(APIView):
                     'selected_series': 0
                 }
             region_map[reg]['total'] += 1
-            haystacks = [r.get('Content', '') or '']
-            haystacks.extend(expand_content_tokens(r.get('Content')))
+            haystacks = [r.get('Product', '') or '']
             haystacks.extend(expand_gen_labels(r.get('Gen')))
             if any(search_token.lower() in str(h).lower() for h in haystacks if h):
                 region_map[reg]['selected_series'] += 1
@@ -507,7 +426,7 @@ class ProductMixView(APIView):
         retailer_family_map = {}
         for row in rows:
             ret = row.get('Retailer')
-            if not ret:
+            if not ret or is_skipped_account(ret):
                 continue
             for family in product_families_for_row(row):
                 fam = visibility_family(family)
@@ -611,7 +530,7 @@ class ProductMixView(APIView):
         query_map = {}
         for r in hd_filtered:
             name = r.get('child_account') or 'Unknown'
-            if not name or name in ('Unknown', 'None', 'NA', 'Unmapped', 'Intel Creative', 'Red Baron'):
+            if not name or is_skipped_account(name):
                 continue
             item = query_map.setdefault(name, {'retailer': name, 'queries': 0})
             item['queries'] += int(r.get('helpdesk_queries') or 0)

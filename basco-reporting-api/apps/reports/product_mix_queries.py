@@ -11,8 +11,10 @@ SELECT
     REPLACE(QUARTER, '-', ' ') AS quarter_label,
     YEAR(SEND_DATE) AS year_label
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
-WHERE CONTENT IS NOT NULL
-  AND CONTENT NOT IN ('None', '', 'NA')
+WHERE PRODUCT IS NOT NULL
+  AND LTRIM(RTRIM(PRODUCT)) NOT IN ('None', '', 'NA', 'Null', 'Unknown', 'Unmapped', 'Multiple Products')
+  AND LTRIM(RTRIM(ISNULL(CHILD_ACCOUNT, '')))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 """
 
 HELPDESK_FEEDBACK_MERGE_QUERY = """
@@ -33,4 +35,6 @@ WHERE BRAND_ELEMENT IS NOT NULL
   AND LTRIM(RTRIM(BRAND_ELEMENT)) NOT IN ('', 'None', 'NULL')
   AND ELEMENT_FEEDBACK_CATEGORY IS NOT NULL
   AND LTRIM(RTRIM(ELEMENT_FEEDBACK_CATEGORY)) NOT IN ('', 'None', 'NULL')
+  AND LTRIM(RTRIM(ISNULL(CHILD_ACCOUNT, '')))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 """

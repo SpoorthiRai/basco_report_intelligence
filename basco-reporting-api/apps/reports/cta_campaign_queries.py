@@ -31,4 +31,6 @@ LEFT JOIN (
     ON LTRIM(RTRIM(A.CTA_TEXT)) = M.CTA_TEXT_RAW
 WHERE A.OBJECTIVE IS NOT NULL
   AND A.OBJECTIVE NOT IN ('NA', '', 'None')
+  AND LTRIM(RTRIM(ISNULL(A.CHILD_ACCOUNT, '')))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 """

@@ -6,6 +6,8 @@ SELECT
     H.ID AS Analysis_ID,
     H.MD_TAG AS MD_Tag,
     COALESCE(H.Image_URL, R.MD_Tag_Image_URL) AS Asset_URL,
+    R.MD_Tag_Image_URL AS Hist_Image_URL,
+    H.Image_URL AS Hosted_Image_URL,
     CONCAT(H.Quarter, ' ', H.Year) AS quarter_label,
     H.Year AS Year,
     H.Quarter AS Quarter,
@@ -23,7 +25,7 @@ SELECT
     R.Text_Mention,
     R.Presence_Visual,
     R.Key_Visuals,
-    R.BASCO_SCORE,
+    R.BRAND_SCORE,
     H.Campaign_Type,
     H.Campaign_Name,
     H.Layout,
@@ -46,7 +48,15 @@ LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Raw_HIST_FINAL] R WITH (NOLOCK
     ON H.MD_TAG = R.MD_Tag
    AND H.Year = R.YEAR
    AND H.Quarter = R.QUARTER
-WHERE H.Image_URL IS NOT NULL
+WHERE (
+        NULLIF(LTRIM(RTRIM(R.MD_Tag_Image_URL)), '') IS NOT NULL
+        OR NULLIF(LTRIM(RTRIM(H.Image_URL)), '') IS NOT NULL
+      )
+  AND (
+        R.CHILD_ACCOUNT IS NULL
+        OR LTRIM(RTRIM(R.CHILD_ACCOUNT))
+           NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
+      )
 ORDER BY H.Year DESC, H.Quarter DESC, H.MD_TAG
 """
 
@@ -65,6 +75,7 @@ SELECT DISTINCT
     CONCAT(A.QUARTER, ' ', A.YEAR) AS quarter_label,
     A.Creative,
     A.Reason,
+    A.Element,
     C.FEEDBACK AS CAT,
     D.FEEDBACK AS ELEMENT_CAT
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_TAGS_FEEDBACK_Q12024] A WITH (NOLOCK)
@@ -73,5 +84,5 @@ LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_FEEDBACK_MASTER_HD_POP_OLD] C WITH
 LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_FEEDBACK_MASTER_BE_OLD] D WITH (NOLOCK)
     ON A.Reason = D.Reason
 WHERE A.Reason IS NOT NULL
-  AND A.Reason NOT LIKE '%evaluated%'
+   OR A.Element IS NOT NULL
 """

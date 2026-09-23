@@ -66,16 +66,14 @@ def _norm_tag(value) -> str:
     return str(value or "").strip().lower()
 
 
-def _to_basco_pct(raw) -> float:
+def _to_brand_pct(raw) -> float | None:
+    """BRAND_SCORE from HIST as-is, shown as percent (value * 100)."""
+    if raw in (None, ""):
+        return None
     try:
-        n = float(raw)
+        return round(float(raw) * 100.0, 1)
     except (TypeError, ValueError):
-        return 0.0
-    if n <= 0:
-        return 0.0
-    if n <= 1.5:
-        return round(n * 100.0, 1)
-    return round(n, 1)
+        return None
 
 
 def _attach_feedback(rows: list[dict], feedback_rows: list[dict]) -> None:
@@ -83,8 +81,11 @@ def _attach_feedback(rows: list[dict], feedback_rows: list[dict]) -> None:
     for row in feedback_rows:
         key = (_norm_tag(row.get("Creative")), str(row.get("Year") or ""), str(row.get("Quarter") or "").strip())
         item = grouped.setdefault(key, {"reasons": [], "cats": [], "seen_reason": set(), "seen_cat": set()})
-        reason = str(row.get("Reason") or "").strip()
-        cat = str(row.get("CAT") or "").strip()
+        element = str(row.get("Element") or "").strip()
+        reason_raw = str(row.get("Reason") or "").strip()
+        reason_missing = reason_raw.lower() in ("", "none", "null", "na", "n/a")
+        reason = element if reason_missing else reason_raw
+        cat = element if reason_missing else str(row.get("CAT") or "").strip()
         if reason and reason not in item["seen_reason"]:
             item["seen_reason"].add(reason)
             item["reasons"].append(reason)
@@ -149,8 +150,8 @@ class EvidenceLockerView(APIView):
 
         for r in raw_rows:
             r["product_families"] = extract_product_families(r.get("Content") or "")
-            raw_score = r.get("BASCO_SCORE")
-            r["basco_score"] = None if raw_score in (None, "") else _to_basco_pct(raw_score)
+            raw_score = r.get("BRAND_SCORE")
+            r["brand_score"] = _to_brand_pct(raw_score)
 
         countries = sorted({
             r["Country"] for r in raw_rows

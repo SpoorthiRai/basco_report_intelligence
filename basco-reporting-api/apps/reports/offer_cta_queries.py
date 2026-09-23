@@ -26,6 +26,8 @@ LEFT JOIN (
     ON LTRIM(RTRIM(A.CTA_TEXT)) = M.CTA_TEXT_RAW
     AND ISNULL(A.CTA_FLAG, 'No') NOT IN ('No', 'N', 'n', '0')
     AND LTRIM(RTRIM(ISNULL(A.CTA_TEXT, ''))) NOT IN ('', 'None', 'NA', 'Unknown')
+WHERE LTRIM(RTRIM(ISNULL(A.CHILD_ACCOUNT, '')))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 """
 
 OFFER_EVIDENCE_QUERY = """
@@ -44,5 +46,7 @@ SELECT
     REPLACE(QUARTER, '-', ' ') AS quarter_label
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
 WHERE ASSET_URL IS NOT NULL
+  AND LTRIM(RTRIM(ISNULL(CHILD_ACCOUNT, '')))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 ORDER BY SEND_DATE DESC
 """

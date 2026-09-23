@@ -19,6 +19,16 @@ import {
 } from 'recharts';
 import api from '../api/client';
 
+function isSkippedRetailer(value?: string | null): boolean {
+  const t = (value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return !t || ['unknown', 'unmapped', 'none', 'na', 'n a', 'null', 'intel creative', 'red baron'].includes(t);
+}
+
 interface RegionAdoption {
   region: string;
   total: number;
@@ -202,7 +212,11 @@ export default function ProductMixPage() {
   }, [quarterFilter, regionFilter, countryFilter, retailerFilter, yearFilter, topAccountFilter, familyFilter, targetSeriesFilter]);
 
   const families = data?.all_families || [];
-  const retailerMix = data?.retailer_product_mix || [];
+  const retailerMix = (data?.retailer_product_mix || []).filter((row) => !isSkippedRetailer(row.retailer));
+  const retailerQueries = (data?.retailer_queries || []).filter((row) => !isSkippedRetailer(row.retailer));
+  const retailerOptions = (data?.filter_options?.retailers || ['All Retailers']).filter(
+    (r) => r === 'All Retailers' || !isSkippedRetailer(r)
+  );
   const regionData = data?.series3_by_region || [];
   const genData = (data?.gen_series_breakdown || []).map((item) => ({
     ...item,
@@ -285,7 +299,7 @@ export default function ProductMixPage() {
                 onChange={(e) => setRetailerFilter(e.target.value)}
                 className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
               >
-                {(data?.filter_options?.retailers || ['All Retailers']).map((r) => (
+                {retailerOptions.map((r) => (
                   <option key={r} value={r} className="bg-white text-[#111827]">
                     {r}
                   </option>
@@ -373,7 +387,7 @@ export default function ProductMixPage() {
               <div className="w-full h-full bg-[#F8FAFC] rounded-xl animate-pulse flex items-center justify-center">
                 <span className="text-xs font-semibold text-[#6B7280]">Loading query counts...</span>
               </div>
-            ) : (data?.retailer_queries || []).length === 0 ? (
+            ) : retailerQueries.length === 0 ? (
               <div className="w-full h-full flex items-center justify-center text-xs font-medium text-[#6B7280]">
                 No Helpdesk queries found for the selected filters.
               </div>
@@ -381,7 +395,7 @@ export default function ProductMixPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   layout="vertical"
-                  data={data?.retailer_queries || []}
+                  data={retailerQueries}
                   margin={{ top: 8, right: 36, left: 10, bottom: 8 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
@@ -411,7 +425,7 @@ export default function ProductMixPage() {
               Creative Compliance Guidance
             </h3>
             <p className="text-xs text-[#6B7280] mt-0.5">
-              Select a brand element to see ELEMENT_FEEDBACK_CATEGORY counts from Helpdesk feedback.
+              Explore creative compliance guidance via BASCO Helpdesk by selecting a brand element.
             </p>
             <div className="flex flex-wrap gap-1.5 mt-3">
               {(data?.brand_elements || BRAND_ELEMENT_BUTTONS).map((item) => {
@@ -536,7 +550,7 @@ export default function ProductMixPage() {
               <ResponsiveContainer width="100%" height={340}>
                 <BarChart
                   data={regionData}
-                  margin={{ top: 25, right: 10, left: 10, bottom: 15 }}
+                  margin={{ top: 10, right: 10, left: 10, bottom: 15 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis
@@ -566,16 +580,7 @@ export default function ProductMixPage() {
                     fill="#1E429F"
                     radius={[0, 0, 4, 4]}
                     barSize={38}
-                  >
-                    <LabelList
-                      dataKey="series_pct"
-                      position="center"
-                      fill="#ffffff"
-                      fontSize={11}
-                      fontWeight="bold"
-                      formatter={(v: any) => (v >= 10 ? `${v}%` : '')}
-                    />
-                  </Bar>
+                  />
                   {/* Top: other (Grey #CBD5E1) */}
                   <Bar
                     dataKey="other"
@@ -583,44 +588,10 @@ export default function ProductMixPage() {
                     fill="#CBD5E1"
                     radius={[4, 4, 0, 0]}
                     barSize={38}
-                  >
-                    <LabelList
-                      dataKey="series_pct"
-                      position="top"
-                      fill="#1E429F"
-                      fontSize={11}
-                      fontWeight="800"
-                      formatter={(v: any) => `${v}%`}
-                    />
-                  </Bar>
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
-          </div>
-
-          {/* Regional Adoption Summary Cards below Chart */}
-          <div className="mt-3 pt-3 border-t border-[#E5E7EB] flex flex-col gap-2">
-            <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
-              Regional Adoption:
-            </span>
-            <div className="grid grid-cols-1 gap-1.5">
-              {regionData.map((r) => (
-                <div
-                  key={r.region}
-                  className="flex items-center justify-between bg-[#F8FAFC] border border-[#E5E7EB] px-2.5 py-1.5 rounded-lg text-xs"
-                >
-                  <span className="font-bold text-[#111827]">{r.region}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#6B7280] font-medium text-[11px]">
-                      {r.series_count ?? r.series3 ?? 0} / {r.total}
-                    </span>
-                    <span className="bg-[#1E429F]/10 text-[#1E429F] text-[11px] font-extrabold px-1.5 py-0.5 rounded">
-                      {r.series_pct ?? r.series3_pct ?? 0}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
         </div>

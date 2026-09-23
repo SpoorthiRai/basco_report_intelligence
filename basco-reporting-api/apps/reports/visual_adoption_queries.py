@@ -15,6 +15,8 @@ SELECT
     ISNULL(CAMPAIGN_TYPE, 'Unknown') AS Campaign_Type,
     COUNT(*) AS creative_count
 FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
+WHERE LTRIM(RTRIM(ISNULL(CHILD_ACCOUNT, '')))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 GROUP BY
     CHILD_ACCOUNT,
     PARENT_ACCOUNT,
@@ -68,6 +70,8 @@ FROM [BASCO_WAREHOUSE_2024].[dbo].[BASCO_AIHD_Metadata] WITH (NOLOCK)
 WHERE ASSET_URL IS NOT NULL
   AND VISUAL_CONTENT_NAME IS NOT NULL
   AND VISUAL_CONTENT_NAME NOT IN ('None', '', 'NA')
+  AND LTRIM(RTRIM(ISNULL(CHILD_ACCOUNT, '')))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 ORDER BY SEND_DATE DESC
 """
 
@@ -92,6 +96,9 @@ LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Raw_HIST_FINAL] R WITH (NOLOCK
     ON H.MD_TAG = R.MD_Tag
    AND H.Year = R.YEAR
    AND H.Quarter = R.QUARTER
+WHERE R.CHILD_ACCOUNT IS NULL
+   OR LTRIM(RTRIM(R.CHILD_ACCOUNT))
+      NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
 GROUP BY
     R.CHILD_ACCOUNT,
     R.PARENT_ACCOUNT_V2,
@@ -150,5 +157,10 @@ LEFT JOIN [BASCO_WAREHOUSE_2024].[dbo].[BASCO_POP_Raw_HIST_FINAL] R WITH (NOLOCK
 WHERE COALESCE(H.Image_URL, R.MD_Tag_Image_URL) IS NOT NULL
   AND H.Visual_Content_Name IS NOT NULL
   AND H.Visual_Content_Name NOT IN ('None', '', 'NA')
+  AND (
+        R.CHILD_ACCOUNT IS NULL
+        OR LTRIM(RTRIM(R.CHILD_ACCOUNT))
+           NOT IN ('Unknown', 'Unmapped', 'None', '', 'NA', 'Null', 'Intel Creative', 'Red Baron')
+      )
 ORDER BY H.Year DESC, H.Quarter DESC, H.MD_TAG
 """

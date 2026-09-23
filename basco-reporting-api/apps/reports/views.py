@@ -21,6 +21,7 @@ from .kpi import (
     attach_helpdesk_usage,
     compute_league_kpis,
     compute_market_kpis,
+    drop_skipped_retailer_rows,
     group_parent_accounts,
     normalize_parent,
     region_thresholds_for_period,
@@ -62,8 +63,13 @@ def apply_user_scope(rows, user, country_key="country", region_key="region", ret
         - If user.country is set (e.g. 'India'): filtered to user.country
     - ADMIN: unfiltered
     """
+    extra = (retailer_key,) if retailer_key else ()
+
+    def _finish(result):
+        return drop_skipped_retailer_rows(result, extra_keys=extra)
+
     if not user or not user.is_authenticated:
-        return rows
+        return _finish(rows)
 
     if user.role == User.Role.RSM:
         allowed_raw = {str(v).strip() for v in (user.retailer_ids or []) if str(v).strip()}
@@ -96,7 +102,7 @@ def apply_user_scope(rows, user, country_key="country", region_key="region", ret
                     return True
             return False
 
-        return [r for r in rows if _in_rsm_scope(r)]
+        return _finish([r for r in rows if _in_rsm_scope(r)])
 
     if user.role == User.Role.RMM:
         user_region = (getattr(user, "region", "") or "").strip().upper()
@@ -113,9 +119,9 @@ def apply_user_scope(rows, user, country_key="country", region_key="region", ret
                 r for r in scoped
                 if (r.get(country_key) or r.get("country") or r.get("Country") or "").strip().lower() == user_country
             ]
-        return scoped
+        return _finish(scoped)
 
-    return rows
+    return _finish(rows)
 
 
 def _rows_to_dicts(cursor) -> list[dict]:

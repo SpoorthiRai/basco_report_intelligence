@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from core.db import get_warehouse_connection
 from .permissions import IsAnyReportingRole
+from .kpi import is_skipped_account
 from .views import sort_quarters_desc, apply_user_scope
 from .cta_campaign_queries import CTA_CAMPAIGN_QUERY
 from .evidence_views import PRODUCT_FAMILIES, extract_product_families
@@ -13,25 +14,19 @@ def _blank(value) -> bool:
 
 
 def normalize_cta_bucket(raw_bucket, cta_flag=None, cta_text=None) -> str:
-    """Map warehouse CTA_Bucket / flag into Campaign Effectiveness tiles."""
+    """Only Buy/Shop, Learn, and Urgency are real CTA types. Everything else is Missing CTA (No CTA)."""
     text = str(raw_bucket or "").strip().lower().replace(" ", "").replace("_", "").replace("-", "")
-    if text in ("nocta", "missingcta"):
-        return "Missing CTA"
     if "buy" in text or "shop" in text:
         return "Buy/Shop CTA"
     if "learn" in text:
         return "Learn CTA"
     if "urgenc" in text:
         return "Urgency CTA"
-    if text in ("other", "others", "othercta"):
-        return "Other CTA"
-    if str(cta_flag or "").strip().lower() in ("no", "n", "false", "0") or _blank(cta_text):
-        return "Missing CTA"
-    return "Other CTA"
+    return "Missing CTA"
 
 
 def classify_cta(cta_flag, cta_text, mapped_bucket=None):
-    """Prefer BASCO_CTA_MAPPING.CTA_Bucket; Missing CTA when no CTA text/flag."""
+    """Map CTA_Bucket to Buy/Shop, Learn, Urgency, or Missing CTA (No CTA)."""
     return normalize_cta_bucket(mapped_bucket, cta_flag, cta_text)
 
 
@@ -96,7 +91,7 @@ class CTACampaignView(APIView):
         ))
         all_retailers = sorted(set(
             r['Retailer'] for r in rows
-            if r.get('Retailer') and r['Retailer'] != 'Unknown'
+            if r.get('Retailer') and not is_skipped_account(r.get('Retailer'))
         ))
 
         # Apply region / country / retailer first so QoQ can compare adjacent quarters
@@ -195,7 +190,6 @@ class CTACampaignView(APIView):
                     'Learn CTA': 0,
                     'Missing CTA': 0,
                     'Urgency CTA': 0,
-                    'Other CTA': 0,
                 }
             retailer_map[ret]['total'] += 1
             bucket = r.get('cta_bucket') or 'Missing CTA'

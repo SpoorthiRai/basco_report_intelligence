@@ -138,6 +138,7 @@ def split_visual_tokens(names) -> list:
 
 _PLACEHOLDER_LABELS = frozenset({
     '', 'na', 'n/a', 'null', 'none', 'unknown', 'unmapped',
+    'intel creative', 'red baron',
 })
 
 
