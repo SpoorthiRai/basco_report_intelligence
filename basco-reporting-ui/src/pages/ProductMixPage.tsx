@@ -550,7 +550,7 @@ export default function ProductMixPage() {
               <ResponsiveContainer width="100%" height={340}>
                 <BarChart
                   data={regionData}
-                  margin={{ top: 10, right: 10, left: 10, bottom: 15 }}
+                  margin={{ top: 25, right: 10, left: 10, bottom: 15 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis
@@ -588,7 +588,16 @@ export default function ProductMixPage() {
                     fill="#CBD5E1"
                     radius={[4, 4, 0, 0]}
                     barSize={38}
-                  />
+                  >
+                    <LabelList
+                      dataKey="series_pct"
+                      position="top"
+                      fill="#1E429F"
+                      fontSize={11}
+                      fontWeight={800}
+                      formatter={(v: any) => (Number(v) > 0 ? `${v}%` : '')}
+                    />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             )}
