@@ -6,7 +6,7 @@ from .product_mix_queries import HELPDESK_FEEDBACK_MERGE_QUERY, PRODUCT_MIX_QUER
 from .queries import HELPDESK_MASTER_MERGE_PARENT_USAGE_QUERY, LEAGUE_TABLE_QUERY
 from .kpi import is_skipped_account, is_top_account, normalize_parent
 from .permissions import IsAnyReportingRole
-from .views import apply_user_scope, sort_quarters_desc
+from .views import apply_user_scope, sort_quarters_desc, build_cascading_filter_options, is_all_filter
 
 
 VISIBILITY_FAMILY_ORDER = [
@@ -257,7 +257,49 @@ class ProductMixView(APIView):
             if is_top_account(r) and normalize_parent(r.get('child_account') or r.get('retailer'))
         }
 
-        # ── 2026 Master filter dropdowns (derived directly from scoped 2026 data) ──
+        # ── Cascading Quarter → Region → Country → Retailer options ──
+        filter_options = build_cascading_filter_options(
+            all_raw_rows,
+            selected_quarter=quarter_filter,
+            selected_region=region_filter,
+            selected_country=country_filter,
+            quarter_keys=("quarter_label",),
+            region_keys=("Region",),
+            country_keys=("Country",),
+            retailer_keys=("Retailer", "child_account", "retailer"),
+        )
+        # Merge POP retailers into the cascading retailer list for the selected scope.
+        scoped_for_retailers = all_raw_rows
+        if not is_all_filter(quarter_filter, 'All', 'All Quarters'):
+            scoped_for_retailers = [r for r in scoped_for_retailers if r.get('quarter_label') == quarter_filter]
+        if not is_all_filter(region_filter, 'All', 'All Regions'):
+            wanted_region = region_filter.strip().upper()
+            scoped_for_retailers = [
+                r for r in scoped_for_retailers
+                if str(r.get('Region') or '').strip().upper() == wanted_region
+            ]
+        if not is_all_filter(country_filter, 'All', 'All Countries'):
+            scoped_for_retailers = [r for r in scoped_for_retailers if r.get('Country') == country_filter]
+        pop_retailer_scope = pop_rows
+        if not is_all_filter(quarter_filter, 'All', 'All Quarters'):
+            pop_retailer_scope = [r for r in pop_retailer_scope if str(r.get('quarter') or '') == quarter_filter]
+        if not is_all_filter(region_filter, 'All', 'All Regions'):
+            wanted_region = region_filter.strip().upper()
+            pop_retailer_scope = [
+                r for r in pop_retailer_scope
+                if str(r.get('region') or '').strip().upper() == wanted_region
+            ]
+        if not is_all_filter(country_filter, 'All', 'All Countries'):
+            pop_retailer_scope = [r for r in pop_retailer_scope if r.get('country') == country_filter]
+        retailer_set = set(filter_options.get('retailers') or [])
+        for r in pop_retailer_scope:
+            name = r.get('child_account') or r.get('retailer')
+            if name and not is_skipped_account(name):
+                retailer_set.add(name)
+        filter_options['retailers'] = ['All Retailers'] + sorted(
+            n for n in retailer_set if n and n != 'All Retailers'
+        )
+
         raw_years = set()
         for r in all_raw_rows:
             y = r.get('year_label')
@@ -270,55 +312,22 @@ class ProductMixView(APIView):
                 raw_years.add(parts[-1])
         master_years = sorted(raw_years, reverse=True)
 
-        raw_quarters = set(r.get('quarter_label') for r in all_raw_rows if r.get('quarter_label'))
-        master_quarters = sort_quarters_desc(list(raw_quarters))
-
-        raw_retailers = set(
-            r.get('Retailer') for r in all_raw_rows
-            if r.get('Retailer') and not is_skipped_account(r.get('Retailer'))
-        )
-        for r in pop_rows:
-            name = r.get('child_account') or r.get('retailer')
-            if name and not is_skipped_account(name):
-                raw_retailers.add(name)
-        master_retailers = sorted(raw_retailers)
-
-        raw_regions = set(
-            r.get('Region') for r in all_raw_rows
-            if r.get('Region') and str(r.get('Region')).strip() not in ('Unknown', 'None', '')
-        )
-        master_regions = sorted(list(raw_regions))
-
-        country_source = all_raw_rows
-        if region_filter and region_filter not in ('All', 'All Regions'):
-            wanted_region = region_filter.strip().upper()
-            country_source = [
-                r for r in all_raw_rows
-                if str(r.get('Region') or '').strip().upper() == wanted_region
-            ]
-
-        raw_countries = set(
-            r.get('Country') for r in country_source
-            if r.get('Country') and r.get('Country') not in ('Unknown', 'None', '')
-        )
-        master_countries = sorted(list(raw_countries))
-
         # Apply filters
         rows = all_raw_rows
-        if quarter_filter and quarter_filter not in ('All', 'All Quarters'):
+        if not is_all_filter(quarter_filter, 'All', 'All Quarters'):
             rows = [r for r in rows if r.get('quarter_label') == quarter_filter]
-        if region_filter and region_filter not in ('All', 'All Regions'):
+        if not is_all_filter(region_filter, 'All', 'All Regions'):
             wanted_region = region_filter.strip().upper()
             rows = [r for r in rows if str(r.get('Region') or '').strip().upper() == wanted_region]
-        if country_filter and country_filter not in ('All', 'All Countries'):
+        if not is_all_filter(country_filter, 'All', 'All Countries'):
             rows = [r for r in rows if r.get('Country') == country_filter]
-        if year_filter and year_filter not in ('All', 'All Years'):
+        if not is_all_filter(year_filter, 'All', 'All Years'):
             rows = [
                 r for r in rows
                 if str(r.get('year_label') or '') == str(year_filter)
                 or str(r.get('quarter_label') or '').endswith(str(year_filter))
             ]
-        if retailer_filter and retailer_filter not in ('All', 'All Retailers'):
+        if not is_all_filter(retailer_filter, 'All', 'All Retailers'):
             wanted_ret = normalize_parent(retailer_filter)
             rows = [r for r in rows if normalize_parent(r.get('Retailer')) == wanted_ret]
         if top_account_filter in ('yes', 'true', '1', 'top'):
@@ -587,10 +596,7 @@ class ProductMixView(APIView):
             'compliance_guidance_by_element': compliance_guidance_by_element,
             'brand_elements':         list(BRAND_ELEMENT_BUTTONS),
             'filter_options': {
-                'quarters':  ['All Quarters'] + master_quarters,
-                'regions':   ['All Regions'] + master_regions,
-                'countries': ['All Countries'] + master_countries,
-                'retailers': ['All Retailers'] + master_retailers,
+                **filter_options,
                 'years':     ['All Years'] + master_years,
                 'top_accounts': ['All', 'Yes', 'No'],
             }

@@ -945,11 +945,15 @@ def compute_helpdesk_kpis(
     league_history: list[dict] | None = None,
     helpdesk_history: list[dict] | None = None,
     compare_quarter: str = "",
+    pop_quarter: str = "",
+    helpdesk_quarter: str = "",
 ) -> dict:
     """Helpdesk usage vs live creatives (POP queries + AIHD CAMPAIGN_TYPE mix)."""
     helpdesk_rows = helpdesk_rows or []
     league_history = league_history if league_history is not None else league_rows
     helpdesk_history = helpdesk_history if helpdesk_history is not None else helpdesk_rows
+    pop_compare = pop_quarter or compare_quarter
+    hd_compare = helpdesk_quarter or compare_quarter
     queries_received = sum(int(row.get("creative_count") or 1) for row in visual_rows)
 
     approval_rows = [row for row in helpdesk_rows if _is_counted_approval(row.get("Final_Basco_Approval"))]
@@ -980,23 +984,24 @@ def compute_helpdesk_kpis(
     other_pct = max(0, 100 - intel_days_pct - intel_gamer_days_pct - back_to_school_pct)
     intel_specific = intel_days + intel_gamer_days + back_to_school
 
-    pop_now = _pop_children_for_quarter(league_history, compare_quarter) if compare_quarter else {
+    pop_now = _pop_children_for_quarter(league_history, pop_compare) if pop_compare else {
         key for row in league_history
         if (key := _helpdesk_child_key(row)) and not is_skipped_account(key)
     }
-    hd_now = _hd_children_for_quarter(helpdesk_history, compare_quarter) if compare_quarter else {
+    hd_now = _hd_children_for_quarter(helpdesk_history, hd_compare) if hd_compare else {
         key for row in helpdesk_history
         if (key := _helpdesk_child_key(row)) and not is_skipped_account(key)
     }
     outside = len(pop_now - hd_now)
     adopted_now = len(pop_now & hd_now)
 
-    prev_quarter = previous_quarter_label(compare_quarter) if compare_quarter else ""
+    pop_prev_quarter = previous_quarter_label(pop_compare) if pop_compare else ""
+    hd_prev_quarter = previous_quarter_label(hd_compare) if hd_compare else ""
     adopted_prev = 0
     has_prev = False
-    if prev_quarter:
-        pop_prev = _pop_children_for_quarter(league_history, prev_quarter)
-        hd_prev = _hd_children_for_quarter(helpdesk_history, prev_quarter)
+    if pop_prev_quarter or hd_prev_quarter:
+        pop_prev = _pop_children_for_quarter(league_history, pop_prev_quarter) if pop_prev_quarter else set()
+        hd_prev = _hd_children_for_quarter(helpdesk_history, hd_prev_quarter) if hd_prev_quarter else set()
         if pop_prev or hd_prev:
             has_prev = True
             adopted_prev = len(pop_prev & hd_prev)

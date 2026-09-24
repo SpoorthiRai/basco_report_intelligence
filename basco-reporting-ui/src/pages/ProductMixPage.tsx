@@ -1,5 +1,5 @@
 // src/pages/ProductMixPage.tsx
-// Product Mix — Helpdesk Assets (Pre Launch)
+// Product Mix ? Helpdesk Assets (Pre Launch)
 // 3-Panel Layout: Region Series Adoption, Retailer Product Proportion, Generation/Series Mix
 
 import { useState, useEffect } from 'react';
@@ -18,6 +18,8 @@ import {
   Legend,
 } from 'recharts';
 import api from '../api/client';
+import ClearFiltersButton from '../components/common/ClearFiltersButton';
+import { filtersAreActive, pickValidOption } from '../utils/cascadingFilters';
 
 function isSkippedRetailer(value?: string | null): boolean {
   const t = (value ?? '')
@@ -211,6 +213,35 @@ export default function ProductMixPage() {
     };
   }, [quarterFilter, regionFilter, countryFilter, retailerFilter, yearFilter, topAccountFilter, familyFilter, targetSeriesFilter]);
 
+  useEffect(() => {
+    const opts = data?.filter_options;
+    if (!opts) return;
+    const nextQuarter = pickValidOption(quarterFilter, opts.quarters || [], 'All Quarters');
+    const nextRegion = pickValidOption(regionFilter, opts.regions || [], 'All Regions');
+    const nextCountry = pickValidOption(countryFilter, opts.countries || [], 'All Countries');
+    const nextRetailer = pickValidOption(retailerFilter, opts.retailers || [], 'All Retailers');
+    const nextYear = pickValidOption(yearFilter, opts.years || [], 'All Years');
+    if (nextQuarter !== quarterFilter) setQuarterFilter(nextQuarter);
+    if (nextRegion !== regionFilter) setRegionFilter(nextRegion);
+    if (nextCountry !== countryFilter) setCountryFilter(nextCountry);
+    if (nextRetailer !== retailerFilter) setRetailerFilter(nextRetailer);
+    if (nextYear !== yearFilter) setYearFilter(nextYear);
+  }, [data?.filter_options, quarterFilter, regionFilter, countryFilter, retailerFilter, yearFilter]);
+
+  const clearFilters = () => {
+    setQuarterFilter('All Quarters');
+    setRegionFilter('All Regions');
+    setCountryFilter('All Countries');
+    setRetailerFilter('All Retailers');
+    setYearFilter('All Years');
+    setTopAccountFilter('All');
+  };
+
+  const filtersActive = filtersAreActive(
+    [quarterFilter, regionFilter, countryFilter, retailerFilter, yearFilter, topAccountFilter],
+    ['All Quarters', 'All Regions', 'All Countries', 'All Retailers', 'All Years', 'All']
+  );
+
   const families = data?.all_families || [];
   const retailerMix = (data?.retailer_product_mix || []).filter((row) => !isSkippedRetailer(row.retailer));
   const retailerQueries = (data?.retailer_queries || []).filter((row) => !isSkippedRetailer(row.retailer));
@@ -240,7 +271,7 @@ export default function ProductMixPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* ── Page Header ─────────────────────────────────────────── */}
+      {/* ?? Page Header ??????????????????????????????????????????? */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
@@ -252,13 +283,54 @@ export default function ProductMixPage() {
             </h1>
           </div>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
-            See which Intel products are gaining visibility across retailers and markets – and where priority products have room to grow.
+            See which Intel products are gaining visibility across retailers and markets ? and where priority products have room to grow.
           </p>
         </div>
 
-        {/* Filters: row 1 geo/retailer, row 2 year/quarter/top account */}
-        <div className="w-full lg:w-[min(100%,540px)] flex flex-col gap-2">
+        {/* Filters: Year, Quarter, Region, Country, Retailer, Top Account */}
+        <div className="w-full lg:w-[min(100%,620px)] flex flex-col gap-2">
           <div className="grid grid-cols-3 gap-2">
+            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
+              <span className="text-[#6B7280] font-medium shrink-0">Year:</span>
+              <select
+                value={yearFilter}
+                onChange={(e) => {
+                  setYearFilter(e.target.value);
+                  setQuarterFilter('All Quarters');
+                  setRegionFilter('All Regions');
+                  setCountryFilter('All Countries');
+                  setRetailerFilter('All Retailers');
+                }}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
+              >
+                {(data?.filter_options?.years || ['All Years']).map((y) => (
+                  <option key={y} value={y} className="bg-white text-[#111827]">
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
+              <span className="text-[#6B7280] font-medium shrink-0">Quarter:</span>
+              <select
+                value={quarterFilter}
+                onChange={(e) => {
+                  setQuarterFilter(e.target.value);
+                  setRegionFilter('All Regions');
+                  setCountryFilter('All Countries');
+                  setRetailerFilter('All Retailers');
+                }}
+                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
+              >
+                {(data?.filter_options?.quarters || ['All Quarters']).map((q) => (
+                  <option key={q} value={q} className="bg-white text-[#111827]">
+                    {q}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
               <span className="text-[#6B7280] font-medium shrink-0">Region:</span>
               <select
@@ -266,6 +338,7 @@ export default function ProductMixPage() {
                 onChange={(e) => {
                   setRegionFilter(e.target.value);
                   setCountryFilter('All Countries');
+                  setRetailerFilter('All Retailers');
                 }}
                 className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
               >
@@ -276,12 +349,17 @@ export default function ProductMixPage() {
                 ))}
               </select>
             </div>
+          </div>
 
+          <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
             <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
               <span className="text-[#6B7280] font-medium shrink-0">Country:</span>
               <select
                 value={countryFilter}
-                onChange={(e) => setCountryFilter(e.target.value)}
+                onChange={(e) => {
+                  setCountryFilter(e.target.value);
+                  setRetailerFilter('All Retailers');
+                }}
                 className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
               >
                 {(data?.filter_options?.countries || ['All Countries']).map((c) => (
@@ -306,38 +384,6 @@ export default function ProductMixPage() {
                 ))}
               </select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
-              <span className="text-[#6B7280] font-medium shrink-0">Year:</span>
-              <select
-                value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
-              >
-                {(data?.filter_options?.years || ['All Years']).map((y) => (
-                  <option key={y} value={y} className="bg-white text-[#111827]">
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
-              <span className="text-[#6B7280] font-medium shrink-0">Quarter:</span>
-              <select
-                value={quarterFilter}
-                onChange={(e) => setQuarterFilter(e.target.value)}
-                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer min-w-0 flex-1"
-              >
-                {(data?.filter_options?.quarters || ['All Quarters']).map((q) => (
-                  <option key={q} value={q} className="bg-white text-[#111827]">
-                    {q}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             <div className="flex items-center gap-1.5 min-w-0 h-9 bg-white/95 border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
               <span className="text-[#6B7280] font-medium shrink-0">Top Account:</span>
@@ -353,15 +399,16 @@ export default function ProductMixPage() {
                 ))}
               </select>
             </div>
+            <ClearFiltersButton onClear={clearFilters} disabled={!filtersActive} />
           </div>
         </div>
       </div>
 
 
-      {/* ── Error Banner ────────────────────────────────────────── */}
+      {/* ?? Error Banner ?????????????????????????????????????????? */}
       {error && (
         <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs md:text-sm font-semibold flex items-center justify-between">
-          <span>⚠️ {error}</span>
+          <span>?? {error}</span>
           <button
             onClick={() => setFamilyFilter((prev) => prev)}
             className="text-xs underline hover:text-rose-900 cursor-pointer font-bold"
@@ -501,11 +548,11 @@ export default function ProductMixPage() {
         </div>
       </div>
 
-      {/* ── 3-Panel Grid Layout ──────────────────────────────────── */}
+      {/* ?? 3-Panel Grid Layout ???????????????????????????????????? */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ?????????????????????????????????????????????????????????? */}
         {/* LEFT PANEL: 27% Width (lg:col-span-3)                      */}
-        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ?????????????????????????????????????????????????????????? */}
         <div className="lg:col-span-3 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between min-h-[600px]">
           <div>
             <div className="flex flex-col gap-2 pb-3 border-b border-[#E5E7EB]">
@@ -605,9 +652,9 @@ export default function ProductMixPage() {
 
         </div>
 
-        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ?????????????????????????????????????????????????????????? */}
         {/* CENTRE PANEL: 45% Width (lg:col-span-5)                    */}
-        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ?????????????????????????????????????????????????????????? */}
         <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between min-h-[620px] h-full">
           <div>
             <div className="flex items-center justify-between gap-2">
@@ -621,7 +668,7 @@ export default function ProductMixPage() {
                   className="text-[11px] font-bold text-[#1E429F] hover:text-[#162E6E] bg-[#1E429F]/10 hover:bg-[#1E429F]/20 px-2 py-0.5 rounded-md transition-colors cursor-pointer flex items-center gap-1"
                 >
                   <span>Reset selection ({selectedFamilies.length})</span>
-                  <span>✕</span>
+                  <span>?</span>
                 </button>
               )}
             </div>
@@ -730,7 +777,7 @@ export default function ProductMixPage() {
                     />
                     <span className="truncate max-w-[150px]">{fam}</span>
                     {isSelected && (
-                      <span className="text-[10px] ml-0.5 font-bold text-emerald-400">✓</span>
+                      <span className="text-[10px] ml-0.5 font-bold text-emerald-400">?</span>
                     )}
                   </button>
                 );
@@ -739,9 +786,9 @@ export default function ProductMixPage() {
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ?????????????????????????????????????????????????????????? */}
         {/* RIGHT PANEL: 28% Width (lg:col-span-4)                     */}
-        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ?????????????????????????????????????????????????????????? */}
         <div className="lg:col-span-4 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col justify-between min-h-[620px] h-full">
           <div>
             {/* Family Dropdown Selector */}

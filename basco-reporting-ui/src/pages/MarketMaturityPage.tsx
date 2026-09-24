@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import { useMarketMaturity } from "../hooks/useMarketMaturity";
 import { useLeagueTable } from "../hooks/useLeagueTable";
+import ClearFiltersButton from "../components/common/ClearFiltersButton";
+import { filtersAreActive, pickValidOption } from "../utils/cascadingFilters";
 
 export interface ParentAccountRow {
   parent_account: string;
@@ -414,6 +416,23 @@ export default function MarketMaturityPage() {
 
   const availableRegions = apiResponse?.filter_options?.regions || leagueResponse?.filter_options?.regions || ["All"];
 
+  useEffect(() => {
+    setSelectedQuarter((prev) => pickValidOption(prev, availableQuarters, "All Quarters"));
+    setSelectedRegion((prev) => pickValidOption(prev, availableRegions, "All"));
+  }, [availableQuarters, availableRegions]);
+
+  const clearFilters = () => {
+    setSelectedQuarter("All Quarters");
+    setSelectedRegion("All");
+    setCountryFilter("All Countries");
+    setExplorerQuarter("All Quarters");
+  };
+
+  const filtersActive = filtersAreActive(
+    [selectedQuarter, selectedRegion],
+    ["All Quarters", "All", "All Regions"]
+  );
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -438,11 +457,11 @@ export default function MarketMaturityPage() {
     );
     return raw.map((a) => {
       const bench = regionThresholds[regionKey(a.region)] ?? 0;
-      return {
+        return {
         ...a,
         quadrant: classifyMaturity(Number(a.basco_score || 0), Number(a.attr_loss || 0), bench),
-      };
-    });
+        };
+      });
   }, [apiResponse, leagueResponse]);
 
   // ── Compute Country Aggregates based on live backend data ────────────────────
@@ -503,10 +522,10 @@ export default function MarketMaturityPage() {
       const lossVsPct = threshold > 0 ? (d.attr_loss / threshold) * 100 : null;
       const fmv = d.fmv == null ? null : Number(d.fmv);
       return {
-        ...d,
+      ...d,
         fmv,
-        x: d.basco_score,
-        y: d.attr_loss,
+      x: d.basco_score,
+      y: d.attr_loss,
         radius: Math.max(7, Math.min(26, Math.round(((fmv || 0) / maxVal) * 26))),
         attribution_loss_threshold: threshold,
         loss_vs_threshold_pct: lossVsPct,
@@ -729,6 +748,7 @@ export default function MarketMaturityPage() {
                       key={period}
                       onClick={() => {
                         setSelectedQuarter(period);
+                        setSelectedRegion("All");
                         setIsQuarterOpen(false);
                       }}
                       className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between transition-colors ${
@@ -796,6 +816,8 @@ export default function MarketMaturityPage() {
               </div>
             )}
           </div>
+
+          <ClearFiltersButton onClear={clearFilters} disabled={!filtersActive} />
         </div>
       </div>
 

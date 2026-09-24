@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsAnyReportingRole
 from core.db import get_warehouse_connection
-from .views import sort_quarters_desc, apply_user_scope
+from .views import sort_quarters_desc, apply_user_scope, build_cascading_filter_options, is_all_filter
 from .offer_cta_queries import (
     OFFER_CTA_QUERY,
     OFFER_EVIDENCE_QUERY
@@ -99,42 +99,36 @@ class OfferCTAView(APIView):
         rows = apply_user_scope(rows, request.user, country_key='Country', region_key='Region', retailer_key='Retailer')
         ev_rows = apply_user_scope(ev_rows, request.user, country_key='Country', region_key='Region', retailer_key='Retailer')
 
-        # Extract master filter options from scoped data
-        all_quarters = sort_quarters_desc(set(
-            r['quarter_label'] for r in rows
-            if r.get('quarter_label')
-        ))
-        all_regions = sorted(set(
-            r['Region'] for r in rows
-            if r.get('Region') and str(r.get('Region')).strip() not in ('Unknown', 'None', '', 'NA', 'Unmapped')
-        ))
-        all_countries = sorted(set(
-            r['Country'] for r in rows
-            if r.get('Country') and r['Country'] != 'Unknown'
-        ))
-        all_retailers = sorted(set(
-            r['Retailer'] for r in rows
-            if r.get('Retailer') and not _is_placeholder_retailer(r.get('Retailer'))
-        ))
+        filter_options = build_cascading_filter_options(
+            rows,
+            selected_quarter=quarter_filter,
+            selected_region=region_filter,
+            selected_country=country_filter,
+            quarter_keys=("quarter_label",),
+            region_keys=("Region",),
+            country_keys=("Country",),
+            retailer_keys=("Retailer",),
+            skip_retailer=_is_placeholder_retailer,
+        )
 
         # Apply filters
         for dataset in [rows, ev_rows]:
-            if quarter_filter and quarter_filter not in ('All', 'All Quarters'):
+            if not is_all_filter(quarter_filter, 'All', 'All Quarters'):
                 dataset[:] = [
                     r for r in dataset
                     if r.get('quarter_label') == quarter_filter
                 ]
-            if region_filter and region_filter not in ('All', 'All Regions'):
+            if not is_all_filter(region_filter, 'All', 'All Regions'):
                 dataset[:] = [
                     r for r in dataset
-                    if r.get('Region') == region_filter
+                    if str(r.get('Region') or '').strip().upper() == region_filter.strip().upper()
                 ]
-            if country_filter and country_filter not in ('All', 'All Countries'):
+            if not is_all_filter(country_filter, 'All', 'All Countries'):
                 dataset[:] = [
                     r for r in dataset
                     if r.get('Country') == country_filter
                 ]
-            if retailer_filter and retailer_filter not in ('All', 'All Retailers'):
+            if not is_all_filter(retailer_filter, 'All', 'All Retailers'):
                 dataset[:] = [
                     r for r in dataset
                     if r.get('Retailer') == retailer_filter
@@ -298,10 +292,7 @@ class OfferCTAView(APIView):
             'promo_missing_cta': promo_missing_cta[:100],
             'all_offer_evidence': all_offer_evidence[:100],
             'filter_options': {
-                'quarters': ['All Quarters'] + all_quarters,
-                'regions': ['All Regions'] + all_regions,
-                'countries': ['All Countries'] + all_countries,
-                'retailers': ['All Retailers'] + all_retailers,
+                **filter_options,
                 'offer_types': ['All Offer Types'] + all_offer_types,
             }
         })

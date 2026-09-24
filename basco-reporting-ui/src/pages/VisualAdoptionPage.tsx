@@ -15,6 +15,8 @@ import {
 } from 'recharts';
 import api from '../api/client';
 import ImageModal from '../components/common/ImageModal';
+import ClearFiltersButton from '../components/common/ClearFiltersButton';
+import { filtersAreActive, pickValidOption } from '../utils/cascadingFilters';
 
 interface PMSVisual {
   PMSVisual_ID: number | string;
@@ -85,6 +87,37 @@ function visualLabel(pv: PMSVisual): string {
   return pv.PMSVisual_Label || pv.PMSVisual_Name;
 }
 
+function FilterChip({
+  label,
+  value,
+  options,
+  onChange,
+  optionLabel,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  optionLabel?: (value: string) => string;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 shrink-0 h-9 bg-white border border-[#E5E7EB] shadow-2xs px-2.5 rounded-xl text-xs font-bold text-[#111827]">
+      <span className="text-[#6B7280] font-medium">{label}:</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer max-w-[132px]"
+      >
+        {options.map((option) => (
+          <option key={`${label}-${option}`} value={option} className="bg-white text-[#111827]">
+            {optionLabel ? optionLabel(option) : option}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export default function VisualAdoptionPage() {
   const [data, setData] = useState<VisualAdoptionResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -122,6 +155,9 @@ export default function VisualAdoptionPage() {
     }
     if (countryFilter && countryFilter !== 'All' && countryFilter !== 'All Countries') {
       params.append('country', countryFilter);
+    }
+    if (tableRetailerFilter && tableRetailerFilter !== 'All' && tableRetailerFilter !== 'All Retailers') {
+      params.append('retailer', tableRetailerFilter);
     }
     if (visualStyleFilter && visualStyleFilter !== 'All') {
       params.append('visual_style', visualStyleFilter);
@@ -162,7 +198,34 @@ export default function VisualAdoptionPage() {
     return () => {
       isMounted = false;
     };
-  }, [quarterFilter, regionFilter, countryFilter, visualStyleFilter, selectedVisual, sourceFilter]);
+  }, [quarterFilter, regionFilter, countryFilter, tableRetailerFilter, visualStyleFilter, selectedVisual, sourceFilter]);
+
+  useEffect(() => {
+    const opts = data?.filter_options;
+    if (!opts) return;
+    const nextQuarter = pickValidOption(quarterFilter, opts.quarters || [], 'All');
+    const nextRegion = pickValidOption(regionFilter, opts.regions || [], 'All');
+    const nextCountry = pickValidOption(countryFilter, opts.countries || [], 'All');
+    const nextRetailer = pickValidOption(tableRetailerFilter, opts.retailers || [], 'All');
+    if (nextQuarter !== quarterFilter) setQuarterFilter(nextQuarter);
+    if (nextRegion !== regionFilter) setRegionFilter(nextRegion);
+    if (nextCountry !== countryFilter) setCountryFilter(nextCountry);
+    if (nextRetailer !== tableRetailerFilter) setTableRetailerFilter(nextRetailer);
+  }, [data?.filter_options, quarterFilter, regionFilter, countryFilter, tableRetailerFilter]);
+
+  const clearFilters = () => {
+    setQuarterFilter('All');
+    setRegionFilter('All');
+    setCountryFilter('All');
+    setTableRetailerFilter('All');
+    setVisualStyleFilter('All');
+    setUsageFilter('All');
+  };
+
+  const filtersActive = filtersAreActive(
+    [quarterFilter, regionFilter, countryFilter, tableRetailerFilter, visualStyleFilter, usageFilter],
+    ['All', 'All Quarters', 'All Regions', 'All Countries', 'All Retailers']
+  );
 
   // Top 15 retailers for left chart
   const topRetailersAdoption = (data?.retailer_adoption || []).slice(0, 15);
@@ -196,97 +259,88 @@ export default function VisualAdoptionPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* ── Page Header ─────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
-              <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
-                Brand &amp; Visual Adoption
-              </span>
-            </h1>
-          </div>
+      <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
+            <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
+              Brand &amp; Visual Adoption
+            </span>
+          </h1>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
             See how Intel-approved campaign visuals are being activated across retailers – and where adoption can grow.
           </p>
         </div>
 
-        {/* Source + Quarter, Region, Country */}
-        <div className="flex items-center gap-2.5 flex-wrap justify-end">
-          <div className="inline-flex rounded-xl border border-[#E5E7EB] overflow-hidden bg-white shadow-2xs">
+        <div className="flex items-center gap-2 flex-nowrap overflow-x-auto justify-end xl:shrink-0">
+          <div className="inline-flex rounded-xl border border-[#E5E7EB] overflow-hidden bg-white shadow-2xs shrink-0">
             <button
               type="button"
-              onClick={() => setSourceFilter('pop')}
-              className={`px-3 py-2 text-[11px] font-bold transition-colors ${
+              onClick={() => {
+                setSourceFilter('pop');
+                setTableRetailerFilter('All');
+              }}
+              className={`px-3 h-9 text-[11px] font-bold transition-colors ${
                 sourceFilter === 'pop'
                   ? 'bg-[#1E429F] text-white'
                   : 'bg-white text-[#6B7280] hover:bg-[#F8FAFC]'
               }`}
             >
-              POP creatives
+              POP
             </button>
             <button
               type="button"
-              onClick={() => setSourceFilter('helpdesk')}
-              className={`px-3 py-2 text-[11px] font-bold transition-colors border-l border-[#E5E7EB] ${
+              onClick={() => {
+                setSourceFilter('helpdesk');
+                setTableRetailerFilter('All');
+              }}
+              className={`px-3 h-9 text-[11px] font-bold transition-colors border-l border-[#E5E7EB] ${
                 sourceFilter === 'helpdesk'
                   ? 'bg-[#0D9488] text-white'
                   : 'bg-white text-[#6B7280] hover:bg-[#F8FAFC]'
               }`}
             >
-              Helpdesk creatives
+              Helpdesk
             </button>
           </div>
 
-          {/* Quarter dropdown */}
-          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
-            <span className="text-[#6B7280] font-medium">Quarter:</span>
-            <select
-              value={quarterFilter}
-              onChange={(e) => setQuarterFilter(e.target.value)}
-              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
-            >
-              {(data?.filter_options?.quarters || ['All']).map((q) => (
-                <option key={q} value={q} className="bg-white text-[#111827]">
-                  {q}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Region dropdown */}
-          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
-            <span className="text-[#6B7280] font-medium">Region:</span>
-            <select
-              value={regionFilter}
-              onChange={(e) => {
-                setRegionFilter(e.target.value);
-                setCountryFilter('All');
-              }}
-              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
-            >
-              {(data?.filter_options?.regions || ['All']).map((r) => (
-                <option key={r} value={r} className="bg-white text-[#111827]">
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Country dropdown */}
-          <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
-            <span className="text-[#6B7280] font-medium">Country:</span>
-            <select
-              value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
-              className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
-            >
-              {(data?.filter_options?.countries || ['All']).map((c) => (
-                <option key={c} value={c} className="bg-white text-[#111827]">
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FilterChip
+            label="Quarter"
+            value={quarterFilter}
+            options={data?.filter_options?.quarters || ['All']}
+            onChange={(value) => {
+              setQuarterFilter(value);
+              setRegionFilter('All');
+              setCountryFilter('All');
+              setTableRetailerFilter('All');
+            }}
+          />
+          <FilterChip
+            label="Region"
+            value={regionFilter}
+            options={data?.filter_options?.regions || ['All']}
+            onChange={(value) => {
+              setRegionFilter(value);
+              setCountryFilter('All');
+              setTableRetailerFilter('All');
+            }}
+          />
+          <FilterChip
+            label="Country"
+            value={countryFilter}
+            options={data?.filter_options?.countries || ['All']}
+            onChange={(value) => {
+              setCountryFilter(value);
+              setTableRetailerFilter('All');
+            }}
+          />
+          <FilterChip
+            label="Retailer"
+            value={tableRetailerFilter}
+            options={tableRetailerOptions}
+            optionLabel={(value) => (value === 'All' ? 'All Retailers' : value)}
+            onChange={setTableRetailerFilter}
+          />
+          <ClearFiltersButton onClear={clearFilters} disabled={!filtersActive} />
         </div>
       </div>
 
@@ -611,58 +665,7 @@ export default function VisualAdoptionPage() {
               Master visual vs live retailer creatives for {selectedVisualLabel || 'the selected visual'}.
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap justify-end">
-            <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
-              <span className="text-[11px] font-medium text-[#6B7280]">Quarter:</span>
-              <select
-                value={quarterFilter}
-                onChange={(e) => setQuarterFilter(e.target.value)}
-                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
-              >
-                {(data?.filter_options?.quarters || ['All']).map((q) => (
-                  <option key={`t-q-${q}`} value={q}>{q}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
-              <span className="text-[11px] font-medium text-[#6B7280]">Region:</span>
-              <select
-                value={regionFilter}
-                onChange={(e) => {
-                  setRegionFilter(e.target.value);
-                  setCountryFilter('All');
-                }}
-                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
-              >
-                {(data?.filter_options?.regions || ['All']).map((r) => (
-                  <option key={`t-r-${r}`} value={r}>{r}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
-              <span className="text-[11px] font-medium text-[#6B7280]">Country:</span>
-              <select
-                value={countryFilter}
-                onChange={(e) => setCountryFilter(e.target.value)}
-                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer"
-              >
-                {(data?.filter_options?.countries || ['All']).map((c) => (
-                  <option key={`t-c-${c}`} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
-              <span className="text-[11px] font-medium text-[#6B7280]">Retailer:</span>
-              <select
-                value={tableRetailerFilter}
-                onChange={(e) => setTableRetailerFilter(e.target.value)}
-                className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer max-w-[140px]"
-              >
-                {tableRetailerOptions.map((r) => (
-                  <option key={`t-ret-${r}`} value={r}>{r}</option>
-                ))}
-              </select>
-            </div>
+          <div className="flex items-center gap-2 flex-nowrap justify-end">
             <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg px-2.5 py-1 text-xs">
               <span className="text-[11px] font-medium text-[#6B7280]">Usage:</span>
               <select

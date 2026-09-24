@@ -124,6 +124,106 @@ def apply_user_scope(rows, user, country_key="country", region_key="region", ret
     return _finish(rows)
 
 
+def is_all_filter(value, *labels) -> bool:
+    text = str(value or "").strip()
+    if not text:
+        return True
+    lowered = text.lower()
+    if lowered == "all":
+        return True
+    return lowered in {str(label).strip().lower() for label in labels if label}
+
+
+def _row_field(row: dict, *keys) -> str:
+    for key in keys:
+        text = str(row.get(key) or "").strip()
+        if text:
+            return text
+    return ""
+
+
+def build_cascading_filter_options(
+    rows: list[dict],
+    *,
+    selected_quarter=None,
+    selected_region=None,
+    selected_country=None,
+    quarter_keys=("quarter_label", "quarter", "period"),
+    region_keys=("Region", "region"),
+    country_keys=("Country", "country"),
+    retailer_keys=("Retailer", "retailer", "child_account", "Child_Account"),
+    include_retailers: bool = True,
+    skip_retailer=None,
+    quarter_all: str = "All Quarters",
+    region_all: str = "All Regions",
+    country_all: str = "All Countries",
+    retailer_all: str = "All Retailers",
+    region_skip=("Unknown", "None", "", "NA", "Unmapped", "Null"),
+    country_skip=("Unknown", "None", "", "NA", "Unmapped", "Null"),
+) -> dict:
+    """
+    Build Quarter → Region → Country → Retailer options with restricted interaction.
+    Quarters come from all rows; each next level is limited by the selected parents.
+    """
+    from .kpi import is_skipped_account
+
+    def _quarter(row):
+        return normalize_quarter_label(_row_field(row, *quarter_keys))
+
+    def _region(row):
+        return _row_field(row, *region_keys)
+
+    def _country(row):
+        return _row_field(row, *country_keys)
+
+    def _retailer(row):
+        return _row_field(row, *retailer_keys)
+
+    def _ok_region(name: str) -> bool:
+        return bool(name) and name not in region_skip
+
+    def _ok_country(name: str) -> bool:
+        return bool(name) and name not in country_skip
+
+    def _ok_retailer(name: str) -> bool:
+        if not name:
+            return False
+        if skip_retailer is not None:
+            return not skip_retailer(name)
+        return not is_skipped_account(name)
+
+    quarters = sort_quarters_desc({q for row in rows if (q := _quarter(row))})
+
+    region_source = rows
+    if not is_all_filter(selected_quarter, quarter_all):
+        wanted_q = normalize_quarter_label(selected_quarter).upper()
+        region_source = [r for r in rows if _quarter(r).upper() == wanted_q]
+
+    regions = sorted({r for row in region_source if _ok_region((r := _region(row)))})
+
+    country_source = region_source
+    if not is_all_filter(selected_region, region_all, "All"):
+        wanted_r = str(selected_region).strip().upper()
+        country_source = [r for r in region_source if _region(r).upper() == wanted_r]
+
+    countries = sorted({c for row in country_source if _ok_country((c := _country(row)))})
+
+    retailer_source = country_source
+    if not is_all_filter(selected_country, country_all, "All"):
+        wanted_c = str(selected_country).strip()
+        retailer_source = [r for r in country_source if _country(r) == wanted_c]
+
+    options = {
+        "quarters": [quarter_all] + quarters,
+        "regions": [region_all] + regions,
+        "countries": [country_all] + countries,
+    }
+    if include_retailers:
+        retailers = sorted({ret for row in retailer_source if _ok_retailer((ret := _retailer(row)))})
+        options["retailers"] = [retailer_all] + retailers
+    return options
+
+
 def _rows_to_dicts(cursor) -> list[dict]:
     """Convert a cursor result set to a list of plain dicts."""
     columns = [col[0] for col in cursor.description]
@@ -230,21 +330,28 @@ class LeagueTableView(APIView):
             # Role-based & regional scoping
             rows = apply_user_scope(rows, request.user, country_key='country', region_key='region', retailer_key='child_account')
 
-            # Master options for 2026 based on scoped data
-            all_quarters = sort_quarters_desc(list(set(r['quarter'] for r in rows if r.get('quarter'))))
-            all_countries = sorted(list(set(r['country'] for r in rows if r.get('country') and r['country'] not in ('', 'Unknown', 'None'))))
-            all_regions = sorted(list(set(r['region'] for r in rows if r.get('region') and r['region'] not in ('', 'Unknown', 'None'))))
+            filter_options = build_cascading_filter_options(
+                rows,
+                selected_quarter=quarter_filter,
+                selected_region=region_filter,
+                selected_country=country_filter,
+                quarter_keys=("quarter",),
+                region_keys=("region",),
+                country_keys=("country",),
+                include_retailers=False,
+                region_all="All",
+            )
 
             # Compute prev_basco and trend across quarters for each retailer
             rows = enrich_league_rows(rows)
 
             # Filter if query parameters provided
             filtered_rows = rows
-            if quarter_filter and quarter_filter not in ('All', 'All Quarters'):
+            if not is_all_filter(quarter_filter, "All", "All Quarters"):
                 filtered_rows = [r for r in filtered_rows if r.get('quarter') == quarter_filter]
-            if country_filter and country_filter not in ('All', 'All Countries'):
+            if not is_all_filter(country_filter, "All", "All Countries"):
                 filtered_rows = [r for r in filtered_rows if r.get('country') == country_filter]
-            if region_filter and region_filter != 'All':
+            if not is_all_filter(region_filter, "All", "All Regions"):
                 filtered_rows = [r for r in filtered_rows if r.get('region') == region_filter]
 
             helpdesk_filtered = helpdesk_rows
@@ -265,11 +372,7 @@ class LeagueTableView(APIView):
                     helpdesk_filtered,
                 ),
                 'region_thresholds': region_thresholds,
-                'filter_options': {
-                    'quarters': ['All Quarters'] + all_quarters,
-                    'countries': ['All Countries'] + all_countries,
-                    'regions': ['All'] + all_regions,
-                }
+                'filter_options': filter_options,
             }, status=status.HTTP_200_OK)
 
         except pyodbc.Error as e:
@@ -336,13 +439,18 @@ class MarketMaturityView(APIView):
 
             quarter_param = request.query_params.get("quarter", "").strip()
             region_param = request.query_params.get("region", "").strip()
-            all_quarters = sort_quarters_desc(list(set(r.get("quarter_label") for r in raw_rows if r.get("quarter_label"))))
-            all_regions = sorted(list(set(
-                r.get("region") for r in raw_rows
-                if r.get("region") and r.get("region") not in ("", "Unknown", "None")
-            )))
+            filter_options = build_cascading_filter_options(
+                raw_rows,
+                selected_quarter=quarter_param,
+                selected_region=region_param,
+                quarter_keys=("quarter_label",),
+                region_keys=("region",),
+                country_keys=("country",),
+                include_retailers=False,
+                region_all="All",
+            )
 
-            if quarter_param and quarter_param not in ("All", "All Quarters"):
+            if not is_all_filter(quarter_param, "All", "All Quarters"):
                 # Filter by specific quarter
                 matching_rows = [r for r in raw_rows if r.get("quarter_label") == quarter_param]
                 country_rows = []
@@ -439,10 +547,7 @@ class MarketMaturityView(APIView):
                     "data": country_rows,
                     "kpis": compute_market_kpis(country_rows),
                     "region_thresholds": region_thresholds,
-                    "filter_options": {
-                        "quarters": ["All Quarters"] + all_quarters,
-                        "regions": ["All"] + all_regions,
-                    },
+                    "filter_options": filter_options,
                 },
                 status=status.HTTP_200_OK,
             )

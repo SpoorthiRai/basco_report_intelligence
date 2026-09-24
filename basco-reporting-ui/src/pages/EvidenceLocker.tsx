@@ -5,6 +5,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import api from '../api/client';
+import ClearFiltersButton from '../components/common/ClearFiltersButton';
+import { filtersAreActive, pickValidOption } from '../utils/cascadingFilters';
 
 interface CreativeItem {
   Analysis_ID: number | string
@@ -657,6 +659,15 @@ export default function EvidenceLocker() {
     if (quarterFilter && quarterFilter !== 'All' && quarterFilter !== 'All Quarters') {
       params.append('quarter', quarterFilter);
     }
+    if (regionFilter && regionFilter !== 'All' && regionFilter !== 'All Regions') {
+      params.append('region', regionFilter);
+    }
+    if (countryFilter && countryFilter !== 'All' && countryFilter !== 'All Countries') {
+      params.append('country', countryFilter);
+    }
+    if (productFilter && productFilter !== 'All' && productFilter !== 'All Products') {
+      params.append('product', productFilter);
+    }
     const queryString = params.toString() ? `?${params.toString()}` : '';
 
     api
@@ -666,38 +677,20 @@ export default function EvidenceLocker() {
         if (res.data) {
           setData(res.data);
 
-          if (Array.isArray(res.data.filter_options?.products) && res.data.filter_options.products.length > 1) {
+          if (Array.isArray(res.data.filter_options?.products) && res.data.filter_options.products.length > 0) {
             setAvailableProducts(res.data.filter_options.products);
           }
 
-          if (Array.isArray(res.data.filter_options?.quarters) && res.data.filter_options.quarters.length > 1) {
-            setAvailableQuarters((prev) => {
-              const merged = Array.from(new Set([...prev, ...res.data.filter_options.quarters]));
-              const rest = merged.filter((q) => q !== 'All Quarters' && q !== 'All');
-              rest.sort((a, b) => {
-                const pa = a.match(/Q(\d)\s+(\d{4})/i);
-                const pb = b.match(/Q(\d)\s+(\d{4})/i);
-                if (!pa || !pb) return b.localeCompare(a);
-                const yearDiff = Number(pb[2]) - Number(pa[2]);
-                if (yearDiff !== 0) return yearDiff;
-                return Number(pb[1]) - Number(pa[1]);
-              });
-              return ['All Quarters', ...rest];
-            });
+          if (Array.isArray(res.data.filter_options?.quarters) && res.data.filter_options.quarters.length > 0) {
+            setAvailableQuarters(res.data.filter_options.quarters);
           }
 
-          if (Array.isArray(res.data.filter_options?.regions) && res.data.filter_options.regions.length > 1) {
+          if (Array.isArray(res.data.filter_options?.regions) && res.data.filter_options.regions.length > 0) {
             setAvailableRegions(res.data.filter_options.regions);
           }
 
-          if (Array.isArray(res.data.filter_options?.countries) && res.data.filter_options.countries.length > 1) {
-            const countries = res.data.filter_options.countries.map((c) =>
-              c === 'All' ? 'All Countries' : c
-            );
-            if (!countries.includes('All Countries')) {
-              countries.unshift('All Countries');
-            }
-            setAvailableCountries(countries);
+          if (Array.isArray(res.data.filter_options?.countries) && res.data.filter_options.countries.length > 0) {
+            setAvailableCountries(res.data.filter_options.countries);
           }
         }
       })
@@ -729,7 +722,27 @@ export default function EvidenceLocker() {
     return () => {
       isMounted = false;
     };
-  }, [quarterFilter]);
+  }, [quarterFilter, regionFilter, countryFilter, productFilter]);
+
+  useEffect(() => {
+    setQuarterFilter((prev) => pickValidOption(prev, availableQuarters, 'All Quarters'));
+    setRegionFilter((prev) => pickValidOption(prev, availableRegions, 'All Regions'));
+    setCountryFilter((prev) => pickValidOption(prev, availableCountries, 'All Countries'));
+    setProductFilter((prev) => pickValidOption(prev, availableProducts, 'All Products'));
+  }, [availableQuarters, availableRegions, availableCountries, availableProducts]);
+
+  const clearFilters = () => {
+    setQuarterFilter('All Quarters');
+    setRegionFilter('All Regions');
+    setCountryFilter('All Countries');
+    setProductFilter('All Products');
+    setStatusFilter(null);
+  };
+
+  const filtersActive = filtersAreActive(
+    [quarterFilter, regionFilter, countryFilter, productFilter],
+    ['All Quarters', 'All Regions', 'All Countries', 'All Products', 'All']
+  ) || Boolean(statusFilter);
 
   // Product family match
   const matchesProduct = useCallback(
@@ -757,26 +770,7 @@ export default function EvidenceLocker() {
     [countryFilter]
   );
 
-  const countryOptions = useMemo(() => {
-    const fromData = Array.from(
-      new Set(
-        (data?.creatives || [])
-          .filter((c) => matchesRegion(c))
-          .map((c) => String(c.Country || '').trim())
-          .filter((c) => c && c !== 'None' && c !== 'Unknown')
-      )
-    ).sort((a, b) => a.localeCompare(b));
-    if (fromData.length > 0) return ['All Countries', ...fromData];
-    return availableCountries;
-  }, [data, matchesRegion, availableCountries]);
-
-  useEffect(() => {
-    if (countryFilter === 'All Countries') return;
-    if (!countryOptions.includes(countryFilter)) {
-      setCountryFilter('All Countries');
-    }
-  }, [countryOptions, countryFilter]);
-
+  const countryOptions = availableCountries;
   const filteredCreatives = useMemo(() => {
     if (!data?.creatives) return [];
     return data.creatives.filter((c) => {
@@ -825,30 +819,16 @@ export default function EvidenceLocker() {
             <select
               id="quarter-filter"
               value={quarterFilter}
-              onChange={(e) => setQuarterFilter(e.target.value)}
+              onChange={(e) => {
+                setQuarterFilter(e.target.value);
+                setRegionFilter('All Regions');
+                setCountryFilter('All Countries');
+              }}
               className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors"
             >
               {availableQuarters.map((q) => (
                 <option key={q} value={q} className="bg-slate-900 text-white">
                   {q}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            <label htmlFor="product-filter" className="text-xs font-semibold text-slate-300 whitespace-nowrap">
-              Product:
-            </label>
-            <select
-              id="product-filter"
-              value={productFilter}
-              onChange={(e) => setProductFilter(e.target.value)}
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[150px]"
-            >
-              {availableProducts.map((p) => (
-                <option key={p} value={p} className="bg-slate-900 text-white">
-                  {p}
                 </option>
               ))}
             </select>
@@ -861,7 +841,10 @@ export default function EvidenceLocker() {
             <select
               id="region-filter"
               value={availableRegions.includes(regionFilter) ? regionFilter : 'All Regions'}
-              onChange={(e) => setRegionFilter(e.target.value)}
+              onChange={(e) => {
+                setRegionFilter(e.target.value);
+                setCountryFilter('All Countries');
+              }}
               className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[130px]"
             >
               {availableRegions.map((r) => (
@@ -889,6 +872,30 @@ export default function EvidenceLocker() {
               ))}
             </select>
           </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <label htmlFor="product-filter" className="text-xs font-semibold text-slate-300 whitespace-nowrap">
+              Product:
+            </label>
+            <select
+              id="product-filter"
+              value={productFilter}
+              onChange={(e) => setProductFilter(e.target.value)}
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0D9488] cursor-pointer backdrop-blur-xs transition-colors max-w-[150px]"
+            >
+              {availableProducts.map((p) => (
+                <option key={p} value={p} className="bg-slate-900 text-white">
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <ClearFiltersButton
+            onClear={clearFilters}
+            disabled={!filtersActive}
+            className="!bg-white/10 !border-white/20 !text-white hover:!bg-white/20 hover:!text-rose-200 hover:!border-rose-300/40"
+          />
         </div>
       </div>
 

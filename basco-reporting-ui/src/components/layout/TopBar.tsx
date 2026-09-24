@@ -4,6 +4,8 @@
 import { useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { useOverviewFilters } from '../../store/overviewFiltersStore'
+import ClearFiltersButton from '../common/ClearFiltersButton'
+import { filtersAreActive } from '../../utils/cascadingFilters'
 
 const roleBadge: Record<string, string> = {
   ADMIN: 'bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/25 shadow-2xs',
@@ -24,8 +26,13 @@ export default function TopBar() {
   const region = useOverviewFilters((s) => s.region)
   const quarters = useOverviewFilters((s) => s.quarters)
   const regions = useOverviewFilters((s) => s.regions)
+  const defaultQuarter = useOverviewFilters((s) => s.defaultQuarter)
   const setQuarter = useOverviewFilters((s) => s.setQuarter)
   const setRegion = useOverviewFilters((s) => s.setRegion)
+  const clearFilters = useOverviewFilters((s) => s.clearFilters)
+  const filtersActive =
+    filtersAreActive([region], ['All', 'All Regions']) ||
+    Boolean(quarter && defaultQuarter && quarter !== defaultQuarter)
 
   return (
     <header className="flex items-center justify-between h-14 px-6 bg-white/90 backdrop-blur-md border-b border-[#E5E7EB] shrink-0 z-20">
@@ -72,6 +79,7 @@ export default function TopBar() {
                 ))}
               </select>
             </label>
+            <ClearFiltersButton onClear={clearFilters} disabled={!filtersActive} />
             <div className="w-px h-4 bg-[#CBD5E1] mx-0.5 hidden sm:block" />
           </div>
         )}

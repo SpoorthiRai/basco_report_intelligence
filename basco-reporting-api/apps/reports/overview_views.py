@@ -1,6 +1,7 @@
 """GET /api/reports/overview/ — precomputed Overview KPIs."""
 
 from datetime import date
+import re
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -16,6 +17,7 @@ from .views import (
     _rows_to_dicts,
     normalize_quarter_label,
     sort_quarters_desc,
+    build_cascading_filter_options,
 )
 from .kpi import (
     compute_league_kpis,
@@ -42,6 +44,9 @@ def _is_all_period(value: str) -> bool:
     return (value or "").strip() in ("", "All", "All Quarters")
 
 
+OVERVIEW_ALL_QUARTERS_MIN_YEAR = 2026
+
+
 def current_quarter_label(today=None) -> str:
     day = today or date.today()
     quarter = (day.month - 1) // 3 + 1
@@ -58,6 +63,23 @@ def _row_quarter_label(row: dict) -> str:
     )
 
 
+def _row_quarter_year(row: dict) -> int | None:
+    """Year from row Year/year fields or from a quarter label like 'Q2 2026'."""
+    for key in ("Year", "year", "YEAR"):
+        raw = row.get(key)
+        if raw in (None, ""):
+            continue
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            pass
+    label = _row_quarter_label(row)
+    match = re.search(r"(20\d{2})", label or "")
+    if match:
+        return int(match.group(1))
+    return None
+
+
 def _row_region_label(row: dict) -> str:
     return str(row.get("region") or row.get("Region") or "").strip()
 
@@ -70,34 +92,52 @@ def _apply_overview_filters(rows, quarter: str, region: str):
     if not _is_all_period(quarter):
         wanted = normalize_quarter_label(quarter).upper()
         out = [r for r in out if _row_quarter_label(r).upper() == wanted]
+    else:
+        # All Quarters on Overview = 2026 onwards only
+        filtered = []
+        for r in out:
+            year = _row_quarter_year(r)
+            if year is None or year >= OVERVIEW_ALL_QUARTERS_MIN_YEAR:
+                filtered.append(r)
+        out = filtered
     return out
 
 
-def _latest_pop_quarter(league_rows) -> str:
-    found = {_row_quarter_label(row) for row in league_rows if _row_quarter_label(row)}
+def _latest_quarter(rows) -> str:
+    found = {_row_quarter_label(row) for row in rows if _row_quarter_label(row)}
     ordered = sort_quarters_desc(found)
-    return ordered[0] if ordered else current_quarter_label()
+    return ordered[0] if ordered else ""
 
 
-def _collect_quarters(*row_sets):
-    found = set()
-    for rows in row_sets:
-        for row in rows:
-            label = _row_quarter_label(row)
-            if label:
-                found.add(label)
-    return ["All Quarters"] + sort_quarters_desc(found)
+def _latest_pop_quarter(league_rows) -> str:
+    return _latest_quarter(league_rows) or current_quarter_label()
 
 
-def _collect_regions(*row_sets):
-    found = set()
-    skip = {"", "Unknown", "None", "Unmapped", "NA"}
-    for rows in row_sets:
-        for row in rows:
-            name = _row_region_label(row)
-            if name and name not in skip:
-                found.add(name)
-    return ["All"] + sorted(found)
+def _dataset_has_quarter(rows, quarter: str) -> bool:
+    wanted = normalize_quarter_label(quarter).upper()
+    if not wanted:
+        return False
+    return any(_row_quarter_label(row).upper() == wanted for row in rows)
+
+
+def _effective_quarter(rows, selected: str, use_fallback: bool) -> str:
+    """When viewing the current calendar quarter, use latest present in this dataset if selected is missing."""
+    if _is_all_period(selected):
+        return selected
+    if use_fallback and not _dataset_has_quarter(rows, selected):
+        return _latest_quarter(rows) or selected
+    return selected
+
+
+def _ensure_quarter_option(options: dict, quarter: str) -> None:
+    label = normalize_quarter_label(quarter)
+    if not label:
+        return
+    quarters = list(options.get("quarters") or [])
+    if label in quarters:
+        return
+    rest = [q for q in quarters if q not in ("All Quarters", "All", "")]
+    options["quarters"] = ["All Quarters"] + sort_quarters_desc(set(rest + [label]))
 
 
 def _aggregate_market(raw_rows, quarter: str):
@@ -115,6 +155,9 @@ def _aggregate_market(raw_rows, quarter: str):
 
     agg = {}
     for r in raw_rows:
+        year = _row_quarter_year(r)
+        if year is not None and year < OVERVIEW_ALL_QUARTERS_MIN_YEAR:
+            continue
         key = (r.get("country"), r.get("region"))
         if key not in agg:
             agg[key] = {
@@ -236,31 +279,56 @@ class OverviewView(APIView):
             if conn:
                 conn.close()
 
+        calendar_quarter = current_quarter_label()
         latest_pop_quarter = _latest_pop_quarter(league_rows)
-        quarter = requested_quarter or latest_pop_quarter
+        latest_helpdesk_quarter = _latest_quarter(helpdesk_rows) or calendar_quarter
+        quarter = requested_quarter or calendar_quarter
+        is_current = (
+            not _is_all_period(quarter)
+            and normalize_quarter_label(quarter) == calendar_quarter
+        )
 
-        filter_options = {
-            "quarters": _collect_quarters(
-                league_rows, visual_rows, market_rows, offer_rows, cta_rows
-            ),
-            "regions": _collect_regions(
-                league_rows, visual_rows, market_rows, offer_rows, cta_rows
-            ),
-            "default_quarter": latest_pop_quarter,
-        }
+        cascade_rows = league_rows + visual_rows + market_rows + offer_rows + cta_rows + helpdesk_rows
+        filter_options = build_cascading_filter_options(
+            cascade_rows,
+            selected_quarter=quarter,
+            selected_region=region,
+            quarter_keys=("quarter", "period", "quarter_label"),
+            region_keys=("region", "Region"),
+            country_keys=("country", "Country"),
+            include_retailers=False,
+            region_all="All",
+        )
+        _ensure_quarter_option(filter_options, calendar_quarter)
+        filter_options["default_quarter"] = calendar_quarter
 
-        league_f = _apply_overview_filters(league_rows, quarter, region)
-        visual_f = _apply_overview_filters(visual_rows, quarter, region)
-        market_f = _apply_overview_filters(market_rows, quarter, region)
-        offer_f = _apply_overview_filters(offer_rows, quarter, region)
-        cta_f = _apply_overview_filters(cta_rows, quarter, region)
-        hist_f = _apply_overview_filters(hist_rows, quarter, region)
-        hosted_f = _apply_overview_filters(hosted_rows, quarter, region)
-        feedback_f = _apply_overview_filters(feedback_rows, quarter, region)
-        helpdesk_f = _apply_overview_filters(helpdesk_rows, quarter, region)
+        pop_q = _effective_quarter(league_rows, quarter, is_current)
+        hist_q = _effective_quarter(hist_rows, quarter, is_current)
+        hosted_q = _effective_quarter(hosted_rows, quarter, is_current)
+        feedback_q = _effective_quarter(feedback_rows, quarter, is_current)
+        market_q = _effective_quarter(market_rows, quarter, is_current)
+        offer_q = _effective_quarter(offer_rows, quarter, is_current)
+        cta_q = _effective_quarter(cta_rows, quarter, is_current)
+        visual_q = _effective_quarter(visual_rows, quarter, is_current)
+        helpdesk_q = _effective_quarter(helpdesk_rows, quarter, is_current)
+
+        league_f = _apply_overview_filters(league_rows, pop_q, region)
+        visual_f = _apply_overview_filters(visual_rows, visual_q, region)
+        market_f = _apply_overview_filters(market_rows, market_q, region)
+        offer_f = _apply_overview_filters(offer_rows, offer_q, region)
+        cta_f = _apply_overview_filters(cta_rows, cta_q, region)
+        hist_f = _apply_overview_filters(hist_rows, hist_q, region)
+        hosted_f = _apply_overview_filters(hosted_rows, hosted_q, region)
+        feedback_f = _apply_overview_filters(feedback_rows, feedback_q, region)
+        helpdesk_f = _apply_overview_filters(helpdesk_rows, helpdesk_q, region)
         league_history = _apply_overview_filters(league_rows, "All Quarters", region)
         helpdesk_history = _apply_overview_filters(helpdesk_rows, "All Quarters", region)
-        compare_quarter = latest_pop_quarter if _is_all_period(quarter) else normalize_quarter_label(quarter)
+        if _is_all_period(quarter):
+            pop_compare = latest_pop_quarter
+            hd_compare = latest_helpdesk_quarter
+        else:
+            pop_compare = normalize_quarter_label(pop_q)
+            hd_compare = normalize_quarter_label(helpdesk_q)
 
         retailer_kpis = compute_league_kpis(league_f)
         market_kpis = compute_market_kpis(_aggregate_market(market_f, "All Quarters"))
@@ -273,7 +341,9 @@ class OverviewView(APIView):
             helpdesk_f,
             league_history=league_history,
             helpdesk_history=helpdesk_history,
-            compare_quarter=compare_quarter,
+            compare_quarter=pop_compare,
+            pop_quarter=pop_compare,
+            helpdesk_quarter=hd_compare,
         )
         creative_effectiveness = compute_creative_effectiveness(cta_f)
         promotion_led = compute_promotion_led(offer_f)

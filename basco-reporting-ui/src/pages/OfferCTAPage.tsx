@@ -14,6 +14,8 @@ import {
 } from 'recharts';
 import api from '../api/client';
 import ImageModal from '../components/common/ImageModal';
+import ClearFiltersButton from '../components/common/ClearFiltersButton';
+import { filtersAreActive, pickValidOption } from '../utils/cascadingFilters';
 
 
 interface OfferCTABar {
@@ -171,6 +173,31 @@ export default function OfferCTAPage() {
     };
   }, [quarterFilter, regionFilter, countryFilter, retailerFilter]);
 
+  useEffect(() => {
+    const opts = data?.filter_options;
+    if (!opts) return;
+    const nextQuarter = pickValidOption(quarterFilter, opts.quarters || [], 'All Quarters');
+    const nextRegion = pickValidOption(regionFilter, opts.regions || [], 'All Regions');
+    const nextCountry = pickValidOption(countryFilter, opts.countries || [], 'All Countries');
+    const nextRetailer = pickValidOption(retailerFilter, opts.retailers || [], 'All Retailers');
+    if (nextQuarter !== quarterFilter) setQuarterFilter(nextQuarter);
+    if (nextRegion !== regionFilter) setRegionFilter(nextRegion);
+    if (nextCountry !== countryFilter) setCountryFilter(nextCountry);
+    if (nextRetailer !== retailerFilter) setRetailerFilter(nextRetailer);
+  }, [data?.filter_options, quarterFilter, regionFilter, countryFilter, retailerFilter]);
+
+  const clearFilters = () => {
+    setQuarterFilter('All Quarters');
+    setRegionFilter('All Regions');
+    setCountryFilter('All Countries');
+    setRetailerFilter('All Retailers');
+  };
+
+  const filtersActive = filtersAreActive(
+    [quarterFilter, regionFilter, countryFilter, retailerFilter],
+    ['All Quarters', 'All Regions', 'All Countries', 'All Retailers', 'All']
+  );
+
   const kpis = data?.kpis || {
     total_offer_creatives: 0,
     conversion_ready: 0,
@@ -247,17 +274,21 @@ export default function OfferCTAPage() {
           </p>
         </div>
 
-        {/* Quarter, Country, Retailer Dropdowns */}
+        {/* Quarter → Region → Country → Retailer */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Quarter dropdown */}
           <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
             <span className="text-[#6B7280] font-medium">Quarter:</span>
             <select
               value={quarterFilter}
-              onChange={(e) => setQuarterFilter(e.target.value)}
+              onChange={(e) => {
+                setQuarterFilter(e.target.value);
+                setRegionFilter('All Regions');
+                setCountryFilter('All Countries');
+                setRetailerFilter('All Retailers');
+              }}
               className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
             >
-              {(data?.filter_options?.quarters || ['All']).map((q) => (
+              {(data?.filter_options?.quarters || ['All Quarters']).map((q) => (
                 <option key={q} value={q} className="bg-white text-[#111827]">
                   {q}
                 </option>
@@ -265,12 +296,15 @@ export default function OfferCTAPage() {
             </select>
           </div>
 
-          {/* Region dropdown */}
           <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
             <span className="text-[#6B7280] font-medium">Region:</span>
             <select
               value={regionFilter}
-              onChange={(e) => setRegionFilter(e.target.value)}
+              onChange={(e) => {
+                setRegionFilter(e.target.value);
+                setCountryFilter('All Countries');
+                setRetailerFilter('All Retailers');
+              }}
               className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
             >
               {(data?.filter_options?.regions || ['All Regions']).map((r) => (
@@ -281,15 +315,17 @@ export default function OfferCTAPage() {
             </select>
           </div>
 
-          {/* Country dropdown */}
           <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
             <span className="text-[#6B7280] font-medium">Country:</span>
             <select
               value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
+              onChange={(e) => {
+                setCountryFilter(e.target.value);
+                setRetailerFilter('All Retailers');
+              }}
               className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
             >
-              {(data?.filter_options?.countries || ['All']).map((c) => (
+              {(data?.filter_options?.countries || ['All Countries']).map((c) => (
                 <option key={c} value={c} className="bg-white text-[#111827]">
                   {c}
                 </option>
@@ -297,7 +333,6 @@ export default function OfferCTAPage() {
             </select>
           </div>
 
-          {/* Retailer dropdown */}
           <div className="flex items-center gap-2 bg-white/95 border border-[#E5E7EB] shadow-2xs px-3.5 py-2 rounded-xl text-xs font-bold text-[#111827]">
             <span className="text-[#6B7280] font-medium">Retailer:</span>
             <select
@@ -305,13 +340,15 @@ export default function OfferCTAPage() {
               onChange={(e) => setRetailerFilter(e.target.value)}
               className="bg-transparent text-[#111827] text-xs font-bold focus:outline-none cursor-pointer pr-1"
             >
-              {(data?.filter_options?.retailers || ['All']).map((r) => (
+              {(data?.filter_options?.retailers || ['All Retailers']).map((r) => (
                 <option key={r} value={r} className="bg-white text-[#111827]">
                   {r}
                 </option>
               ))}
             </select>
           </div>
+
+          <ClearFiltersButton onClear={clearFilters} disabled={!filtersActive} />
         </div>
       </div>
 

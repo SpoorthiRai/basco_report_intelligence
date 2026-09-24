@@ -11,7 +11,12 @@ from .evidence_queries import (
     EVIDENCE_FEEDBACK_QUERY,
     EVIDENCE_QUARTER_OPTIONS_QUERY,
 )
-from .views import _rows_to_dicts, apply_user_scope, sort_quarters_desc
+from .views import (
+    _rows_to_dicts,
+    apply_user_scope,
+    build_cascading_filter_options,
+    is_all_filter,
+)
 
 
 PRODUCT_FAMILIES = [
@@ -155,6 +160,26 @@ class EvidenceLockerView(APIView):
             retailer_key="Child_Account",
         )
 
+        filter_options = build_cascading_filter_options(
+            raw_rows,
+            selected_quarter=quarter_filter,
+            selected_region=region_filter,
+            selected_country=country_filter,
+            quarter_keys=("quarter_label",),
+            region_keys=("Region",),
+            country_keys=("Country",),
+            include_retailers=False,
+        )
+        # Prefer warehouse quarter catalog when creatives are sparse for a period.
+        option_quarters = [
+            r.get("quarter_label") for r in quarter_option_rows if r.get("quarter_label")
+        ]
+        if option_quarters:
+            from .views import sort_quarters_desc
+            cascaded = [q for q in filter_options["quarters"] if q != "All Quarters"]
+            merged = sort_quarters_desc(set(cascaded) | set(option_quarters))
+            filter_options["quarters"] = ["All Quarters"] + merged
+
         if quarter_code:
             raw_rows = [
                 r for r in raw_rows
@@ -175,25 +200,13 @@ class EvidenceLockerView(APIView):
             r["brand_score"] = _to_brand_pct(raw_score)
         _apply_perfect_score_feedback_default(raw_rows)
 
-        countries = sorted({
-            r["Country"] for r in raw_rows
-            if r.get("Country") and r["Country"] not in ("None", "", None)
-        })
-        regions = sorted({
-            r["Region"] for r in raw_rows
-            if r.get("Region") and str(r.get("Region")).strip() not in ("None", "", "Unknown")
-        })
-        quarters = sort_quarters_desc({
-            r.get("quarter_label") for r in quarter_option_rows
-            if r.get("quarter_label")
-        })
-
         rows = raw_rows
         if product_filter and product_filter not in ("All", "All Products"):
             rows = [r for r in rows if product_filter in r.get("product_families", [])]
-        if region_filter and region_filter not in ("All", "All Regions"):
-            rows = [r for r in rows if str(r.get("Region") or "").strip().upper() == region_filter.strip().upper()]
-        if country_filter and country_filter not in ("All", "All Countries"):
+        if not is_all_filter(region_filter, "All", "All Regions"):
+            wanted = region_filter.strip().upper()
+            rows = [r for r in rows if str(r.get("Region") or "").strip().upper() == wanted]
+        if not is_all_filter(country_filter, "All", "All Countries"):
             rows = [r for r in rows if r.get("Country") == country_filter]
 
         total = len(rows)
@@ -203,10 +216,8 @@ class EvidenceLockerView(APIView):
                 "total": total,
             },
             "filter_options": {
-                "quarters": ["All Quarters"] + quarters,
+                **filter_options,
                 "products": PRODUCT_FAMILIES,
-                "regions": ["All Regions"] + regions,
-                "countries": ["All Countries"] + countries,
             },
             "creatives": rows,
         })

@@ -19,7 +19,7 @@ from .layout import (
 )
 from .permissions import IsAnyReportingRole
 from .offer_cta_views import classify_product_family
-from .views import apply_user_scope, sort_quarters_desc
+from .views import apply_user_scope, build_cascading_filter_options, is_all_filter
 
 _TITLE_ACRONYMS = {
     'igd', 'pms', 'ai', 'cta', 'pop', 'oem', 'cpu', 'gpu', 'kv', 'uhd', 'arc', 'evo', 'aihd',
@@ -168,6 +168,7 @@ class VisualAdoptionView(APIView):
         region_filter       = request.query_params.get('region', 'All') or 'All'
         country_filter      = request.query_params.get('country', 'All') or 'All'
         visual_style_filter = request.query_params.get('visual_style', 'All') or 'All'
+        retailer_filter     = request.query_params.get('retailer', 'All') or 'All'
         selected_visual     = request.query_params.get('visual_name', None)
         source_filter       = (request.query_params.get('source', 'helpdesk') or 'helpdesk').strip().lower()
         if source_filter not in ('pop', 'helpdesk'):
@@ -213,19 +214,31 @@ class VisualAdoptionView(APIView):
             raw_evidence, request.user, country_key='Country', region_key='Region', retailer_key='Retailer'
         )
 
-        # ── 4. Derived Master Dropdown Options (scoped to user data) ──
-        master_quarters = sort_quarters_desc(list(set(r.get('quarter_label') for r in rows if r.get('quarter_label'))))
-        master_regions = sorted(list(set(
-            r.get('Region') for r in rows
-            if r.get('Region') and str(r.get('Region')).strip() not in ('', 'Unknown', 'None', 'NA')
-        )))
-        master_countries = sorted(list(set(r.get('Country') for r in rows if r.get('Country') and r['Country'] not in ('', 'Unknown', 'None'))))
+        # ── 4. Cascading Quarter → Region → Country (+ retailers for table filters) ──
+        filter_options = build_cascading_filter_options(
+            rows,
+            selected_quarter=quarter_filter,
+            selected_region=region_filter,
+            selected_country=country_filter,
+            quarter_keys=("quarter_label",),
+            region_keys=("Region",),
+            country_keys=("Country",),
+            retailer_keys=("Retailer", "Child_Account", "CHILD_ACCOUNT"),
+            region_all="All",
+            country_all="All",
+            retailer_all="All",
+            quarter_all="All",
+        )
+        master_quarters = [q for q in filter_options["quarters"] if q != "All"]
         master_visual_styles = sorted(list(set(r.get('Visual_Style') for r in rows if r.get('Visual_Style') and r['Visual_Style'] not in ('', 'None', 'NA', 'Unknown'))))
-        master_retailers = sorted(list(set(
-            child_account_label(r)
-            for r in evidence_rows
-            if child_account_label(r)
-        )))
+        master_retailers = [r for r in filter_options.get("retailers", []) if r != "All"]
+        if not master_retailers:
+            master_retailers = sorted(list(set(
+                child_account_label(r)
+                for r in evidence_rows
+                if child_account_label(r)
+            )))
+            filter_options["retailers"] = ["All"] + master_retailers
 
         # ── 5. Build Master Visual Catalog from Metadata (VISUAL_CONTENT_URL & VISUAL_CONTENT_NAME) ──
         visual_catalog = {}
@@ -319,6 +332,12 @@ class VisualAdoptionView(APIView):
             ]
         if country_filter and country_filter not in ('All', 'All Countries'):
             filtered_rows = [r for r in filtered_rows if r.get('Country') == country_filter]
+        if not is_all_filter(retailer_filter, 'All', 'All Retailers'):
+            wanted_ret = retailer_filter.strip()
+            filtered_rows = [
+                r for r in filtered_rows
+                if child_account_label(r) == wanted_ret or str(r.get('Retailer') or '').strip() == wanted_ret
+            ]
         if visual_style_filter and visual_style_filter not in ('All', 'All Styles'):
             filtered_rows = [r for r in filtered_rows if r.get('Visual_Style') == visual_style_filter]
 
@@ -449,6 +468,10 @@ class VisualAdoptionView(APIView):
                 if country_filter and country_filter not in ('All', 'All Countries'):
                     if r.get('Country') != country_filter:
                         continue
+                if not is_all_filter(retailer_filter, 'All', 'All Retailers'):
+                    wanted_ret = retailer_filter.strip()
+                    if child_account_label(r) != wanted_ret and str(r.get('Retailer') or '').strip() != wanted_ret:
+                        continue
                 names = split_visual_tokens(r.get('Visual_Content_Name'))
                 if selected_visual not in names:
                     continue
@@ -496,10 +519,7 @@ class VisualAdoptionView(APIView):
             'retailer_visual_breakdown':  retailer_visual_breakdown,
             'usage_table':                usage_table,
             'filter_options': {
-                'quarters':      ['All'] + master_quarters,
-                'regions':       ['All'] + master_regions,
-                'countries':     ['All'] + master_countries,
-                'retailers':     ['All'] + master_retailers,
+                **filter_options,
                 'visual_styles': ['All'] + master_visual_styles,
             }
         })

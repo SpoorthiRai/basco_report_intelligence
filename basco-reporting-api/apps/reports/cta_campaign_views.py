@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from core.db import get_warehouse_connection
 from .permissions import IsAnyReportingRole
 from .kpi import is_skipped_account
-from .views import sort_quarters_desc, apply_user_scope
+from .views import sort_quarters_desc, apply_user_scope, build_cascading_filter_options, is_all_filter
 from .cta_campaign_queries import CTA_CAMPAIGN_QUERY
 from .evidence_views import PRODUCT_FAMILIES, extract_product_families
 
@@ -76,31 +76,24 @@ class CTACampaignView(APIView):
         # ── Apply role-based & regional scoping ──
         rows = apply_user_scope(rows, request.user, country_key='Country', region_key='Region', retailer_key='Retailer')
 
-        # Extract master filter options from scoped data
-        all_quarters = sort_quarters_desc(set(
-            r['quarter_label'] for r in rows
-            if r.get('quarter_label')
-        ))
-        all_countries = sorted(set(
-            r['Country'] for r in rows
-            if r.get('Country') and r['Country'] != 'Unknown'
-        ))
-        all_regions = sorted(set(
-            r['Region'] for r in rows
-            if r.get('Region') and str(r.get('Region')).strip() not in ('Unknown', 'None', '', 'NA', 'Unmapped')
-        ))
-        all_retailers = sorted(set(
-            r['Retailer'] for r in rows
-            if r.get('Retailer') and not is_skipped_account(r.get('Retailer'))
-        ))
+        filter_options = build_cascading_filter_options(
+            rows,
+            selected_quarter=quarter_filter,
+            selected_region=region_filter,
+            selected_country=country_filter,
+            quarter_keys=("quarter_label",),
+            region_keys=("Region",),
+            country_keys=("Country",),
+            retailer_keys=("Retailer",),
+        )
 
         # Apply region / country / retailer first so QoQ can compare adjacent quarters
-        if region_filter and region_filter not in ('All', 'All Regions'):
+        if not is_all_filter(region_filter, 'All', 'All Regions'):
             wanted = region_filter.strip().upper()
             rows = [r for r in rows if str(r.get('Region') or '').strip().upper() == wanted]
-        if country_filter and country_filter not in ('All', 'All Countries'):
+        if not is_all_filter(country_filter, 'All', 'All Countries'):
             rows = [r for r in rows if r.get('Country') == country_filter]
-        if retailer_filter and retailer_filter not in ('All', 'All Retailers'):
+        if not is_all_filter(retailer_filter, 'All', 'All Retailers'):
             rows = [r for r in rows if r.get('Retailer') == retailer_filter]
 
         for r in rows:
@@ -288,10 +281,7 @@ class CTACampaignView(APIView):
             'top_cta_phrases':        top_cta_phrases,
             'misaligned_evidence':    deduped_evidence[:100],
             'filter_options': {
-                'quarters':  ['All Quarters'] + all_quarters,
-                'regions':   ['All Regions'] + all_regions,
-                'countries': ['All Countries'] + all_countries,
-                'retailers': ['All Retailers'] + all_retailers,
+                **filter_options,
                 'products':  PRODUCT_FAMILIES,
             }
         })
