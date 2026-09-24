@@ -873,7 +873,7 @@ def compute_visual_kpis(total_creatives: int, intel_layouts: int, custom_layouts
 
 
 def classify_campaign_bucket(campaign_type):
-    """Match CAMPAIGN_TYPE exactly as stored in BASCO_AIHD_Metadata."""
+    """Intel-specific ratio: Intel Gamer Days / Intel Days / Back to School; everything else is Other."""
     text = str(campaign_type or "").strip()
     if text == "Intel Gamer Days":
         return "Intel Gamer Days"
@@ -881,13 +881,7 @@ def classify_campaign_bucket(campaign_type):
         return "Intel Days"
     if text == "Back to School":
         return "Back to School"
-    if text == "Event Driven":
-        return "Event Driven"
-    if text == "Product Launch":
-        return "Product Launch"
-    if text == "Other":
-        return "Other"
-    return None
+    return "Other"
 
 
 def previous_quarter_label(label: str) -> str:
@@ -965,8 +959,6 @@ def compute_helpdesk_kpis(
     intel_days = 0
     intel_gamer_days = 0
     back_to_school = 0
-    event_driven = 0
-    product_launch = 0
     other = 0
     for row in visual_rows:
         count = int(row.get("creative_count") or 1)
@@ -977,24 +969,15 @@ def compute_helpdesk_kpis(
             intel_gamer_days += count
         elif bucket == "Back to School":
             back_to_school += count
-        elif bucket == "Event Driven":
-            event_driven += count
-        elif bucket == "Product Launch":
-            product_launch += count
-        elif bucket == "Other":
+        else:
             other += count
 
-    mix_total = intel_days + intel_gamer_days + back_to_school + event_driven + product_launch + other
+    mix_total = intel_days + intel_gamer_days + back_to_school + other
     denom = mix_total or 1
     intel_days_pct = round(intel_days / denom * 100)
     intel_gamer_days_pct = round(intel_gamer_days / denom * 100)
     back_to_school_pct = round(back_to_school / denom * 100)
-    event_driven_pct = round(event_driven / denom * 100)
-    product_launch_pct = round(product_launch / denom * 100)
-    other_pct = max(
-        0,
-        100 - intel_days_pct - intel_gamer_days_pct - back_to_school_pct - event_driven_pct - product_launch_pct,
-    )
+    other_pct = max(0, 100 - intel_days_pct - intel_gamer_days_pct - back_to_school_pct)
     intel_specific = intel_days + intel_gamer_days + back_to_school
 
     pop_now = _pop_children_for_quarter(league_history, compare_quarter) if compare_quarter else {
@@ -1038,10 +1021,6 @@ def compute_helpdesk_kpis(
             "intel_gamer_days_pct": intel_gamer_days_pct,
             "back_to_school": back_to_school,
             "back_to_school_pct": back_to_school_pct,
-            "event_driven": event_driven,
-            "event_driven_pct": event_driven_pct,
-            "product_launch": product_launch,
-            "product_launch_pct": product_launch_pct,
             "other": other,
             "other_pct": other_pct,
         },
