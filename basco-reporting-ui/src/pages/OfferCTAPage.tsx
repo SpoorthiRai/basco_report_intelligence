@@ -17,6 +17,28 @@ import ImageModal from '../components/common/ImageModal';
 import ClearFiltersButton from '../components/common/ClearFiltersButton';
 import { filtersAreActive, pickValidOption } from '../utils/cascadingFilters';
 
+function InfoTip({
+  text,
+  align = 'right',
+}: {
+  text: string;
+  align?: 'left' | 'right';
+}) {
+  return (
+    <span className="relative z-20 inline-flex shrink-0">
+      <span className="peer inline-flex items-center justify-center w-5 h-5 rounded-full border border-[#CBD5E1] bg-white text-[10px] font-bold text-[#6B7280] leading-none">
+        i
+      </span>
+      <span
+        className={`pointer-events-none absolute top-full mt-1.5 w-72 rounded-lg bg-[#0B1325] px-2.5 py-2 text-[11px] font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100 ${
+          align === 'left' ? 'left-0' : 'right-0'
+        }`}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
 
 interface OfferCTABar {
   offer_type: string;
@@ -268,6 +290,10 @@ export default function OfferCTAPage() {
                 Effectiveness
               </span>
             </h1>
+            <InfoTip
+              align="left"
+              text="Shows how retailers use promotional offers and whether those offers give shoppers a clear path to action."
+            />
           </div>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
             See how retailers are using promotional offers – and whether those offers give shoppers a clear path to action
@@ -378,9 +404,15 @@ export default function OfferCTAPage() {
         >
           <div>
             <div className="pb-3 border-b border-[#E5E7EB]">
-              <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                How Effectively Offers Drive Action
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                  How Effectively Offers Drive Action
+                </h3>
+                <InfoTip
+                  align="left"
+                  text="A bar chart comparing CTA presence across promotional offer types (Affordability, Multiple Offer etc). The percentage on each bar is the share of that offer type's creatives that have a CTA."
+                />
+              </div>
               <p className="text-xs text-[#6B7280] mt-0.5">
                 Compare CTA presence across different promotional offer types.
               </p>
@@ -508,9 +540,15 @@ export default function OfferCTAPage() {
         >
           <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB] flex-wrap shrink-0">
             <div>
-              <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                Offers Needing Attention
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                  Offers Needing Attention
+                </h3>
+                <InfoTip
+                  align="left"
+                  text="A creative-level list of promotional creatives that carry an offer, with a toggle between No CTA and With CTA. Highlighted rows are Event-Driven creatives with non-transactional or urgency messaging."
+                />
+              </div>
               <p className="text-xs text-[#6B7280] font-medium mt-0.5">
                 Promotional creatives with an offer. Highlighted rows are Event-Driven with non-transactional messaging.
               </p>
@@ -657,9 +695,15 @@ export default function OfferCTAPage() {
         >
           <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-[#E5E7EB]">
             <div>
-              <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                Offer Strategy Across Products
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                  Offer Strategy Across Products
+                </h3>
+                <InfoTip
+                  align="left"
+                  text="Proportion of different Offer Types across Products."
+                />
+              </div>
               <p className="text-xs text-[#6B7280] font-medium mt-0.5">
                 See which promotional mechanics are being used across Intel product families.
               </p>

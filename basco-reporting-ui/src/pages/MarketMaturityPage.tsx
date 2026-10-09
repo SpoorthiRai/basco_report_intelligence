@@ -691,9 +691,19 @@ export default function MarketMaturityPage() {
       {/* ── Page Header & Top Telemetry Summary + Quarter Filter ─────────── */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-[#111827] tracking-tight">
-            Market Maturity Model
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-black text-[#111827] tracking-tight">
+              Market Maturity Model
+            </h1>
+            <span className="relative z-20 inline-flex shrink-0">
+              <span className="peer inline-flex items-center justify-center w-5 h-5 rounded-full border border-[#CBD5E1] bg-white text-[10px] font-bold text-[#6B7280] leading-none">
+                i
+              </span>
+              <span className="pointer-events-none absolute left-0 top-full mt-1.5 w-80 rounded-lg bg-[#0B1325] px-2.5 py-2 text-[11px] font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100">
+                A bubble chart that plots each retailer, using the toggle by BASCO score on the X-axis and attribution loss ($) on the Y-axis, with bubble size showing market value (FMV). The dotted lines mark the Action, Watch, Low Priority and Strong retailers based on BASCO Score & Attribution Loss threshold (median) within each region.
+              </span>
+            </span>
+          </div>
           <p className="text-xs text-[#6B7280] mt-0.5">
             See where retail execution is strongest, where brand value is at risk, and which markets need attention.
           </p>

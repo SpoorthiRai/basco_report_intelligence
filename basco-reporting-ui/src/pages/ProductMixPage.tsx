@@ -117,6 +117,29 @@ const GUIDANCE_SLICE_COLORS = ['#1E429F', '#0284C7', '#4338CA', '#7C3AED', '#0D9
 
 const BRAND_ELEMENT_BUTTONS = ['Text', 'Visual', 'Badge', 'Logo'];
 
+function InfoTip({
+  text,
+  align = 'right',
+}: {
+  text: string;
+  align?: 'left' | 'right';
+}) {
+  return (
+    <span className="relative z-20 inline-flex shrink-0">
+      <span className="peer inline-flex items-center justify-center w-5 h-5 rounded-full border border-[#CBD5E1] bg-white text-[10px] font-bold text-[#6B7280] leading-none">
+        i
+      </span>
+      <span
+        className={`pointer-events-none absolute top-full mt-1.5 w-72 rounded-lg bg-[#0B1325] px-2.5 py-2 text-[11px] font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100 ${
+          align === 'left' ? 'left-0' : 'right-0'
+        }`}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
 function getCodenameSubtitle(series: string): string {
   const s = series.toLowerCase();
   if (s.includes('series 3') || s.includes('series3')) return 'Panther Lake (Till Date)';
@@ -281,6 +304,10 @@ export default function ProductMixPage() {
                 Momentum
               </span>
             </h1>
+            <InfoTip
+              align="left"
+              text="Shows which Intel products are gaining visibility across retailers and markets, and where priority products have room to grow through the creatives submitted via Helpdesk."
+            />
           </div>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
             See which Intel products are gaining visibility across retailers and markets ? and where priority products have room to grow.
@@ -468,9 +495,12 @@ export default function ProductMixPage() {
 
         <div className="lg:col-span-5 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col min-h-[420px]">
           <div className="pb-3 border-b border-[#E5E7EB]">
-            <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-              Creative Compliance Guidance
-            </h3>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                Creative Compliance Guidance
+              </h3>
+              <InfoTip text="Lets you pick a brand element (Text, Visual, Badge or Logo) to see the counts of compliance guidance categories given through the BASCO Helpdesk for that element." />
+            </div>
             <p className="text-xs text-[#6B7280] mt-0.5">
               Explore creative compliance guidance via BASCO Helpdesk by selecting a brand element.
             </p>
@@ -661,6 +691,7 @@ export default function ProductMixPage() {
               <h3 className="text-sm font-bold text-[#111827] tracking-tight">
                 Product Visibility Across Retailers
               </h3>
+              <div className="flex items-center gap-2">
               {selectedFamilies.length > 0 && (
                 <button
                   type="button"
@@ -671,6 +702,8 @@ export default function ProductMixPage() {
                   <span>?</span>
                 </button>
               )}
+              <InfoTip text="Which Intel product families appear in each retailer’s assets, with each coloured segment representing a product family." />
+              </div>
             </div>
             <p className="text-xs text-[#6B7280] mt-0.5">
               See which Intel product families are showing up across retailer marketing.
@@ -793,12 +826,15 @@ export default function ProductMixPage() {
           <div>
             {/* Family Dropdown Selector */}
             <div>
-              <label
-                htmlFor="family-select"
-                className="text-xs font-bold uppercase tracking-wider text-[#111827] block mb-1.5"
-              >
-                Explore Product Family
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label
+                  htmlFor="family-select"
+                  className="text-xs font-bold uppercase tracking-wider text-[#111827]"
+                >
+                  Explore Product Family
+                </label>
+                <InfoTip text="Lets you choose a product family and see the mix of its generations across the submitted creatives on Helpdesk." />
+              </div>
               <select
                 id="family-select"
                 value={familyFilter}

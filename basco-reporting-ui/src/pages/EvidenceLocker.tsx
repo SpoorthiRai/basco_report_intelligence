@@ -805,6 +805,14 @@ export default function EvidenceLocker() {
             <h2 className="text-base md:text-lg font-bold tracking-tight text-white">
               Retailer Creative Performance
             </h2>
+            <span className="relative z-20 inline-flex shrink-0">
+              <span className="peer inline-flex items-center justify-center w-5 h-5 rounded-full border border-white/35 bg-white/10 text-[10px] font-bold text-white leading-none">
+                i
+              </span>
+              <span className="pointer-events-none absolute left-0 top-full mt-1.5 w-80 rounded-lg bg-[#0B1325] px-2.5 py-2 text-[11px] font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100 border border-white/10">
+                Review the creative execution behind retailer performance. It has two tabs, each looking at the same creatives from a different angle. Compliance Gap: checks whether each creative follows Intel's brand guidelines. Execution Gap: checks how each creative is executed commercially, covering the campaign, offer, product and CTA.
+              </span>
+            </span>
           </div>
           <p className="text-xs text-slate-300 mt-1">
             Review the creative execution behind retailer performance and identify where brand requirements need attention.

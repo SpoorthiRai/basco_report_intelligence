@@ -19,6 +19,29 @@ import ImageModal from '../components/common/ImageModal';
 import ClearFiltersButton from '../components/common/ClearFiltersButton';
 import { filtersAreActive, pickValidOption } from '../utils/cascadingFilters';
 
+function InfoTip({
+  text,
+  align = 'right',
+}: {
+  text: string;
+  align?: 'left' | 'right';
+}) {
+  return (
+    <span className="relative z-20 inline-flex shrink-0">
+      <span className="peer inline-flex items-center justify-center w-5 h-5 rounded-full border border-[#CBD5E1] bg-white text-[10px] font-bold text-[#6B7280] leading-none">
+        i
+      </span>
+      <span
+        className={`pointer-events-none absolute top-full mt-1.5 w-72 rounded-lg bg-[#0B1325] px-2.5 py-2 text-[11px] font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100 ${
+          align === 'left' ? 'left-0' : 'right-0'
+        }`}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
 interface KPITile {
   label: string;
   count: number;
@@ -350,6 +373,10 @@ export default function CTACampaignPage() {
                 Effectiveness
               </span>
             </h1>
+            <InfoTip
+              align="left"
+              text="Shows whether campaign calls to action support the intended marketing objective, and where execution needs attention."
+            />
           </div>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
             See whether campaign calls to action support the intended marketing objective – and where execution needs attention.
@@ -483,11 +510,11 @@ export default function CTACampaignPage() {
         ))}
 
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col h-full">
-          <div className="flex items-center justify-between min-h-[16px]">
+          <div className="flex items-center justify-between min-h-[16px] gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
               Aligned to Objective
             </span>
-            <span className="w-2 h-2 rounded-full bg-[#1E429F] shrink-0" />
+            <InfoTip text="Conv/Sales campaign with Buy/Shop or Urgency CTA | Awareness campaign with Learn CTA or No CTA" />
           </div>
           <div className="mt-3 flex items-baseline gap-1.5 leading-none">
             <span className="text-2xl font-black tracking-tight text-[#1E429F]">
@@ -505,11 +532,11 @@ export default function CTACampaignPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xs p-4 flex flex-col h-full">
-          <div className="flex items-center justify-between min-h-[16px]">
+          <div className="flex items-center justify-between min-h-[16px] gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] truncate">
               Needs Alignment
             </span>
-            <span className="w-2 h-2 rounded-full bg-[#64748B] shrink-0" />
+            <InfoTip text="Conv/Sales campaign with Learn CTA or No CTA | Awareness campaign with Buy/Shop or Urgency CTA" />
           </div>
           <div className="mt-3 flex items-baseline gap-1.5 leading-none">
             <span className="text-2xl font-black tracking-tight text-[#64748B]">
@@ -689,9 +716,15 @@ export default function CTACampaignPage() {
         >
           <div className="pb-3 border-b border-[#E5E7EB] flex items-center justify-between flex-wrap gap-2 shrink-0">
             <div>
-              <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                Campaigns to Review
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                  Campaigns to Review
+                </h3>
+                <InfoTip
+                  align="left"
+                  text="A creative-level list showing each creative's campaign objective, CTA type, alignment status (Aligned or Misaligned) and Intel Voice of Application (e.g., Heavy, Low)"
+                />
+              </div>
               <p className="text-xs text-[#6B7280] font-medium mt-0.5">
                 All campaign objectives and CTA types, with alignment and Intel Voice of Application.
               </p>

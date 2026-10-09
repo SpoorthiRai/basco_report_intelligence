@@ -118,6 +118,29 @@ function FilterChip({
   );
 }
 
+function InfoTip({
+  text,
+  align = 'right',
+}: {
+  text: string;
+  align?: 'left' | 'right';
+}) {
+  return (
+    <span className="relative z-20 inline-flex shrink-0">
+      <span className="peer inline-flex items-center justify-center w-5 h-5 rounded-full border border-[#CBD5E1] bg-white text-[10px] font-bold text-[#6B7280] leading-none">
+        i
+      </span>
+      <span
+        className={`pointer-events-none absolute top-full mt-1.5 w-72 rounded-lg bg-[#0B1325] px-2.5 py-2 text-[11px] font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100 ${
+          align === 'left' ? 'left-0' : 'right-0'
+        }`}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
 export default function VisualAdoptionPage() {
   const [data, setData] = useState<VisualAdoptionResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -261,11 +284,17 @@ export default function VisualAdoptionPage() {
       {/* ── Page Header ─────────────────────────────────────────── */}
       <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
-            <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
-              Brand &amp; Visual Adoption
-            </span>
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#111827]">
+              <span className="bg-gradient-to-r from-[#1E429F] via-[#0D9488] to-[#6366F1] bg-clip-text text-transparent inline-block">
+                Brand &amp; Visual Adoption
+              </span>
+            </h1>
+            <InfoTip
+              align="left"
+              text="How widely approved Intel campaign visuals are being adopted across retailers."
+            />
+          </div>
           <p className="text-xs md:text-sm text-[#6B7280] mt-1">
             See how Intel-approved campaign visuals are being activated across retailers – and where adoption can grow.
           </p>
@@ -423,9 +452,15 @@ export default function VisualAdoptionPage() {
             <div>
               {/* Header + Visual Style Filter */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-[#E5E7EB]">
-                <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                  Visual Adoption Across Retailers
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-[#111827] tracking-tight">
+                    Visual Adoption Across Retailers
+                  </h3>
+                  <InfoTip
+                    align="left"
+                    text="Compare retailers to see who is using the PMS visuals most."
+                  />
+                </div>
 
                 {/* Visual Style Filter Dropdown */}
                 <div className="flex items-center gap-1.5 bg-[#1E429F] hover:bg-[#162E6E] transition-colors text-white px-3 py-1.5 rounded-lg shadow-xs self-start sm:self-auto">
@@ -526,12 +561,15 @@ export default function VisualAdoptionPage() {
           {/* Master Visual Selector Card */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5 flex flex-col gap-4">
             <div>
-              <label
-                htmlFor="visual-select"
-                className="text-xs font-bold uppercase tracking-wider text-[#111827] block mb-1.5"
-              >
-                Explore Intel Campaign Visuals
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label
+                  htmlFor="visual-select"
+                  className="text-xs font-bold uppercase tracking-wider text-[#111827]"
+                >
+                  Explore Intel Campaign Visuals
+                </label>
+                <InfoTip text="Drill into a specific campaign visual to see exactly which retailers are using it and how frequently." />
+              </div>
               <select
                 id="visual-select"
                 value={selectedVisual}
@@ -550,13 +588,13 @@ export default function VisualAdoptionPage() {
             </div>
 
             {/* Thumbnail Image Banner */}
-            <div className="w-full h-[180px] rounded-xl overflow-hidden bg-slate-900 relative flex items-center justify-center border border-slate-800 shadow-inner">
+            <div className="w-full h-[320px] rounded-xl overflow-hidden bg-slate-900 relative flex items-center justify-center border border-slate-800 shadow-inner">
               {currentThumbnail && !imgError ? (
                 <img
                   src={currentThumbnail}
                   alt={selectedVisualLabel || 'Master Visual'}
                   onError={() => setImgError(true)}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <div className="p-4 text-center">

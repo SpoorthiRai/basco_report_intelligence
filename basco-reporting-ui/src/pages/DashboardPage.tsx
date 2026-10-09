@@ -6,6 +6,25 @@ import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useOverviewFilters } from '../store/overviewFiltersStore';
 
+function CardInfoTip({ text, wide = false }: { text: string; wide?: boolean }) {
+  return (
+    <span
+      className="relative z-20 inline-flex shrink-0"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
+      <span className="peer inline-flex items-center justify-center w-5 h-5 rounded-full border border-[#CBD5E1] bg-white text-[10px] font-bold text-[#6B7280] leading-none">
+        i
+      </span>
+      <span className={`pointer-events-none absolute right-0 top-full mt-1.5 rounded-lg bg-[#0B1325] px-2.5 py-2 text-[11px] font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100 ${wide ? 'w-72' : 'w-56'}`}>
+        {text}
+      </span>
+    </span>
+  );
+}
+
 function fmtCompactUsd(value: number): string {
   if (!Number.isFinite(value) || value === 0) return '$0';
   const abs = Math.abs(value);
@@ -293,9 +312,7 @@ export default function DashboardPage() {
                   <path d="m7 16 5-6 4 3 3-5" />
                 </svg>
               </div>
-              <span className="text-[10px] font-bold text-[#64748B] bg-[#64748B]/10 px-2 py-0.5 rounded-full group-hover:bg-[#64748B]/20 transition-colors">
-                View →
-              </span>
+              <CardInfoTip text="Overall brand attribution score across all evaluated retailers and creatives during POP evaluation" />
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#111827] tracking-tight block">
@@ -327,9 +344,7 @@ export default function DashboardPage() {
                   <path d="M6 4h12v5c0 3.31-2.69 6-6 6s-6-2.69-6-6V4Z" />
                 </svg>
               </div>
-              <span className="text-[10px] font-bold text-[#1E429F] bg-[#1E429F]/10 px-2 py-0.5 rounded-full group-hover:bg-[#1E429F]/20 transition-colors">
-                View →
-              </span>
+              <CardInfoTip text="Number of creatives that have one or more brand compliance issues" />
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#111827] tracking-tight block">
@@ -359,9 +374,7 @@ export default function DashboardPage() {
                   <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
                 </svg>
               </div>
-              <span className="text-[10px] font-bold text-[#0EA5E9] bg-[#0EA5E9]/15 px-2 py-0.5 rounded-full group-hover:bg-[#0EA5E9]/30 transition-colors">
-                View →
-              </span>
+              <CardInfoTip text="Number of retailers whose BASCO score is below the defined target (< 90%)" />
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#111827] tracking-tight block">
@@ -388,9 +401,7 @@ export default function DashboardPage() {
                   <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
                 </svg>
               </div>
-              <span className="text-[10px] font-bold text-[#1E429F] bg-[#1E429F]/10 px-2 py-0.5 rounded-full group-hover:bg-[#1E429F]/20 transition-colors">
-                View →
-              </span>
+              <CardInfoTip text="The most frequently occurring compliance issue" />
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#1E429F] tracking-tight block leading-tight">
@@ -417,9 +428,7 @@ export default function DashboardPage() {
                   <path d="M7 7h.01" strokeWidth="3" />
                 </svg>
               </div>
-              <span className="text-[10px] font-bold text-[#0EA5E9] bg-[#0EA5E9]/10 px-2 py-0.5 rounded-full group-hover:bg-[#0EA5E9]/20 transition-colors">
-                View →
-              </span>
+              <CardInfoTip text="Estimated fair market/claim value at risk because of non compliant creatives" />
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#0EA5E9] tracking-tight block">
@@ -454,9 +463,7 @@ export default function DashboardPage() {
                   <path d="M9 20v2" />
                 </svg>
               </div>
-              <span className="text-[10px] font-bold text-[#64748B] bg-[#64748B]/10 px-2 py-0.5 rounded-full group-hover:bg-[#64748B]/20 transition-colors">
-                View →
-              </span>
+              <CardInfoTip text="Estimated fair market/claim value protected through BASCO POP evaluation" />
             </div>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#64748B] tracking-tight block">
@@ -504,6 +511,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+                <CardInfoTip
+                  wide
+                  text="Shows how many retailers and creatives are being monitored during POP evaluation, the overall BASCO score, and how many retailers are good vs. bad performers."
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-2 my-3">
@@ -589,6 +600,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+                <CardInfoTip
+                  wide
+                  text="Shows the share of creatives with compliance & execution issues during POP evaluation, highlighting missing brand elements, promo creatives without CTA, and a breakdown of issue types."
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-2 my-3">
@@ -678,6 +693,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+                <CardInfoTip
+                  wide
+                  text="Shows how many creatives retailers submitted to the Helpdesk, the final approval rate, and how many belong to Intel-specific campaigns."
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-2 my-3">
@@ -758,6 +777,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+                <CardInfoTip
+                  wide
+                  text="Shows whether submitted creatives carry a strong Intel voice and a CTA that matches the creative's objective, plus which product categories are misaligned."
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-2 my-3">
@@ -831,6 +854,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+                <CardInfoTip
+                  wide
+                  text="Shows how many creatives lead with a price or discount, how many carry no offer, and the intent behind them (Buy/Shop, Urgency, Learn)."
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-2 my-3">
@@ -919,6 +946,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+                <CardInfoTip
+                  wide
+                  text="Shows how much Intel's visual assets are used in creatives (completely/partially), or whether they are co-branded or retailer-custom."
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-2 my-3">
