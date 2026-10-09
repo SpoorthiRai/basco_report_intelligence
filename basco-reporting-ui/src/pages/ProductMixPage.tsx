@@ -484,7 +484,7 @@ export default function ProductMixPage() {
                     formatter={(val: any) => [`${val} queries`, 'Helpdesk Queries']}
                     contentStyle={{ borderRadius: '0.5rem', fontSize: '12px', borderColor: '#E5E7EB' }}
                   />
-                  <Bar dataKey="queries" fill="#1E429F" radius={[0, 4, 4, 0]} barSize={14}>
+                  <Bar dataKey="queries" fill="#1E429F" radius={[0, 4, 4, 0]} barSize={14} isAnimationActive={false}>
                     <LabelList dataKey="queries" position="right" fill="#111827" fontSize={11} fontWeight={700} />
                   </Bar>
                 </BarChart>
@@ -550,6 +550,7 @@ export default function ProductMixPage() {
                     innerRadius={58}
                     outerRadius={92}
                     paddingAngle={2}
+                    isAnimationActive={false}
                   >
                     {(data?.compliance_guidance_by_element?.[brandElement] || []).map((g, idx) => (
                       <Cell key={g.label} fill={GUIDANCE_SLICE_COLORS[idx % GUIDANCE_SLICE_COLORS.length]} />
@@ -657,6 +658,7 @@ export default function ProductMixPage() {
                     fill="#1E429F"
                     radius={[0, 0, 4, 4]}
                     barSize={38}
+                    isAnimationActive={false}
                   />
                   {/* Top: other (Grey #CBD5E1) */}
                   <Bar
@@ -665,6 +667,7 @@ export default function ProductMixPage() {
                     fill="#CBD5E1"
                     radius={[4, 4, 0, 0]}
                     barSize={38}
+                    isAnimationActive={false}
                   >
                     <LabelList
                       dataKey="series_pct"
@@ -759,6 +762,7 @@ export default function ProductMixPage() {
                         fill={isAnySelected && !isSelected ? '#CBD5E1' : baseColor}
                         opacity={isAnySelected && !isSelected ? 0.22 : 1}
                         barSize={16}
+                        isAnimationActive={false}
                       />
                     );
                   })}
@@ -901,6 +905,7 @@ export default function ProductMixPage() {
                     fill="#1E429F"
                     radius={[4, 4, 0, 0]}
                     barSize={32}
+                    isAnimationActive={false}
                   >
                     <LabelList
                       dataKey="count"

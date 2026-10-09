@@ -537,6 +537,7 @@ export default function VisualAdoptionPage() {
                       fill="#1E429F"
                       radius={[0, 5, 5, 0]}
                       barSize={18}
+                      isAnimationActive={false}
                     >
                       <LabelList
                         dataKey="adoption_pct"

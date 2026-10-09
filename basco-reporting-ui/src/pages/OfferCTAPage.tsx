@@ -470,6 +470,7 @@ export default function OfferCTAPage() {
                       fill="#1E429F"
                       radius={[0, 0, 4, 4]}
                       barSize={36}
+                      isAnimationActive={false}
                     />
                     <Bar
                       dataKey="remainder"
@@ -478,6 +479,7 @@ export default function OfferCTAPage() {
                       fill="#CBD5E1"
                       radius={[4, 4, 0, 0]}
                       barSize={36}
+                      isAnimationActive={false}
                     >
                       <LabelList
                         dataKey="cta_pct"
