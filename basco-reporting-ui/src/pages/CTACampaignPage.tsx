@@ -161,7 +161,7 @@ function layoutTreemap(
   const total = nodes.reduce((sum, node) => sum + node.size, 0) || 1;
   let acc = 0;
   let splitAt = 1;
-  for (let i = 0; i < nodes.length; i += 1) {
+  for (let i = 0; i < nodes.length - 1; i += 1) {
     acc += nodes[i].size;
     splitAt = i + 1;
     if (acc >= total / 2) break;
@@ -170,13 +170,17 @@ function layoutTreemap(
   const right = nodes.slice(splitAt);
   const leftShare = left.reduce((sum, node) => sum + node.size, 0) / total;
   if (width >= height) {
-    const leftWidth = Math.round(width * leftShare);
+    let leftWidth = Math.round(width * leftShare);
+    if (leftWidth <= 0) leftWidth = 1;
+    if (leftWidth >= width) leftWidth = Math.max(1, width - 1);
     return [
       ...layoutTreemap(left, x, y, leftWidth, height),
       ...layoutTreemap(right, x + leftWidth, y, width - leftWidth, height),
     ];
   }
-  const leftHeight = Math.round(height * leftShare);
+  let leftHeight = Math.round(height * leftShare);
+  if (leftHeight <= 0) leftHeight = 1;
+  if (leftHeight >= height) leftHeight = Math.max(1, height - 1);
   return [
     ...layoutTreemap(left, x, y, width, leftHeight),
     ...layoutTreemap(right, x, y + leftHeight, width, height - leftHeight),

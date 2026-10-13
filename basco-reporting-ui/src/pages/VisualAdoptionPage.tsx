@@ -200,10 +200,10 @@ export default function VisualAdoptionPage() {
         if (!isMounted) return;
         if (res.data) {
           setData(res.data);
-          // By default, select the latest visual returned by the backend
-          if (!selectedVisual) {
-            const defaultName = res.data.default_visual || res.data.pms_visuals?.[0]?.PMSVisual_Name;
-            if (defaultName) {
+          const names = (res.data.pms_visuals || []).map((p) => p.PMSVisual_Name);
+          const defaultName = res.data.default_visual || names[0] || '';
+          if (!selectedVisual || !names.includes(selectedVisual)) {
+            if (defaultName !== selectedVisual) {
               setSelectedVisual(defaultName);
             }
           }

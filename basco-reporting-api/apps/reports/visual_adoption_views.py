@@ -240,7 +240,26 @@ class VisualAdoptionView(APIView):
             )))
             filter_options["retailers"] = ["All"] + master_retailers
 
-        # ── 5. Build Master Visual Catalog from Metadata (VISUAL_CONTENT_URL & VISUAL_CONTENT_NAME) ──
+        # ── 5. Apply Quarter / Region / Country / Retailer (not Visual Style) ──
+        geo_filtered_rows = rows
+        if quarter_filter and quarter_filter not in ('All', 'All Quarters'):
+            geo_filtered_rows = [r for r in geo_filtered_rows if r.get('quarter_label') == quarter_filter]
+        if region_filter and region_filter not in ('All', 'All Regions'):
+            wanted_region = region_filter.strip().upper()
+            geo_filtered_rows = [
+                r for r in geo_filtered_rows
+                if str(r.get('Region') or '').strip().upper() == wanted_region
+            ]
+        if country_filter and country_filter not in ('All', 'All Countries'):
+            geo_filtered_rows = [r for r in geo_filtered_rows if r.get('Country') == country_filter]
+        if not is_all_filter(retailer_filter, 'All', 'All Retailers'):
+            wanted_ret = retailer_filter.strip()
+            geo_filtered_rows = [
+                r for r in geo_filtered_rows
+                if child_account_label(r) == wanted_ret or str(r.get('Retailer') or '').strip() == wanted_ret
+            ]
+
+        # URL lookup: PMS metadata, then names found in the current slice
         visual_catalog = {}
         for p in raw_pms:
             name = p.get('PMSVisual_Name')
@@ -248,28 +267,39 @@ class VisualAdoptionView(APIView):
             if name and name not in ('None', '', 'NA') and url and url not in ('None', '', 'NA'):
                 visual_catalog[name] = url
 
-        for r in rows:
-            names = r.get('Visual_Content_Name', '') or ''
-            urls = r.get('Visual_Content_URL', '') or ''
-            name_tokens = split_visual_tokens(names)
-            url_tokens = [t.strip() for t in urls.replace(';', '|').split('|') if t.strip() and t.strip() not in ('None', '', 'NA')]
-            for i, name in enumerate(name_tokens):
-                if name and name not in visual_catalog and name != 'None':
-                    url = url_tokens[i] if i < len(url_tokens) else (url_tokens[0] if url_tokens else '')
-                    if url:
-                        visual_catalog[name] = url
+        def merge_row_visual_urls(source_rows):
+            for r in source_rows:
+                names = r.get('Visual_Content_Name', '') or ''
+                urls = r.get('Visual_Content_URL', '') or ''
+                name_tokens = split_visual_tokens(names)
+                url_tokens = [
+                    t.strip()
+                    for t in urls.replace(';', '|').split('|')
+                    if t.strip() and t.strip() not in ('None', '', 'NA')
+                ]
+                for i, name in enumerate(name_tokens):
+                    if name and name not in visual_catalog and name != 'None':
+                        url = url_tokens[i] if i < len(url_tokens) else (url_tokens[0] if url_tokens else '')
+                        if url:
+                            visual_catalog[name] = url
 
-        # ── 5.1 Track Recency & Usage Metrics for Each Visual ──
+        merge_row_visual_urls(geo_filtered_rows)
+
+        names_in_slice = set()
+        for r in geo_filtered_rows:
+            for name in split_visual_tokens(r.get('Visual_Content_Name', '') or ''):
+                if name and name in visual_catalog:
+                    names_in_slice.add(name)
+
         quarter_rank = {q: idx for idx, q in enumerate(master_quarters)}
 
         visual_metrics = {}
-        for r in rows:
+        for r in geo_filtered_rows:
             q_label = r.get('quarter_label')
             cnt = r.get('creative_count', 1)
-            names = r.get('Visual_Content_Name', '') or ''
-            tokens = split_visual_tokens(names)
+            tokens = split_visual_tokens(r.get('Visual_Content_Name', '') or '')
             for name in tokens:
-                if name not in visual_catalog:
+                if name not in names_in_slice:
                     continue
                 if name not in visual_metrics:
                     visual_metrics[name] = {
@@ -285,14 +315,13 @@ class VisualAdoptionView(APIView):
                     visual_metrics[name]['latest_quarter_count'] += cnt
                 visual_metrics[name]['total_count'] += cnt
 
-        # Sort visual catalog so latest visuals (most recent quarter, highest creative count) appear first
         def visual_sort_key(name):
             m = visual_metrics.get(name)
             if m:
                 return (m['best_quarter_rank'], -m['latest_quarter_count'], -m['total_count'], name.lower())
             return (9999, 0, 0, name.lower())
 
-        sorted_visual_names = sorted(visual_catalog.keys(), key=visual_sort_key)
+        sorted_visual_names = sorted(names_in_slice, key=visual_sort_key)
 
         pms_visuals = [
             {
@@ -304,40 +333,13 @@ class VisualAdoptionView(APIView):
             for idx, name in enumerate(sorted_visual_names)
         ]
 
-        # Determine the latest default visual (scoped to active quarter filter if set)
-        default_visual = None
-        if quarter_filter and quarter_filter not in ('All', 'All Quarters'):
-            q_r = quarter_rank.get(quarter_filter)
-            q_visuals = [
-                name for name in sorted_visual_names 
-                if visual_metrics.get(name, {}).get('best_quarter_rank') == q_r
-            ]
-            default_visual = q_visuals[0] if q_visuals else (pms_visuals[0]['PMSVisual_Name'] if pms_visuals else None)
-        else:
-            default_visual = pms_visuals[0]['PMSVisual_Name'] if pms_visuals else None
+        default_visual = pms_visuals[0]['PMSVisual_Name'] if pms_visuals else None
 
-        # If user didn't specify a visual, default to the latest visual
-        if not selected_visual or selected_visual not in visual_catalog:
+        if not selected_visual or selected_visual not in names_in_slice:
             selected_visual = default_visual
 
-        # ── 6. Apply Active UI Filters for KPIs and Retailer Breakdown ──
-        filtered_rows = rows
-        if quarter_filter and quarter_filter not in ('All', 'All Quarters'):
-            filtered_rows = [r for r in filtered_rows if r.get('quarter_label') == quarter_filter]
-        if region_filter and region_filter not in ('All', 'All Regions'):
-            wanted_region = region_filter.strip().upper()
-            filtered_rows = [
-                r for r in filtered_rows
-                if str(r.get('Region') or '').strip().upper() == wanted_region
-            ]
-        if country_filter and country_filter not in ('All', 'All Countries'):
-            filtered_rows = [r for r in filtered_rows if r.get('Country') == country_filter]
-        if not is_all_filter(retailer_filter, 'All', 'All Retailers'):
-            wanted_ret = retailer_filter.strip()
-            filtered_rows = [
-                r for r in filtered_rows
-                if child_account_label(r) == wanted_ret or str(r.get('Retailer') or '').strip() == wanted_ret
-            ]
+        # ── 6. Visual Style filter for KPIs and Retailer Breakdown ──
+        filtered_rows = geo_filtered_rows
         if visual_style_filter and visual_style_filter not in ('All', 'All Styles'):
             filtered_rows = [r for r in filtered_rows if r.get('Visual_Style') == visual_style_filter]
 

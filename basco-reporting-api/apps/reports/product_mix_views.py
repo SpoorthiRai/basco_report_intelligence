@@ -386,7 +386,24 @@ class ProductMixView(APIView):
 
         # -------------------------------------------------------
         # PANEL 1 — Selected Series/Gen adoption by Region
+        # Year and quarter still apply. Region, country, retailer,
+        # and top account do not — this chart compares regions.
         # -------------------------------------------------------
+        region_panel_rows = all_raw_rows
+        if not is_all_filter(quarter_filter, 'All', 'All Quarters'):
+            region_panel_rows = [r for r in region_panel_rows if r.get('quarter_label') == quarter_filter]
+        if not is_all_filter(year_filter, 'All', 'All Years'):
+            region_panel_rows = [
+                r for r in region_panel_rows
+                if str(r.get('year_label') or '') == str(year_filter)
+                or str(r.get('quarter_label') or '').endswith(str(year_filter))
+            ]
+        region_panel_rows = [r for r in region_panel_rows if not is_skipped_account(r.get('Retailer'))]
+        region_panel_rows = [
+            r for r in region_panel_rows
+            if str(r.get('Product') or '').strip() and not _is_blank_product(r.get('Product'))
+        ]
+
         raw_target = series_filter.strip()
         search_token = raw_target
         for prefix in ['Intel Core Ultra ', 'Core Ultra ', 'Intel Core ', 'Core ', 'Intel ']:
@@ -394,7 +411,7 @@ class ProductMixView(APIView):
                 search_token = search_token[len(prefix):].strip()
 
         region_map = {}
-        for r in rows:
+        for r in region_panel_rows:
             reg = r.get('Region', 'Unknown')
             if reg not in region_map:
                 region_map[reg] = {

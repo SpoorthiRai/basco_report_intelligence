@@ -588,9 +588,7 @@ export default function ProductMixPage() {
           <div>
             <div className="flex flex-col gap-2 pb-3 border-b border-[#E5E7EB]">
               <h3 className="text-sm font-bold text-[#111827] tracking-tight">
-                {targetSeriesFilter.includes('Series 3')
-                  ? 'Core Ultra Series 3 Market Adoption'
-                  : `${targetSeriesFilter} Market Adoption`}
+                Product-Wise Market Adoption - Regional Leve
               </h3>
               
               {/* Target Series Dropdown Selector */}
